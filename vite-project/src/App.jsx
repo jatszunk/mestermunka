@@ -1,6 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
+import axios from 'axios';
+
+export function handleRegister(felhasznalonev, email, jelszo, onSuccess) {
+  axios.post('http://localhost:3001/register', {
+    felhasznalonev,
+    email,
+    jelszo
+  })
+  .then(res => {
+    if (res.data.success) {
+      onSuccess();
+    }
+  })
+  .catch(err => {
+    alert('Hiba regisztrációnál');
+    console.error(err);
+  });
+}
+
+export function handleLogin(felhasznalonev, jelszo, onSuccess) {
+  axios.post('http://localhost:3001/login', {
+    felhasznalonev,
+    jelszo
+  })
+  .then(res => {
+    if (res.data.success) {
+      onSuccess();
+    }
+  })
+  .catch(err => {
+    alert('Hibás felhasználónév vagy jelszó');
+    console.error(err);
+  });
+}
 
 const gameImages = {
   'Cyberpunk 2077': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
@@ -886,6 +920,7 @@ function App() {
       </div>
     );
   }
+  
 
   return (
     <BrowserRouter>
