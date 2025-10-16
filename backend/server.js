@@ -9,10 +9,18 @@ app.use(bodyParser.json());
 
 const db = mysql.createConnection({
   host: 'localhost',
+  port: 3307,
   user: 'root',
   password: '',
   database: 'reklamoldal'
 });
+
+app.get('/',(req,res)=>{
+  res.send("fut a szeró");
+})
+app.get('/felhasznalo',(req,res)=>{
+  db.res()
+})
 
 // Regisztráció
 app.post('/register', (req, res) => {

@@ -4,7 +4,7 @@ import './App.css';
 import axios from 'axios';
 
 export function handleRegister(felhasznalonev, email, jelszo, onSuccess) {
-  axios.post('http://localhost:3001/register', {
+  axios.post('localhost:3001/register', {
     felhasznalonev,
     email,
     jelszo
@@ -21,7 +21,7 @@ export function handleRegister(felhasznalonev, email, jelszo, onSuccess) {
 }
 
 export function handleLogin(felhasznalonev, jelszo, onSuccess) {
-  axios.post('http://localhost:3001/login', {
+  axios.post('localhost:3001/login', {
     felhasznalonev,
     jelszo
   })
