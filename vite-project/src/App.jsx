@@ -393,7 +393,7 @@ function App() {
             <span>{game.rating}</span>
           </div>
         </div>
-        <div className="game-info">
+        <div className="game-info" style={{color:"white"}}>
           <h3 className="game-title">{game.title}</h3>
           <div className="game-developer">{game.developer}</div>
           <span className="category-chip">{game.category}</span>
@@ -529,7 +529,7 @@ function App() {
           <div className="game-image">
             <img src={game.image} alt={game.title} />
           </div>
-          <div className="game-info">
+          <div className="game-info" style={{color:"white"}}>
             <div className="game-developer">{game.developer}</div>
             <span className="category-chip">{game.category}</span>
             <div className="game-requirements">
@@ -539,7 +539,7 @@ function App() {
               <p>{game.requirements.recommended}</p>
             </div>
             <div><b>Leírás:</b> {game.description}</div>
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12, color:"white" }}>
               <b>Globális értékelés:</b> {globalRating}
               {user && <><br /><b>Saját értékelés:</b> {ownRating ? ownRating.rating : "Még nincs"}</>}
             </div>
@@ -683,7 +683,7 @@ function App() {
               </div>
               <div><b>Név:</b> <input value={user.username} disabled style={{ width: "80%" }} /></div>
               <div><b>Email:</b> <input value={user.email} disabled style={{ width: "80%" }} /></div>
-              <div><b>Leírás:</b></div>
+              <div><b id='leirass'>Leírás:</b></div>
               <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} style={{ width: "100%", marginBottom: 8 }} maxLength={100} />
               <button className="login-btn" style={{ marginBottom: 9 }} onClick={handleSave}>Mentés</button>
             </>
@@ -691,7 +691,7 @@ function App() {
             <>
               <div><b>Név:</b> {user?.username}</div>
               <div><b>Email:</b> {user?.email}</div>
-              <div><b>Leírás:</b> {user?.bio || "–"}</div>
+              <div><b id='leirass'>Leírás:</b> {user?.bio || "–"}</div>
               <button className="login-btn" style={{ margin: "14px 0 9px 0" }} onClick={() => setEdit(true)}>Szerkesztés</button>
             </>
           )}
