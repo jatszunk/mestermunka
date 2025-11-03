@@ -12,14 +12,11 @@ const db = mysql.createConnection({
   port: 3307,
   user: 'root',
   password: '',
-  database: 'reklamoldal'
+  database: 'jatekhirdeto'
 });
 
 app.get('/',(req,res)=>{
   res.send("fut a szeró");
-})
-app.get('/felhasznalo',(req,res)=>{
-  db.res()
 })
 
 // Regisztráció
@@ -51,6 +48,19 @@ app.post('/register', (req, res) => {
       }
     });
   });
+  
+
+// Felhasználók lekérdezése
+app.get('/felhasznalok', (req, res) => {
+  const sql = 'SELECT * FROM felhasznalo';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Hiba a felhasználók lekérdezésekor:', err);
+      return res.status(500).send('Hiba történt');
+    }
+    res.send({ success: true, users: results });
+  });
+});
 
 app.listen(3001, () => {
     console.log('Szerver fut a 3001-es porton');

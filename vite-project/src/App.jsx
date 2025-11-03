@@ -3,39 +3,6 @@ import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'reac
 import './App.css';
 import axios from 'axios';
 
-export function handleRegister(felhasznalonev, email, jelszo, onSuccess) {
-  axios.post('localhost:3001/register', {
-    felhasznalonev,
-    email,
-    jelszo
-  })
-  .then(res => {
-    if (res.data.success) {
-      onSuccess();
-    }
-  })
-  .catch(err => {
-    alert('Hiba regisztrációnál');
-    console.error(err);
-  });
-}
-
-export function handleLogin(felhasznalonev, jelszo, onSuccess) {
-  axios.post('localhost:3001/login', {
-    felhasznalonev,
-    jelszo
-  })
-  .then(res => {
-    if (res.data.success) {
-      onSuccess();
-    }
-  })
-  .catch(err => {
-    alert('Hibás felhasználónév vagy jelszó');
-    console.error(err);
-  });
-}
-
 const gameImages = {
   'Cyberpunk 2077': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
   'The Witcher 3': 'https://images.igdb.com/igdb/image/upload/t_original/co1r73.jpg',
@@ -229,16 +196,31 @@ function App() {
   const [user, setUser] = useState(null);
   const [comments, setComments] = useState({});
 
-  function isAdmin() {
-    return user && user.username === "admin";
-  }
-
-
   useEffect(() => {
-    if (user && typeof user.bio === "undefined") {
-      setUser(prev => ({ ...prev, bio: '', avatar: '' }));
-    }
-  }, [user]);
+    axios.get('http://localhost:3001/felhasznalok')
+      .then(res => {
+        if (res.data.success) {
+          const mappedUsers = res.data.users.map(u => ({
+            username: u.felhasznalonev,
+            email: u.email,
+            password: u.jelszo,
+            bio: u.bio || "",
+            avatar: u.avatar || ""
+          }));
+          setUsers(mappedUsers);
+        }
+      })
+      .catch(err => {
+        console.error("Hiba a felhasználók lekérésekor:", err);
+      });
+  }, []);
+
+  function handleLogin(uname, pass, cb) {
+    const found = users.find(u => u.username === uname && u.password === pass);
+    if (!found) return alert("Hibás felhasználó vagy jelszó!");
+    setUser(found);
+    cb && cb();
+  }
 
   function handleRegister(uname, email, pass, cb) {
     if (users.some(u => u.username === uname)) return alert("Ez a név már foglalt!");
@@ -246,14 +228,27 @@ function App() {
     setUsers([...users, newu]);
     setUser(newu);
     cb && cb();
+
+      // 🔽 Hozzáadás az adatbázishoz
+  axios.post('http://localhost:3001/register', {
+    felhasznalonev: uname,
+    email: email,
+    jelszo: pass
+  })
+  .then(res => {
+    if (!res.data.success) {
+      console.warn("Az adatbázisba mentés nem sikerült.");
+    }
+  })
+  .catch(err => {
+    console.error("Hiba az adatbázisba mentés során:", err);
+  });
   }
-  function handleLogin(uname, pass, cb) {
-    const found = users.find(u => u.username === uname && u.password === pass);
-    if (!found) return alert("Hibás felhasználó vagy jelszó!");
-    setUser(found);
-    cb && cb();
+
+  function handleLogout() {
+    setUser(null);
   }
-  function handleLogout() { setUser(null); }
+
   function handleAddComment(gameId, text, rating) {
     if (!user) return;
     setComments(prev => ({
@@ -264,19 +259,20 @@ function App() {
       ]
     }));
   }
+
   function handleDeleteComment(gameId, commentIdx) {
     setComments(prev => ({
       ...prev,
       [gameId]: (prev[gameId] || []).filter((_, idx) => idx !== commentIdx)
     }));
   }
+
   function handleProfileEdit(data) {
     setUser(prev => ({ ...prev, ...data }));
     setUsers(usrs => usrs.map(u =>
       u.username === user.username ? { ...u, ...data } : u
     ));
   }
-
 
   // ----------- SEARCH, FILTER/RENDEZÉS -----------------
   function filterSortGames(games, search, filter, sort) {
