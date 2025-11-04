@@ -62,6 +62,53 @@ app.get('/felhasznalok', (req, res) => {
   });
 });
 
+// 📦 GET /jatekok végpont
+app.get('/jatekok', (req, res) => {
+  const sql = `
+    SELECT 
+      j.idjatekok AS id,
+      j.nev AS title,
+      f.nev AS developer,
+      j.ar,
+      k.nev AS category,
+      p.nev AS platform,
+      j.rendszerkovetelmeny,
+      j.ajanlottkovetelmeny,
+      j.leiras AS description,
+      j.kepurl AS image,
+      j.ertekeles AS rating
+    FROM jatekok j
+    JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    JOIN kategoria k ON j.idkategoria = k.idkategoria
+    JOIN platform p ON j.idplatform = p.idplatform
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Hiba a játékok lekérdezésekor:", err);
+      return res.status(500).json({ success: false, error: err });
+    }
+
+    // 🎯 Adatok formázása frontendhez
+    const mappedGames = results.map(game => ({
+      id: game.id,
+      title: game.title,
+      developer: game.developer,
+      price: game.ar === 0 ? 'Ingyenes' : `${game.ar.toLocaleString()} Ft`,
+      image: game.image || '', // ha van kép URL
+      requirements: {
+        minimum: game.rendszerkovetelmeny || '',
+        recommended: game.ajanlottkovetelmeny || ''
+      },
+      category: game.category,
+      rating: game.rating || 0,
+      description: game.description || ''
+    }));
+
+    res.json({ success: true, games: mappedGames });
+  });
+});
+
 app.listen(3001, () => {
     console.log('Szerver fut a 3001-es porton');
   });

@@ -213,6 +213,27 @@ function App() {
       .catch(err => {
         console.error("Hiba a felhasználók lekérésekor:", err);
       });
+      axios.get('http://localhost:3001/jatekok')
+    .then(res => {
+      const mappedGames = res.data.map(game => ({
+        id: game.id,
+        title: game.title,
+        developer: game.developer,
+        price: game.ar === 0 ? 'Ingyenes' : `${game.ar.toLocaleString()} Ft`,
+        image: gameImages[game.title] || defaultImage,
+        requirements: {
+          minimum: game.rendszerkovetelmeny, // ha külön van, akkor bontani kell
+          recommended: game.ajanlottkovetelmeny || ""
+        },
+        category: game.category,
+        rating: game.rating || 0,
+        description: game.description || ""
+      }));
+      setGames(mappedGames);
+    })
+    .catch(err => {
+      console.error("Hiba a játékok lekérésekor:", err);
+    });
   }, []);
 
   function handleLogin(uname, pass, cb) {
