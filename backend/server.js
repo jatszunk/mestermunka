@@ -69,11 +69,11 @@ app.get('/jatekok', (req, res) => {
       j.idjatekok AS id,
       j.nev AS title,
       f.nev AS developer,
-      j.ar,
+      j.ar AS price,
       k.nev AS category,
       p.nev AS platform,
-      j.rendszerkovetelmeny,
-      j.ajanlottkovetelmeny,
+      r.minimum AS minimum,
+      r.ajanlott AS recommended,
       j.leiras AS description,
       j.kepurl AS image,
       j.ertekeles AS rating
@@ -81,6 +81,7 @@ app.get('/jatekok', (req, res) => {
     JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
     JOIN kategoria k ON j.idkategoria = k.idkategoria
     JOIN platform p ON j.idplatform = p.idplatform
+    JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.id
   `;
 
   db.query(sql, (err, results) => {

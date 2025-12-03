@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
 import axios from 'axios';
+import LandingPage from './pages/landingpage.jsx';
+
 
 const gameImages = {
   'Cyberpunk 2077': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
@@ -942,7 +944,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Főoldal games={games} />} />
+        <Route path="/" element={user ? <Főoldal games={games} /> : <LandingPage />} />
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/login" element={user ? <Profile /> : <Login />} />
         <Route path="/profile" element={user ? <Profile /> : <Login />} />
