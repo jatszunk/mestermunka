@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'reac
 import './App.css';
 import axios from 'axios';
 import LandingPage from './pages/landingpage.jsx';
-
+import defaultImage from './assets/default.jpg';
 
 const gameImages = {
   'Cyberpunk 2077': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
@@ -216,28 +216,27 @@ function App() {
         console.error("Hiba a felhasználók lekérésekor:", err);
       });
       axios.get('http://localhost:3001/jatekok')
-    .then(res => {
-      const mappedGames = res.data.map(game => ({
-        id: game.id,
-        title: game.title,
-        developer: game.developer,
-        price: game.ar === 0 ? 'Ingyenes' : `${game.ar.toLocaleString()} Ft`,
-        image: gameImages[game.title] || defaultImage,
-        requirements: {
-          minimum: game.rendszerkovetelmeny, // ha külön van, akkor bontani kell
-          recommended: game.ajanlottkovetelmeny || ""
-        },
-        category: game.category,
-        rating: game.rating || 0,
-        description: game.description || ""
-      }));
-      setGames(mappedGames);
-    })
-    .catch(err => {
-      console.error("Hiba a játékok lekérésekor:", err);
-    });
+      .then(res => {
+        const mappedGames = res.data.games.map(game => ({
+          id: game.id,
+          title: game.title,
+          developer: game.developer,
+          price: game.price,
+          image: game.image || defaultImage,
+          requirements: {
+            minimum: game.minimum || "",
+            recommended: game.recommended || ""
+          },
+          category: game.category,
+          rating: game.rating || 0,
+          description: game.description || ""
+        }));
+        setGames(mappedGames);
+      })
+      .catch(err => {
+        console.error("Hiba a játékok lekérésekor:", err);
+      });
   }, []);
-
   function handleLogin(uname, pass, cb) {
     const found = users.find(u => u.username === uname && u.password === pass);
     if (!found) return alert("Hibás felhasználó vagy jelszó!");

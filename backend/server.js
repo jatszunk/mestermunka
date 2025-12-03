@@ -81,7 +81,7 @@ app.get('/jatekok', (req, res) => {
     JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
     JOIN kategoria k ON j.idkategoria = k.idkategoria
     JOIN platform p ON j.idplatform = p.idplatform
-    JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.id
+    JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
   `;
 
   db.query(sql, (err, results) => {
@@ -95,11 +95,11 @@ app.get('/jatekok', (req, res) => {
       id: game.id,
       title: game.title,
       developer: game.developer,
-      price: game.ar === 0 ? 'Ingyenes' : `${game.ar.toLocaleString()} Ft`,
+      price: game.price === 0 ? 'Ingyenes' : `${game.price.toLocaleString()} Ft`,
       image: game.image || '', // ha van kép URL
       requirements: {
-        minimum: game.rendszerkovetelmeny || '',
-        recommended: game.ajanlottkovetelmeny || ''
+        minimum: game.minimum || '',
+        recommended: game.recommended || ''
       },
       category: game.category,
       rating: game.rating || 0,
