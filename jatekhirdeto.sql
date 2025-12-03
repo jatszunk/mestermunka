@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2025. Nov 04. 09:40
+-- Létrehozás ideje: 2025. Dec 03. 09:37
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -70,9 +70,10 @@ CREATE TABLE `jatekok` (
   `ar` varchar(255) DEFAULT NULL,
   `idplatform` int(11) DEFAULT NULL,
   `idrendszerkovetelmeny` int(11) DEFAULT NULL,
-  `jatekleiras` varchar(255) DEFAULT NULL,
+  `leiras` varchar(255) DEFAULT NULL,
   `ertekeles` int(11) NOT NULL,
-  `idkommentek` int(11) DEFAULT NULL
+  `idkommentek` int(11) DEFAULT NULL,
+  `kepurl` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
