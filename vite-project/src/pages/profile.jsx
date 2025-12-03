@@ -65,3 +65,7 @@ import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'reac
       </div>
     );
   }
+  function handleLogout() {
+    setUser(null);
+  }
+  export default Profile;

@@ -23,4 +23,26 @@ import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'reac
       </div>
     );
   }
+  function handleRegister(uname, email, pass, cb) {
+    if (users.some(u => u.username === uname)) return alert("Ez a név már foglalt!");
+    const newu = { username: uname, email, password: pass, bio: "", avatar: "" };
+    setUsers([...users, newu]);
+    setUser(newu);
+    cb && cb();
+
+      // 🔽 Hozzáadás az adatbázishoz
+  axios.post('http://localhost:3001/register', {
+    felhasznalonev: uname,
+    email: email,
+    jelszo: pass
+  })
+  .then(res => {
+    if (!res.data.success) {
+      console.warn("Az adatbázisba mentés nem sikerült.");
+    }
+  })
+  .catch(err => {
+    console.error("Hiba az adatbázisba mentés során:", err);
+  });
+  }
   export default Register;

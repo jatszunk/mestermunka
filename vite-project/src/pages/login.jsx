@@ -21,4 +21,10 @@ import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'reac
       </div>
     );
   }
+  function handleLogin(uname, pass, cb) {
+    const found = users.find(u => u.username === uname && u.password === pass);
+    if (!found) return alert("Hibás felhasználó vagy jelszó!");
+    setUser(found);
+    cb && cb();
+  }
     export default Login;

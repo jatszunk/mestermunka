@@ -4,6 +4,10 @@ import './App.css';
 import axios from 'axios';
 import LandingPage from './pages/landingpage.jsx';
 import defaultImage from './assets/default.jpg';
+import Register from './pages/register.jsx';
+import Login from './pages/login.jsx';
+import Nevjegy from './pages/nevjegy.jsx';
+import Profile from './pages/profile.jsx';
 
 const gameImages = {
   'Cyberpunk 2077': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
@@ -344,7 +348,6 @@ function App() {
         <nav>
           <Link to="/" className="nav-link">Főoldal</Link>
           <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-          <Link to="/register" className="nav-link">Regisztráció</Link>
           <Link to="/nevjegy" className="nav-link">Névjegy</Link>
           {user?.username === 'admin' && (
             <Link to="/addgame" className="nav-link">Új játék (admin)</Link>
