@@ -219,7 +219,7 @@ function App() {
       .catch(err => {
         console.error("Hiba a felhasználók lekérésekor:", err);
       });
-      axios.get('http://localhost:3001/jatekok')
+    axios.get('http://localhost:3001/jatekok')
       .then(res => {
         const mappedGames = res.data.games.map(game => ({
           id: game.id,
@@ -255,20 +255,20 @@ function App() {
     setUser(newu);
     cb && cb();
 
-      // 🔽 Hozzáadás az adatbázishoz
-  axios.post('http://localhost:3001/register', {
-    felhasznalonev: uname,
-    email: email,
-    jelszo: pass
-  })
-  .then(res => {
-    if (!res.data.success) {
-      console.warn("Az adatbázisba mentés nem sikerült.");
-    }
-  })
-  .catch(err => {
-    console.error("Hiba az adatbázisba mentés során:", err);
-  });
+    // 🔽 Hozzáadás az adatbázishoz
+    axios.post('http://localhost:3001/register', {
+      felhasznalonev: uname,
+      email: email,
+      jelszo: pass
+    })
+      .then(res => {
+        if (!res.data.success) {
+          console.warn("Az adatbázisba mentés nem sikerült.");
+        }
+      })
+      .catch(err => {
+        console.error("Hiba az adatbázisba mentés során:", err);
+      });
   }
 
   function handleLogout() {
@@ -292,6 +292,27 @@ function App() {
       [gameId]: (prev[gameId] || []).filter((_, idx) => idx !== commentIdx)
     }));
   }
+  const onDeleteGame = async (gameId) => {
+    if (!window.confirm("Biztosan törölni szeretnéd ezt a játékot?")) return;
+
+    try {
+      const res = await fetch(`/jatekok/${gameId}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Játék törölve!");
+        // pl. frissítsd a játéklistát
+        setGames(prev => prev.filter(g => g.id !== gameId));
+      } else {
+        alert("Hiba: " + data.message);
+      }
+    } catch (err) {
+      console.error("Hiba a játék törlésekor:", err);
+      alert("Nem sikerült törölni a játékot.");
+    }
+  };
 
   function handleProfileEdit(data) {
     setUser(prev => ({ ...prev, ...data }));
@@ -414,7 +435,7 @@ function App() {
             <span>{game.rating}</span>
           </div>
         </div>
-        <div className="game-info" style={{color:"white"}}>
+        <div className="game-info" style={{ color: "white" }}>
           <h3 className="game-title">{game.title}</h3>
           <div className="game-developer">{game.developer}</div>
           <span className="category-chip">{game.category}</span>
@@ -432,7 +453,6 @@ function App() {
               <button className="megtekintes-btn">Megtekintés</button>
             </Link>
           </div>
-
           {user &&
             <form
               onSubmit={e => {
@@ -550,7 +570,7 @@ function App() {
           <div className="game-image">
             <img src={game.image} alt={game.title} />
           </div>
-          <div className="game-info" style={{color:"white"}}>
+          <div className="game-info" style={{ color: "white" }}>
             <div className="game-developer">{game.developer}</div>
             <span className="category-chip">{game.category}</span>
             <div className="game-requirements">
@@ -560,7 +580,7 @@ function App() {
               <p>{game.requirements.recommended}</p>
             </div>
             <div><b>Leírás:</b> {game.description}</div>
-            <div style={{ marginTop: 12, color:"white" }}>
+            <div style={{ marginTop: 12, color: "white" }}>
               <b>Globális értékelés:</b> {globalRating}
               {user && <><br /><b>Saját értékelés:</b> {ownRating ? ownRating.rating : "Még nincs"}</>}
             </div>
@@ -607,8 +627,45 @@ function App() {
                   </div>
                 ))}
             </div>
-            <button className="vissza-btn" style={{ marginTop: 25 }} onClick={() => navigate(-1)}>⬅ Vissza</button>
           </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 25
+            }}
+          >
+            <button
+              className="vissza-btn"
+              style={{ marginTop: 0 }}
+              onClick={() => navigate(-1)}
+            >
+              ⬅ Vissza
+            </button>
+
+            {user?.username === 'admin' && (
+              <button
+                type="button"
+                onClick={() => onDeleteGame(game.id)}
+                style={{
+                  fontSize: '0.9em',
+                  background: '#93000f',
+                  color: '#fff',
+                  borderRadius: 6,
+                  border: 'none',
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                }}
+                aria-label="Játék törlése"
+                title="Játék törlése"
+              >
+                Játék törlése
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
     );
@@ -723,183 +780,42 @@ function App() {
     );
   }
 
-  function AdminPage({ games, setGames, user }) {
-    const navigate = useNavigate();
-    const [editId, setEditId] = useState(null);
-    const [form, setForm] = useState({
-      title: '',
-      developer: '',
-      price: '',
-      category: '',
-      image: '',
-      minReq: '',
-      recReq: '',
-      rating: 5,
-      desc: ''
-    });
-    const [imgFile, setImgFile] = useState(null);
-
-    // Előre töltés szerkesztéshez
-    function startEdit(game) {
-      setEditId(game.id);
-      setForm({
-        title: game.title,
-        developer: game.developer,
-        price: game.price,
-        category: game.category,
-        image: game.image,
-        minReq: game.requirements.minimum,
-        recReq: game.requirements.recommended,
-        rating: game.rating,
-        desc: game.description || ''
-      });
-      setImgFile(null);
-    }
-
-    // Ha új vagy szerkesztett játék mentése
-    function handleSaveGame(e) {
-      e.preventDefault();
-      if (!form.title || !form.developer || !form.category || !form.minReq || !form.recReq || !form.price) {
-        alert('Minden mező kitöltése kötelező!');
-        return;
-      }
-      if (editId == null) {
-        setGames(prev => [
-          ...prev,
-          {
-            id: Math.max(...prev.map(g => g.id)) + 1,
-            title: form.title,
-            developer: form.developer,
-            price: form.price,
-            image: form.image,
-            requirements: { minimum: form.minReq, recommended: form.recReq },
-            category: form.category,
-            rating: Number(form.rating),
-            description: form.desc
-          }
-        ]);
-      } else {
-        setGames(prev => prev.map(g =>
-          g.id === editId ? {
-            ...g,
-            title: form.title,
-            developer: form.developer,
-            price: form.price,
-            image: form.image,
-            requirements: { minimum: form.minReq, recommended: form.recReq },
-            category: form.category,
-            rating: Number(form.rating),
-            description: form.desc
-          } : g
-        ));
-      }
-      setForm({ title: '', developer: '', price: '', category: '', image: '', minReq: '', recReq: '', rating: 5, desc: '' });
-      setEditId(null);
-      setImgFile(null);
-      alert(editId ? "Játék módosítva!" : "Új játék felvéve!");
-    }
-
-
-
-
-    function handleImgUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      setImgFile(file);
-      const reader = new FileReader();
-      reader.onload = ev => setForm(f => ({ ...f, image: ev.target.result }));
-      reader.readAsDataURL(file);
-    }
-
-    function handleDelete(id) {
-      if (window.confirm('Biztosan töröljem ezt a játékot?')) {
-        setGames(prev => prev.filter(g => g.id !== id));
-        if (editId === id) setEditId(null);
-      }
-    }
-
-    return (
-      <div className="maincenter">
-        <nav>
-          <Link to="/" className="nav-link">Főoldal</Link>
-          <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-          <button className="vissza-btn" style={{ marginLeft: "24px" }} onClick={() => navigate('/')}>⬅ Vissza</button>
-        </nav>
-        <h2>Admin – Játék hozzáadása / szerkesztése</h2>
-        <form className="login-form" style={{ maxWidth: 500, width: '98vw' }}
-          onSubmit={handleSaveGame}
-        >
-          <input className="login-input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Játék címe" required />
-          <input className="login-input" value={form.developer} onChange={e => setForm(f => ({ ...f, developer: e.target.value }))} placeholder="Fejlesztő" required />
-          <input className="login-input" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="Ár pl: 9990 Ft vagy Ingyenes" required />
-          <input className="login-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Kategória" required />
-          <input className="login-input" value={form.rating} type="number" min="1" max="10" step="0.1" onChange={e => setForm(f => ({ ...f, rating: e.target.value }))} placeholder="Értékelés (pl. 9.2)" />
-          <textarea className="login-input" value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Játék leírása" />
-          <input className="login-input" value={form.minReq} onChange={e => setForm(f => ({ ...f, minReq: e.target.value }))} placeholder="Minimum gépigény" required />
-          <input className="login-input" value={form.recReq} onChange={e => setForm(f => ({ ...f, recReq: e.target.value }))} placeholder="Ajánlott gépigény" required />
-          <input type="file" accept="image/*" onChange={handleImgUpload} />
-          <input className="login-input" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="(vagy kép url)" />
-          {form.image && <img src={form.image} alt="játék kép előnézet" style={{ width: 100, margin: '8px auto' }} />}
-          <button className="login-btn" type="submit">{editId ? "Játék mentése" : "Játék hozzáadása"}</button>
-        </form>
-        <hr style={{ margin: "26px 0", width: "88%", borderColor: "#ff41fa" }} />
-        <h2 style={{ fontSize: "1.3em" }}>Összes játék szerkesztése/törlése</h2>
-        <div style={{ maxWidth: 920, margin: "0 auto", display: 'flex', flexWrap: 'wrap', gap: '23px' }}>
-          {games.map(g => (
-            <div key={g.id} style={{ background: '#2b1849', borderRadius: 15, padding: '13px 12px', color: '#19ffe3', minWidth: 220, maxWidth: 260 }}>
-              <img src={g.image} alt={g.title} style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: '12px' }} />
-              <div><b>{g.title}</b> <span style={{ color: "#ff41fa" }}>{g.category}</span></div>
-              <div>{g.developer}</div>
-              <div>{g.price}</div>
-              <button className="login-btn" style={{ margin: "5px 9px 0 0" }} onClick={() => startEdit(g)}>Szerkesztés</button>
-              <button className="login-btn" style={{ margin: "5px 0 0 0", background: "#93000f", color: "#fff" }} onClick={() => handleDelete(g.id)}>Törlés</button>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
   function AddGamePage({ setGames }) {
     const navigate = useNavigate();
     const [form, setForm] = useState({
       title: '', developer: '', price: '', category: '',
       image: '', minReq: '', recReq: '', desc: '', rating: 5
     });
-    const [imgFile, setImgFile] = useState(null);
-
-    function handleImgUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      setImgFile(file);
-      const reader = new FileReader();
-      reader.onload = ev => setForm(f => ({ ...f, image: ev.target.result }));
-      reader.readAsDataURL(file);
-    }
-
-    function handleSubmit(e) {
+  
+    async function handleSubmit(e) {
       e.preventDefault();
       if (!form.title || !form.developer || !form.price || !form.category || !form.image) {
         alert("Minden mező kötelező!");
         return;
       }
-      setGames(prev => [
-        ...prev,
-        {
-          id: Math.max(...prev.map(g => g.id)) + 1,
-          title: form.title,
-          developer: form.developer,
-          price: form.price,
-          image: form.image,
-          requirements: { minimum: form.minReq, recommended: form.recReq },
-          category: form.category,
-          rating: parseFloat(form.rating),
-          description: form.desc
+  
+      try {
+        const res = await fetch("http://localhost3001/jatekok", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form)
+        });
+        const data = await res.json();
+  
+        if (data.success) {
+          alert("Játék hozzáadva!");
+          // opcionálisan frissítjük a state-et
+          setGames(prev => [...prev, data.game]);
+          navigate('/');
+        } else {
+          alert("Hiba: " + data.message);
         }
-      ]);
-      alert("Játék hozzáadva!");
-      navigate('/');
+      } catch (err) {
+        console.error("Hiba a játék hozzáadásakor:", err);
+        alert("Nem sikerült hozzáadni a játékot.");
+      }
     }
-
+  
     return (
       <div className="maincenter">
         <nav>
@@ -917,14 +833,14 @@ function App() {
           <textarea className="login-input" value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Játék leírása" />
           <input className="login-input" value={form.minReq} onChange={e => setForm(f => ({ ...f, minReq: e.target.value }))} placeholder="Minimum gépigény" required />
           <input className="login-input" value={form.recReq} onChange={e => setForm(f => ({ ...f, recReq: e.target.value }))} placeholder="Ajánlott gépigény" required />
-          <input type="file" accept="image/*" onChange={handleImgUpload} />
-          <input className="login-input" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="(vagy kép url)" required />
+          <input className="login-input" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="Kép URL" required />
           {form.image && <img src={form.image} alt="játék kép előnézet" style={{ width: 100, margin: '8px auto' }} />}
           <button className="login-btn" type="submit">Játék hozzáadása</button>
         </form>
       </div>
     );
   }
+  
   function Nevjegy() {
     const navigate = useNavigate();
     return (
@@ -941,7 +857,7 @@ function App() {
       </div>
     );
   }
-  
+
 
   return (
     <BrowserRouter>

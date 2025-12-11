@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2025. Dec 03. 09:37
+-- Létrehozás ideje: 2025. Dec 10. 12:06
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -31,6 +31,13 @@ CREATE TABLE `fejleszto` (
   `idfejleszto` int(11) NOT NULL,
   `nev` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `fejleszto`
+--
+
+INSERT INTO `fejleszto` (`idfejleszto`, `nev`) VALUES
+(1, 'teszt');
 
 -- --------------------------------------------------------
 
@@ -66,14 +73,40 @@ CREATE TABLE `jatekok` (
   `nev` varchar(100) DEFAULT NULL,
   `idkiado` int(11) DEFAULT NULL,
   `idfejleszto` int(11) DEFAULT NULL,
-  `idkategoria` int(11) DEFAULT NULL,
   `ar` varchar(255) DEFAULT NULL,
-  `idplatform` int(11) DEFAULT NULL,
   `idrendszerkovetelmeny` int(11) DEFAULT NULL,
   `leiras` varchar(255) DEFAULT NULL,
   `ertekeles` int(11) NOT NULL,
-  `idkommentek` int(11) DEFAULT NULL,
   `kepurl` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `jatekok`
+--
+
+INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`) VALUES
+(5, 'teszt', 1, 1, '990', 1, 'teszt', 4, 'https://tse1.explicit.bing.net/th/id/OIP.YxCtAe5lsRm7p6IYY78YJwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3');
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatekok_kategoriak`
+--
+
+CREATE TABLE `jatekok_kategoriak` (
+  `idjatekok` int(11) NOT NULL,
+  `idkategoria` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatekok_platformok`
+--
+
+CREATE TABLE `jatekok_platformok` (
+  `idjatekok` int(11) NOT NULL,
+  `idplatform` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -87,6 +120,13 @@ CREATE TABLE `kategoria` (
   `nev` varchar(45) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `kategoria`
+--
+
+INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
+(1, 'teszt');
+
 -- --------------------------------------------------------
 
 --
@@ -98,6 +138,13 @@ CREATE TABLE `kiado` (
   `nev` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `kiado`
+--
+
+INSERT INTO `kiado` (`idkiado`, `nev`) VALUES
+(1, 'teszt');
+
 -- --------------------------------------------------------
 
 --
@@ -106,8 +153,9 @@ CREATE TABLE `kiado` (
 
 CREATE TABLE `kommentek` (
   `idkommentek` int(11) NOT NULL,
-  `idfelhesznalo` int(11) NOT NULL,
-  `fertekeles` int(11) NOT NULL,
+  `idfelhasznalo` int(11) NOT NULL,
+  `idjatekok` int(11) NOT NULL,
+  `ertekeles` int(11) NOT NULL,
   `tartalom` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -121,6 +169,13 @@ CREATE TABLE `platform` (
   `idplatform` int(11) NOT NULL,
   `nev` varchar(45) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `platform`
+--
+
+INSERT INTO `platform` (`idplatform`, `nev`) VALUES
+(1, 'teszt');
 
 -- --------------------------------------------------------
 
@@ -151,10 +206,17 @@ CREATE TABLE `promociosjatekok` (
 --
 
 CREATE TABLE `rendszerkovetelmeny` (
-  `id` int(11) NOT NULL,
-  `minimum` varchar(255) NOT NULL,
-  `ajanlott` varchar(255) NOT NULL
+  `idrendszerkovetelmeny` int(11) NOT NULL,
+  `minimum` varchar(255) DEFAULT NULL,
+  `ajanlott` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `rendszerkovetelmeny`
+--
+
+INSERT INTO `rendszerkovetelmeny` (`idrendszerkovetelmeny`, `minimum`, `ajanlott`) VALUES
+(1, 'a', 'b');
 
 --
 -- Indexek a kiírt táblákhoz
@@ -179,9 +241,21 @@ ALTER TABLE `jatekok`
   ADD PRIMARY KEY (`idjatekok`),
   ADD KEY `idkiado` (`idkiado`),
   ADD KEY `idfejleszto` (`idfejleszto`),
-  ADD KEY `idkategoria` (`idkategoria`),
-  ADD KEY `idplatform` (`idplatform`),
-  ADD KEY `rendszerkovetelmeny` (`idrendszerkovetelmeny`);
+  ADD KEY `idrendszerkovetelmeny` (`idrendszerkovetelmeny`);
+
+--
+-- A tábla indexei `jatekok_kategoriak`
+--
+ALTER TABLE `jatekok_kategoriak`
+  ADD PRIMARY KEY (`idjatekok`,`idkategoria`),
+  ADD KEY `idkategoria` (`idkategoria`);
+
+--
+-- A tábla indexei `jatekok_platformok`
+--
+ALTER TABLE `jatekok_platformok`
+  ADD PRIMARY KEY (`idjatekok`,`idplatform`),
+  ADD KEY `idplatform` (`idplatform`);
 
 --
 -- A tábla indexei `kategoria`
@@ -200,7 +274,8 @@ ALTER TABLE `kiado`
 --
 ALTER TABLE `kommentek`
   ADD PRIMARY KEY (`idkommentek`),
-  ADD KEY `idfelhesznalo` (`idfelhesznalo`);
+  ADD KEY `kommentek_ibfk_1` (`idfelhasznalo`),
+  ADD KEY `kommentek_ibfk_2` (`idjatekok`);
 
 --
 -- A tábla indexei `platform`
@@ -225,7 +300,7 @@ ALTER TABLE `promociosjatekok`
 -- A tábla indexei `rendszerkovetelmeny`
 --
 ALTER TABLE `rendszerkovetelmeny`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`idrendszerkovetelmeny`);
 
 --
 -- A kiírt táblák AUTO_INCREMENT értéke
@@ -235,7 +310,7 @@ ALTER TABLE `rendszerkovetelmeny`
 -- AUTO_INCREMENT a táblához `fejleszto`
 --
 ALTER TABLE `fejleszto`
-  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `felhasznalo`
@@ -247,25 +322,31 @@ ALTER TABLE `felhasznalo`
 -- AUTO_INCREMENT a táblához `jatekok`
 --
 ALTER TABLE `jatekok`
-  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT a táblához `kategoria`
 --
 ALTER TABLE `kategoria`
-  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `kiado`
 --
 ALTER TABLE `kiado`
-  MODIFY `idkiado` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idkiado` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT a táblához `kommentek`
+--
+ALTER TABLE `kommentek`
+  MODIFY `idkommentek` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT a táblához `platform`
 --
 ALTER TABLE `platform`
-  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `promociok`
@@ -277,7 +358,7 @@ ALTER TABLE `promociok`
 -- AUTO_INCREMENT a táblához `rendszerkovetelmeny`
 --
 ALTER TABLE `rendszerkovetelmeny`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Megkötések a kiírt táblákhoz
@@ -287,23 +368,37 @@ ALTER TABLE `rendszerkovetelmeny`
 -- Megkötések a táblához `jatekok`
 --
 ALTER TABLE `jatekok`
-  ADD CONSTRAINT `jatekok_ibfk_1` FOREIGN KEY (`idkiado`) REFERENCES `kiado` (`idkiado`),
-  ADD CONSTRAINT `jatekok_ibfk_2` FOREIGN KEY (`idfejleszto`) REFERENCES `fejleszto` (`idfejleszto`),
-  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`idkategoria`) REFERENCES `kategoria` (`idkategoria`),
-  ADD CONSTRAINT `jatekok_ibfk_4` FOREIGN KEY (`idplatform`) REFERENCES `platform` (`idplatform`);
+  ADD CONSTRAINT `jatekok_ibfk_1` FOREIGN KEY (`idkiado`) REFERENCES `kiado` (`idkiado`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jatekok_ibfk_2` FOREIGN KEY (`idfejleszto`) REFERENCES `fejleszto` (`idfejleszto`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `jatekok_kategoriak`
+--
+ALTER TABLE `jatekok_kategoriak`
+  ADD CONSTRAINT `jatekok_kategoriak_ibfk_1` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jatekok_kategoriak_ibfk_2` FOREIGN KEY (`idkategoria`) REFERENCES `kategoria` (`idkategoria`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `jatekok_platformok`
+--
+ALTER TABLE `jatekok_platformok`
+  ADD CONSTRAINT `jatekok_platformok_ibfk_1` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `jatekok_platformok_ibfk_2` FOREIGN KEY (`idplatform`) REFERENCES `platform` (`idplatform`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `kommentek`
+--
+ALTER TABLE `kommentek`
+  ADD CONSTRAINT `kommentek_ibfk_1` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE,
+  ADD CONSTRAINT `kommentek_ibfk_2` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
 
 --
 -- Megkötések a táblához `promociosjatekok`
 --
 ALTER TABLE `promociosjatekok`
-  ADD CONSTRAINT `promociosjatekok_ibfk_1` FOREIGN KEY (`idpromocio`) REFERENCES `promociok` (`idpromocio`),
-  ADD CONSTRAINT `promociosjatekok_ibfk_2` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`);
-
---
--- Megkötések a táblához `rendszerkovetelmeny`
---
-ALTER TABLE `rendszerkovetelmeny`
-  ADD CONSTRAINT `rendszerkovetelmeny_ibfk_1` FOREIGN KEY (`id`) REFERENCES `jatekok` (`idrendszerkovetelmeny`);
+  ADD CONSTRAINT `promociosjatekok_ibfk_1` FOREIGN KEY (`idpromocio`) REFERENCES `promociok` (`idpromocio`) ON DELETE CASCADE,
+  ADD CONSTRAINT `promociosjatekok_ibfk_2` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
