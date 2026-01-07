@@ -296,7 +296,7 @@ function App() {
     if (!window.confirm("Biztosan törölni szeretnéd ezt a játékot?")) return;
 
     try {
-      const res = await fetch(`/jatekok/${gameId}`, {
+      const res = await fetch(`http://localhost:3001/jatekok/${gameId}`, {
         method: "DELETE"
       });
       const data = await res.json();
@@ -562,7 +562,6 @@ function App() {
         <nav>
           <Link to="/" className="nav-link">Főoldal</Link>
           <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-          <Link to="/register" className="nav-link">Regisztráció</Link>
           <Link to="/nevjegy" className="nav-link">Névjegy</Link>
         </nav>
         <h2>{game.title}</h2>
@@ -795,7 +794,7 @@ function App() {
       }
   
       try {
-        const res = await fetch("http://localhost3001/jatekok", {
+        const res = await fetch("http://localhost:3001/jatekok", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form)

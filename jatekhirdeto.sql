@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2025. Dec 10. 12:06
+-- Létrehozás ideje: 2026. Jan 07. 11:18
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -32,13 +32,6 @@ CREATE TABLE `fejleszto` (
   `nev` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- A tábla adatainak kiíratása `fejleszto`
---
-
-INSERT INTO `fejleszto` (`idfejleszto`, `nev`) VALUES
-(1, 'teszt');
-
 -- --------------------------------------------------------
 
 --
@@ -58,9 +51,7 @@ CREATE TABLE `felhasznalo` (
 --
 
 INSERT INTO `felhasznalo` (`idfelhasznalo`, `email`, `nev`, `jelszo`, `felhasznalonev`) VALUES
-(1, 'admin@games.com', 'admin', 'aaaa', 'admin'),
-(2, 'felhasznalo@games.com', 'csaba', 'aaaa', 'csaba'),
-(4, 'asd@gmail.com', NULL, 'aaa', 'aaa');
+(1, 'admin@games.com', 'admin', 'aaaa', 'admin');
 
 -- --------------------------------------------------------
 
@@ -79,13 +70,6 @@ CREATE TABLE `jatekok` (
   `ertekeles` int(11) NOT NULL,
   `kepurl` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `jatekok`
---
-
-INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`) VALUES
-(5, 'teszt', 1, 1, '990', 1, 'teszt', 4, 'https://tse1.explicit.bing.net/th/id/OIP.YxCtAe5lsRm7p6IYY78YJwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3');
 
 -- --------------------------------------------------------
 
@@ -125,7 +109,9 @@ CREATE TABLE `kategoria` (
 --
 
 INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
-(1, 'teszt');
+(1, 'sgfd'),
+(2, 'dhf'),
+(3, 'sdgfs');
 
 -- --------------------------------------------------------
 
@@ -137,13 +123,6 @@ CREATE TABLE `kiado` (
   `idkiado` int(11) NOT NULL,
   `nev` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `kiado`
---
-
-INSERT INTO `kiado` (`idkiado`, `nev`) VALUES
-(1, 'teszt');
 
 -- --------------------------------------------------------
 
@@ -169,13 +148,6 @@ CREATE TABLE `platform` (
   `idplatform` int(11) NOT NULL,
   `nev` varchar(45) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `platform`
---
-
-INSERT INTO `platform` (`idplatform`, `nev`) VALUES
-(1, 'teszt');
 
 -- --------------------------------------------------------
 
@@ -216,7 +188,9 @@ CREATE TABLE `rendszerkovetelmeny` (
 --
 
 INSERT INTO `rendszerkovetelmeny` (`idrendszerkovetelmeny`, `minimum`, `ajanlott`) VALUES
-(1, 'a', 'b');
+(1, 'sdf', 'gs'),
+(2, 'fghsfghgfh', 'sfghsghgfhsfghgfh'),
+(3, 'sgds', 'dsgsd');
 
 --
 -- Indexek a kiírt táblákhoz
@@ -274,8 +248,8 @@ ALTER TABLE `kiado`
 --
 ALTER TABLE `kommentek`
   ADD PRIMARY KEY (`idkommentek`),
-  ADD KEY `kommentek_ibfk_1` (`idfelhasznalo`),
-  ADD KEY `kommentek_ibfk_2` (`idjatekok`);
+  ADD KEY `idfelhasznalo` (`idfelhasznalo`),
+  ADD KEY `idjatekok` (`idjatekok`);
 
 --
 -- A tábla indexei `platform`
@@ -310,31 +284,31 @@ ALTER TABLE `rendszerkovetelmeny`
 -- AUTO_INCREMENT a táblához `fejleszto`
 --
 ALTER TABLE `fejleszto`
-  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT a táblához `felhasznalo`
 --
 ALTER TABLE `felhasznalo`
-  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `jatekok`
 --
 ALTER TABLE `jatekok`
-  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT a táblához `kategoria`
 --
 ALTER TABLE `kategoria`
-  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT a táblához `kiado`
 --
 ALTER TABLE `kiado`
-  MODIFY `idkiado` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idkiado` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT a táblához `kommentek`
@@ -346,7 +320,7 @@ ALTER TABLE `kommentek`
 -- AUTO_INCREMENT a táblához `platform`
 --
 ALTER TABLE `platform`
-  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT a táblához `promociok`
@@ -358,7 +332,7 @@ ALTER TABLE `promociok`
 -- AUTO_INCREMENT a táblához `rendszerkovetelmeny`
 --
 ALTER TABLE `rendszerkovetelmeny`
-  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Megkötések a kiírt táblákhoz
