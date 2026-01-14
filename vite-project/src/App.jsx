@@ -28,171 +28,6 @@ const gameImages = {
 };
 
 const gamesDemo = [
-  {
-    id: 1,
-    title: 'Cyberpunk 2077',
-    developer: 'CD Projekt Red',
-    price: '19,990 Ft',
-    image: gameImages['Cyberpunk 2077'],
-    requirements: { minimum: 'Intel i5-3570K, 8GB RAM, GTX 780', recommended: 'Intel i7-4790, 12GB RAM, GTX 1060' },
-    category: 'RPG',
-    rating: 4.2,
-    description: "Night City a Te játszótered, ölj hackelj világíts!"
-  },
-  {
-    id: 2,
-    title: 'The Witcher 3',
-    developer: 'CD Projekt Red',
-    price: '9,990 Ft',
-    image: gameImages['The Witcher 3'],
-    requirements: { minimum: 'Intel i5-2500K, 6GB RAM, GTX 660', recommended: 'Intel i7-3770, 8GB RAM, GTX 770' },
-    category: 'RPG',
-    rating: 4.8,
-    description: "Geralt kardját és mágiáját alkalmazva hódíthatod meg a szörnyek birodalmát!"
-  },
-  {
-    id: 3,
-    title: 'Counter-Strike 2',
-    developer: 'Valve',
-    price: 'Ingyenes',
-    image: gameImages['Counter-Strike 2'],
-    requirements: { minimum: 'Intel i5-2500, 8GB RAM, GTX 960', recommended: 'Intel i7, 12GB RAM, RTX 2060' },
-    category: 'Shooter',
-    rating: 4.7,
-    description: "Taktikai FPS, klasszikus e-sport akció."
-  },
-  {
-    id: 4,
-    title: 'Minecraft',
-    developer: 'Mojang',
-    price: '8,990 Ft',
-    image: gameImages['Minecraft'],
-    requirements: { minimum: 'Intel i3, 4GB RAM, Intel HD', recommended: 'Intel i5, 8GB RAM, GTX 1060' },
-    category: 'Sandbox',
-    rating: 4.9,
-    description: "Szabad építés, kreativitás, kaland bármely korosztálynak."
-  },
-  {
-    id: 5,
-    title: 'GTA V',
-    developer: 'Rockstar Games',
-    price: '11,990 Ft',
-    image: gameImages['GTA V'],
-    requirements: { minimum: 'Intel Core i5-3470, 8GB RAM, GTX 660', recommended: 'Intel Core i7-4770, 16GB RAM, GTX 1060' },
-    category: 'Action',
-    rating: 4.6,
-    description: "Los Santos nyitott világa, bűnözés, autók, szabad élet."
-  },
-  {
-    id: 6,
-    title: 'Valorant',
-    developer: 'Riot Games',
-    price: 'Ingyenes',
-    image: gameImages['Valorant'],
-    requirements: { minimum: 'Intel i3-370M, 4GB RAM, Intel HD 3000', recommended: 'Intel i5-4460, 8GB RAM, GTX 1050' },
-    category: 'Shooter',
-    rating: 4.3,
-    description: "Taktikai shooter képességekkel és karakterekkel."
-  },
-  {
-    id: 7,
-    title: 'Among Us',
-    developer: 'InnerSloth',
-    price: '1,500 Ft',
-    image: gameImages['Among Us'],
-    requirements: { minimum: 'Intel Dual Core, 2GB RAM, DirectX 10', recommended: 'Intel i3, 4GB RAM, DirectX 11' },
-    category: 'Party',
-    rating: 4.1,
-    description: "Társasjáték az űrben - ki a besúgó?"
-  },
-  {
-    id: 8,
-    title: 'Fortnite',
-    developer: 'Epic Games',
-    price: 'Ingyenes',
-    image: gameImages['Fortnite'],
-    requirements: { minimum: 'Intel i3-3225, 4GB RAM, Intel HD 4000', recommended: 'Intel i5-7300U, 8GB RAM, GTX 1050' },
-    category: 'Battle Royale',
-    rating: 4.0,
-    description: "Battle Royale építéssel és szórakozással."
-  },
-  {
-    id: 9,
-    title: 'Elden Ring',
-    developer: 'FromSoftware',
-    price: '24,990 Ft',
-    image: gameImages['Elden Ring'],
-    requirements: { minimum: 'Intel i5-8400, 12GB RAM, GTX 1060', recommended: 'Intel i7-8700K, 16GB RAM, GTX 1070' },
-    category: 'RPG',
-    rating: 4.9,
-    description: "Souls-szerű kaland nyitott világban, óriás főellenségekkel."
-  },
-  {
-    id: 10,
-    title: 'League of Legends',
-    developer: 'Riot Games',
-    price: 'Ingyenes',
-    image: gameImages['League of Legends'],
-    requirements: { minimum: 'Intel Core i3-530, 4GB RAM, Intel HD 4000', recommended: 'Intel Core i5-3300, 8GB RAM, GTX 560' },
-    category: 'MOBA',
-    rating: 4.6,
-    description: "Világ legnépszerűbb MOBA-ja, online csapat harc."
-  },
-  {
-    id: 11,
-    title: 'Overwatch 2',
-    developer: 'Blizzard',
-    price: 'Ingyenes',
-    image: gameImages['Overwatch 2'],
-    requirements: { minimum: 'Intel Core i3, 6GB RAM, GTX 600', recommended: 'Intel Core i5, 8GB RAM, GTX 1060' },
-    category: 'Shooter',
-    rating: 4.2,
-    description: "Hősalapú shooter, látványos pályák, különleges karakterek."
-  },
-  {
-    id: 12,
-    title: 'FIFA 23',
-    developer: 'EA Sports',
-    price: '18,000 Ft',
-    image: gameImages['FIFA 23'],
-    requirements: { minimum: 'Intel Core i5-6600K, 8GB RAM, GTX 1050Ti', recommended: 'Intel i7-6700, 12GB RAM, GTX 1660' },
-    category: 'Sport',
-    rating: 3.9,
-    description: "A futball szerelmeseinek legújabb generációs élmény."
-  },
-  {
-    id: 13,
-    title: 'Rocket League',
-    developer: 'Psyonix',
-    price: 'Ingyenes',
-    image: gameImages['Rocket League'],
-    requirements: { minimum: 'Intel Core 2 Duo E8210, 2GB RAM, GeForce 8800', recommended: 'Intel Core i5-2550, 4GB RAM, GTX 660' },
-    category: 'Sport',
-    rating: 4.5,
-    description: "Focizz autókkal! Játékos és őrült."
-  },
-  {
-    id: 14,
-    title: 'Apex Legends',
-    developer: 'Respawn Entertainment',
-    price: 'Ingyenes',
-    image: gameImages['Apex Legends'],
-    requirements: { minimum: 'Intel Core i3-6300, 6GB RAM, GTX 640', recommended: 'Intel i5-3570K, 8GB RAM, GTX 970' },
-    category: 'Battle Royale',
-    rating: 4.4,
-    description: "Gyors tempójú Battle Royale egyedi karakterekkel."
-  },
-  {
-    id: 15,
-    title: 'Hades',
-    developer: 'Supergiant Games',
-    price: '7,990 Ft',
-    image: gameImages['Hades'],
-    requirements: { minimum: 'Dual Core 2.4GHz, 4GB RAM, GeForce 8400', recommended: 'Dual Core 3.0GHz, 8GB RAM, GTX 660' },
-    category: 'Hack&Slash',
-    rating: 4.9,
-    description: "Gyors harc, roguelike élmény a görög alvilágban."
-  },
 ];
 
 
@@ -203,6 +38,7 @@ function App() {
   const [comments, setComments] = useState({});
 
   useEffect(() => {
+    // Felhasználók betöltése
     axios.get('http://localhost:3001/felhasznalok')
       .then(res => {
         if (res.data.success) {
@@ -216,10 +52,13 @@ function App() {
           setUsers(mappedUsers);
         }
       })
-      .catch(err => {
-        console.error("Hiba a felhasználók lekérésekor:", err);
-      });
-    axios.get('http://localhost:3001/jatekok')
+      .catch(err => console.error("Hiba a felhasználók lekérésekor:", err));
+
+    // Játékok betöltése
+    const roleParam = user?.role ? `?role=${user.role}` : "";
+
+    axios.get(`http://localhost:3001/jatekok${roleParam}`)
+
       .then(res => {
         const mappedGames = res.data.games.map(game => ({
           id: game.id,
@@ -228,25 +67,45 @@ function App() {
           price: game.price,
           image: game.image || defaultImage,
           requirements: {
-            minimum: game.minimum || "",
-            recommended: game.recommended || ""
+            minimum: game.minimum,
+            recommended: game.recommended
           },
-          category: game.category,
+          category: Array.isArray(game.categories)
+            ? (game.categories[0] || "Egyéb")
+            : (typeof game.categories === "string" ? (game.categories.split(", ")[0] || "Egyéb") : "Egyéb"),
+
           rating: game.rating || 0,
-          description: game.description || ""
+          description: game.description
         }));
         setGames(mappedGames);
       })
-      .catch(err => {
-        console.error("Hiba a játékok lekérésekor:", err);
-      });
-  }, []);
-  function handleLogin(uname, pass, cb) {
-    const found = users.find(u => u.username === uname && u.password === pass);
-    if (!found) return alert("Hibás felhasználó vagy jelszó!");
-    setUser(found);
-    cb && cb();
+      .catch(err => console.error("Hiba a játékok lekérésekor:", err));
+  }, [user?.role]);
+
+
+  function handleLogin(uname, pass, navigate) {
+    axios.post('http://localhost:3001/login', {
+      felhasznalonev: uname,
+      jelszo: pass
+    })
+      .then(res => {
+        if (res.data.success) {
+          const u = res.data.user;
+          setUser({
+            username: u.felhasznalonev,
+            email: u.email,
+            role: u.role,         // EZ A LÉNYEG
+            bio: u.bio || "",
+            avatar: u.avatar || ""
+          });
+          navigate('/');
+        } else {
+          alert("Hibás felhasználónév vagy jelszó!");
+        }
+      })
+      .catch(() => alert("Hibás felhasználónév vagy jelszó!"));
   }
+
 
   function handleRegister(uname, email, pass, cb) {
     if (users.some(u => u.username === uname)) return alert("Ez a név már foglalt!");
@@ -785,14 +644,14 @@ function App() {
       title: '', developer: '', price: '', category: '',
       image: '', minReq: '', recReq: '', desc: '', rating: 5
     });
-  
+
     async function handleSubmit(e) {
       e.preventDefault();
       if (!form.title || !form.developer || !form.price || !form.category || !form.image) {
         alert("Minden mező kötelező!");
         return;
       }
-  
+
       try {
         const res = await fetch("http://localhost:3001/jatekok", {
           method: "POST",
@@ -800,7 +659,7 @@ function App() {
           body: JSON.stringify(form)
         });
         const data = await res.json();
-  
+
         if (data.success) {
           alert("Játék hozzáadva!");
           // opcionálisan frissítjük a state-et
@@ -814,7 +673,7 @@ function App() {
         alert("Nem sikerült hozzáadni a játékot.");
       }
     }
-  
+
     return (
       <div className="maincenter">
         <nav>
@@ -839,23 +698,301 @@ function App() {
       </div>
     );
   }
-  
+
   function Nevjegy() {
     const navigate = useNavigate();
+
+    // Form state
+    const [formData, setFormData] = useState({
+      name: '',
+      email: '',
+      message: ''
+    });
+    const [status, setStatus] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInputChange = (e) => {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      setStatus('📤 Küldés...');
+
+      try {
+        const response = await fetch("http://localhost:3001/api/send-email", {
+
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: formData.email,
+            name: formData.name,
+            message: formData.message,
+            subject: `GameVerse: ${formData.name}`
+          }),
+          
+        });
+
+        const data = await response.json();
+
+        setIsSubmitting(false);
+        if (data.success) {
+          setStatus('✅ Elküldve a fejlesztőknek!');
+          setFormData({ name: '', email: '', message: '' });
+        } else {
+          setStatus('❌ ' + (data.message || 'Hiba'));
+        }
+      } catch (error) {
+        setIsSubmitting(false);
+        setStatus('❌ Backend nem elérhető!');
+        console.error(error);
+      }
+    };
+
+
     return (
-      <div className="maincenter" style={{ overflowX: "hidden" }}>
+      <main className="maincenter" style={{ overflowX: 'hidden' }}>
         <h2>Névjegy</h2>
-        <div className="nevjegy-card">
-          <p><b>Steam Mester Demo</b></p>
-          <p>Készítette: Pacek Reactes</p>
-          <p>Neon gamer webáruház mintaprojekt. Válassz játékot, böngéssz kategóriák szerint!</p>
-          <p>Kapcsolat: <a style={{ color: "#ff41fa" }} href="mailto:valaki@email.hu">valaki@email.hu</a></p>
-          <p>Verzió: 1.0.0</p>
-          <button className="vissza-btn" style={{ marginTop: "21px" }} onClick={() => navigate('/')}>⬅ Vissza</button>
-        </div>
+
+        <section className="nevjegy-card" aria-labelledby="app-name">
+          <h3 id="app-name" style={{ marginTop: 0 }}>
+            <b>GameVerse</b>
+          </h3>
+
+          <p>
+            A GameVerse egy vizsgához készült projektmunka, amely egy neon témájú gamer
+            mintaprojektet valósít meg. Elsősorban videojátékok böngészésére,
+            keresésére és értékelésére szolgál.
+          </p>
+
+          <div className="nvj-grid">
+            <div className="nvj-block">
+              <h4>👥 Készítők &amp; kapcsolat</h4>
+              <ul>
+                <li>Kiss Csaba</li>
+                <li>Kormos Levente</li>
+              </ul>
+              <p>
+                <strong>E-mail:</strong>{' '}
+                <a href="mailto:gameverseprojekt@gmail.hu">
+                  gameverseprojekt@gmail.hu
+                </a>
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 21, flexWrap: 'wrap' }}>
+            <button className="vissza-btn" onClick={() => navigate('/')}>
+              ⬅ Vissza
+            </button>
+          </div>
+        </section>
+
+        {/* Neon dizájnú kapcsolatfelvételi form */}
+        <section className="contact-section">
+          <h3 style={{
+            color: '#19ffe3',
+            textShadow: '0 0 18px #1ef7ff, 0 0 32px #ff41fa',
+            fontFamily: "'Orbitron', sans-serif",
+            textAlign: 'center',
+            marginBottom: '1rem'
+          }}>
+            📧 Írj nekünk!
+          </h3>
+          <p style={{ color: '#fff', textAlign: 'center', marginBottom: '1.5rem' }}>
+            Üzeneted azonnal elküldődik gameverseprojekt@gmail.hu címre.
+          </p>
+
+          <form onSubmit={handleSubmit} className="contact-form">
+            <div className="form-group">
+              <label htmlFor="name" style={{ color: '#27e8ff', fontWeight: 'bold' }}>
+                Neved:
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                className="neon-input"
+                placeholder="Pl. Valami Valaki"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email" style={{ color: '#27e8ff', fontWeight: 'bold' }}>
+                E-mail címed:
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                className="neon-input"
+                placeholder="te@email.hu"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="message" style={{ color: '#27e8ff', fontWeight: 'bold' }}>
+                Üzeneted:
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={5}
+                value={formData.message}
+                onChange={handleInputChange}
+                required
+                className="neon-textarea"
+                placeholder="Írd ide üzenetedet..."
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="neon-submit-btn"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? '📤 Küldés...' : '🚀 Azonnali küldés'}
+            </button>
+
+            {status && (
+              <p className="status-message" style={{
+                background: status.includes('✅') ? 'rgba(39,232,255,0.2)' : 'rgba(255,65,250,0.2)',
+                color: status.includes('✅') ? '#19ffe3' : '#ff41fa',
+                border: `2px solid ${status.includes('✅') ? '#27e8ff' : '#ff41fa'}`,
+                textShadow: '0 0 8px currentColor',
+                padding: '1rem',
+                borderRadius: '12px',
+                textAlign: 'center',
+                marginTop: '1rem'
+              }}>
+                {status}
+              </p>
+            )}
+          </form>
+        </section>
+      </main>
+    );
+  }
+
+
+
+  // 🔥 ADMIN JÓVÁHAGYÓ DASHBOARD
+  function AdminJovahagyas({ user, navigate, games, setGames }) {
+    const [pendingGames, setPendingGames] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      fetch('http://localhost:3001/jatekok-pending')
+        .then(r => r.json())
+        .then(data => {
+          setPendingGames(data.games || []);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }, []);
+
+    const handleApprove = async (idjatekok) => {
+      try {
+        const res = await fetch(`http://localhost:3001/admin-jovahagy/${idjatekok}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ felhasznalonev: user.username })
+        });
+        const data = await res.json();
+        if (!data.success) return alert(data.message || "Hiba jóváhagyásnál!");
+
+        setPendingGames(prev => prev.filter(g => g.id !== idjatekok));
+        alert("Játék jóváhagyva!");
+      } catch {
+        alert("Hiba a jóváhagyásnál!");
+      }
+    };
+
+    const handleReject = async (idjatekok) => {
+      try {
+        const res = await fetch(`http://localhost:3001/admin-elutasit/${idjatekok}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ felhasznalonev: user.username })
+        });
+        const data = await res.json();
+        if (!data.success) return alert(data.message || "Hiba elutasításnál!");
+
+        setPendingGames(prev => prev.filter(g => g.id !== idjatekok));
+        alert("Játék elutasítva!");
+      } catch {
+        alert("Hiba az elutasításnál!");
+      }
+    };
+
+
+    if (!user || user.role !== 'admin') return (
+      <div className="maincenter" style={{ textAlign: 'center', color: '#ff41fa' }}>
+        <h2>🚫 Admin jogosultság szükséges!</h2>
+        <Link to="/">← Főoldal</Link>
+      </div>
+    );
+
+    return (
+      <div className="maincenter">
+        <nav style={{ marginBottom: '20px' }}>
+          <Link to="/" className="nav-link">🏠 Főoldal</Link>
+          <Link to="/profile" className="nav-link">👤 Profil</Link>
+          <button className="vissza-btn" onClick={() => navigate('/')}>← Vissza</button>
+        </nav>
+        <h2 style={{ color: '#19ffe3', textShadow: '0 0 15px #27e8ff' }}>⚙️ Admin Dashboard</h2>
+        <h3 style={{ color: '#ff41fa' }}>Függőben: {pendingGames.length} játék</h3>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', color: '#27e8ff' }}>⏳ Betöltés...</div>
+        ) : pendingGames.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#27e8ff' }}>
+            ✅ Nincs függőben lévő játék
+          </div>
+        ) : (
+          <div className="games-grid">
+            {pendingGames.map((game) => (
+              <div key={game.id} className="game-card" style={{ maxWidth: '380px' }}>
+                <div className="game-image" style={{ backgroundImage: `url(${game.kepurl || defaultImage})` }}></div>
+                <div className="game-info">
+                  <h3 style={{ color: '#19ffe3' }}>{game.nev}</h3>
+                  <p><strong style={{ color: '#ff41fa' }}>Gamedev:</strong> {game.felhasznalonev}</p>
+                  <p><strong>Ár:</strong> {game.ar}</p>
+                  <p style={{ color: '#888', fontSize: '0.9em' }}>{game.leiras?.substring(0, 100)}...</p>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                    <button className="login-btn" onClick={() => handleApprove(game.id)}>
+                      ✅ JÓVÁHAGY
+                    </button>
+
+                    <button
+                      className="vissza-btn"
+                      style={{ background: "#93000f", padding: "10px 15px" }}onClick={() => handleReject(game.id)}>
+                      ❌ ELUTASÍT
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
+
 
 
   return (
@@ -869,12 +1006,28 @@ function App() {
         <Route path="/nevjegy" element={<Nevjegy />} />
         <Route
           path="/addgame"
-          element={user && user.username === "admin"
-            ? <AddGamePage setGames={setGames} />
-            : <Főoldal games={games} />
+          element={
+            user && user.username === "admin"
+              ? <AddGamePage setGames={setGames} />
+              : <Főoldal games={games} />
           }
         />
-
+        <Route
+          path="/gamedev"
+          element={
+            user?.role === 'gamedev'
+              ? <GamedevFeltoltes user={user} />
+              : <Főoldal games={games} />
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            user?.role === 'admin'
+              ? <AdminJovahagyas user={user} games={games} setGames={setGames} />
+              : <Főoldal games={games} />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

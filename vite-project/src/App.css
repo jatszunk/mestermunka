@@ -250,3 +250,79 @@ h1, h2 {
   box-shadow: 0 0 25px #ff41fa77, 0 0 18px #19ffe333;
   transform: scale(1.06);
 }
+.contact-section {
+  max-width: 650px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background: linear-gradient(135deg, #23272f 0%, #3a186f 100%);
+  border: 2px solid #27e8ff88;
+  border-radius: 21px;
+  box-shadow: 0 0 35px #ff41fa44, 0 0 15px #19ffe322;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.neon-input, .neon-textarea {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border: 2px solid #27e8ff55;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #18183a 0%, #271c36 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.05rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px #27e8ff33 inset;
+  resize: none; /* Eltávolítja a resize fogantyút */
+  box-sizing: border-box; /* Megakadályozza az elcsúszást */
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+.neon-input:focus, .neon-textarea:focus {
+  outline: none;
+  border-color: #ff41fa;
+  box-shadow: 0 0 20px #ff41fa66, 0 0 10px #27e8ff inset;
+  transform: translateY(-1px);
+}
+
+
+.neon-submit-btn {
+  background: linear-gradient(90deg, #27e8ff 25%, #ff41fa 100%);
+  color: #23272f;
+  border: none;
+  border-radius: 14px;
+  padding: 1.2rem 2rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 0 20px #ff41fa77, 0 4px 15px #27e8ff66;
+  transition: all 0.2s ease;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.neon-submit-btn:hover {
+  background: linear-gradient(90deg, #ff41fa 25%, #27e8ff 100%);
+  color: #fff;
+  box-shadow: 0 0 35px #ff41fa, 0 0 25px #19ffe3;
+  transform: scale(1.05) translateY(-2px);
+}
+
+.status-message {
+  padding: 1.2rem;
+  border-radius: 14px;
+  text-align: center;
+  margin-top: 1.5rem;
+  font-weight: 600;
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 15px #19ffe3; }
+  to { box-shadow: 0 0 30px #ff41fa, 0 0 15px #19ffe3; }
+}

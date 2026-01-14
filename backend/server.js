@@ -1,79 +1,62 @@
-const express = require('express');
-const mysql = require('mysql');
-const cors = require('cors');
+const express = require("express");
+const mysql = require("mysql");
+const cors = require("cors");
+const nodemailer = require("nodemailer");
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // ✅ JSON body parser
+app.use(express.json());
 
 // MySQL kapcsolat
 const db = mysql.createConnection({
-  host: 'localhost',
+  host: "localhost",
   port: 3307,
-  user: 'root',
-  password: '',
-  database: 'jatekhirdeto',
-  multipleStatements: true // ha később több utasítást szeretnél egy query-ben
+  user: "root",
+  password: "",
+  database: "jatekhirdeto",
+  multipleStatements: true,
 });
 
-db.connect(err => {
-  if (err) {
-    console.error('Nem sikerült csatlakozni a MySQL-hez:', err);
-  } else {
-    console.log('MySQL kapcsolat létrejött.');
-  }
+db.connect((err) => {
+  if (err) console.error("Nem sikerült csatlakozni a MySQL-hez:", err);
+  else console.log("MySQL kapcsolat létrejött.");
 });
 
-app.get('/', (req, res) => {
-  res.send('fut a szeró');
-});
+app.get("/", (req, res) => res.send("fut a szerver"));
 
 // Regisztráció
-app.post('/register', (req, res) => {
+app.post("/register", (req, res) => {
   const { felhasznalonev, email, jelszo } = req.body;
-  const sql = 'INSERT INTO felhasznalo (felhasznalonev, email, jelszo) VALUES (?, ?, ?)';
+  const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo) VALUES (?, ?, ?)";
   db.query(sql, [felhasznalonev, email, jelszo], (err) => {
-    if (err) {
-      console.error('Hiba regisztrációnál:', err);
-      return res.status(500).json({ success: false, message: 'Hiba történt', error: err });
-    }
+    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
     res.json({ success: true });
   });
 });
 
 // Bejelentkezés
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
   const { felhasznalonev, jelszo } = req.body;
-  const sql = 'SELECT * FROM felhasznalo WHERE felhasznalonev = ? AND jelszo = ?';
+  const sql = "SELECT * FROM felhasznalo WHERE felhasznalonev=? AND jelszo=?";
   db.query(sql, [felhasznalonev, jelszo], (err, results) => {
-    if (err) {
-      console.error('Hiba bejelentkezésnél:', err);
-      return res.status(500).json({ success: false, message: 'Hiba történt', error: err });
-    }
-    if (results.length > 0) {
-      res.json({ success: true, user: results[0] });
-    } else {
-      res.status(401).json({ success: false, message: 'Hibás adatok' });
-    }
+    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+    if (results.length > 0) return res.json({ success: true, user: results[0] });
+    res.status(401).json({ success: false, message: "Hibás adatok" });
   });
 });
 
-// Felhasználók lekérdezése
-app.get('/felhasznalok', (req, res) => {
-  const sql = 'SELECT * FROM felhasznalo';
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Hiba a felhasználók lekérdezésekor:', err);
-      return res.status(500).json({ success: false, message: 'Hiba történt', error: err });
-    }
+// Felhasználók
+app.get("/felhasznalok", (req, res) => {
+  db.query("SELECT * FROM felhasznalo", (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
     res.json({ success: true, users: results });
   });
 });
 
-// 📦 GET /jatekok végpont
-app.get('/jatekok', (req, res) => {
+// Játékok listázása
+app.get("/jatekok", (req, res) => {
   const sql = `
-    SELECT 
+    SELECT
       j.idjatekok AS id,
       j.nev AS title,
       f.nev AS developer,
@@ -88,123 +71,77 @@ app.get('/jatekok', (req, res) => {
     FROM jatekok j
     JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
     JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
-    LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
+    LEFT JOIN jatekokkategoriak jk ON j.idjatekok = jk.idjatekok
     LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
-    LEFT JOIN jatekok_platformok jp ON j.idjatekok = jp.idjatekok
+    LEFT JOIN jatekokplatformok jp ON j.idjatekok = jp.idjatekok
     LEFT JOIN platform p ON jp.idplatform = p.idplatform
     GROUP BY j.idjatekok
   `;
 
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Hiba a játékok lekérdezésekor:', err);
-      return res.status(500).json({ success: false, error: err });
-    }
+    if (err) return res.status(500).json({ success: false, error: err });
 
-    const mappedGames = results.map(game => ({
+    const mappedGames = results.map((game) => ({
       id: game.id,
       title: game.title,
       developer: game.developer,
-      price: game.price == 0 ? 'Ingyenes' : `${Number(game.price).toLocaleString()} Ft`,
-      image: game.image || '',
-      requirements: {
-        minimum: game.minimum || '',
-        recommended: game.recommended || ''
-      },
-      categories: game.categories ? game.categories.split(', ') : [],
-      platforms: game.platforms ? game.platforms.split(', ') : [],
+      price: game.price === "0" ? "Ingyenes" : (game.price ? `${game.price}` : ""),
+      image: game.image,
+      requirements: { minimum: game.minimum, recommended: game.recommended },
+      categories: game.categories ? game.categories.split(",").map((x) => x.trim()) : [],
+      platforms: game.platforms ? game.platforms.split(",").map((x) => x.trim()) : [],
       rating: game.rating || 0,
-      description: game.description || ''
+      description: game.description,
     }));
 
     res.json({ success: true, games: mappedGames });
   });
 });
 
-// 📥 POST /jatekok – teljes beszúrás FK-kkal és kapcsolótáblával
-app.post('/jatekok', (req, res) => {
+// Játék hozzáadás (admin oldalad használja)
+app.post("/jatekok", (req, res) => {
   const { title, developer, price, category, image, minReq, recReq, desc, rating } = req.body;
 
-  // Kötelező mezők ellenőrzése
   if (!title || !developer || !price || !category || !image) {
-    return res.status(400).json({ success: false, message: 'Hiányzó mezők!' });
+    return res.status(400).json({ success: false, message: "Hiányzó mezők!" });
   }
 
-  // 1) Fejlesztő beszúrása / lekérése
-  const insertDevSql = `
-    INSERT INTO fejleszto (nev) VALUES (?)
-    ON DUPLICATE KEY UPDATE idfejleszto = LAST_INSERT_ID(idfejleszto)
-  `;
+  const insertDevSql =
+    "INSERT INTO fejleszto (nev) VALUES (?) ON DUPLICATE KEY UPDATE idfejleszto=LAST_INSERT_ID(idfejleszto)";
   db.query(insertDevSql, [developer], (err, devResult) => {
-    if (err) {
-      console.error('Hiba fejlesztőnél:', err);
-      return res.status(500).json({ success: false, message: 'Fejlesztő hiba', error: err });
-    }
+    if (err) return res.status(500).json({ success: false, message: "Fejlesztő hiba", error: err });
     const devId = devResult.insertId;
 
-    // 2) Rendszerkövetelmény beszúrása
-    const insertReqSql = `
-      INSERT INTO rendszerkovetelmeny (minimum, ajanlott)
-      VALUES (?, ?)
-    `;
-    db.query(insertReqSql, [minReq || '', recReq || ''], (err, reqResult) => {
-      if (err) {
-        console.error('Hiba rendszerkövetelménynél:', err);
-        return res.status(500).json({ success: false, message: 'Rendszerkövetelmény hiba', error: err });
-      }
+    const insertReqSql = "INSERT INTO rendszerkovetelmeny (minimum, ajanlott) VALUES (?, ?)";
+    db.query(insertReqSql, [minReq || "", recReq || ""], (err2, reqResult) => {
+      if (err2) return res.status(500).json({ success: false, message: "Rendszerkövetelmény hiba", error: err2 });
       const reqId = reqResult.insertId;
 
-      // 3) Játék beszúrása minden szükséges oszloppal
-      const insertGameSql = `
-        INSERT INTO jatekok (nev, idfejleszto, ar, idrendszerkovetelmeny, leiras, ertekeles, kepurl)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `;
-      const numericRating = rating === '' || rating === null || rating === undefined ? 0 : Number(rating);
+      const insertGameSql =
+        "INSERT INTO jatekok (nev, idfejleszto, ar, idrendszerkovetelmeny, leiras, ertekeles, kepurl) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      const numericRating = rating === null || rating === undefined ? 0 : Number(rating);
+
       db.query(
         insertGameSql,
-        [title, devId, price, reqId, desc || '', numericRating, image],
-        (err, gameResult) => {
-          if (err) {
-            console.error('Hiba játéknál:', err);
-            return res.status(500).json({ success: false, message: 'Játék hiba', error: err });
-          }
+        [title, devId, price, reqId, desc || "", numericRating, image],
+        (err3, gameResult) => {
+          if (err3) return res.status(500).json({ success: false, message: "Játék hiba", error: err3 });
           const gameId = gameResult.insertId;
 
-          // 4) Kategória beszúrása / lekérése
-          const insertCatSql = `
-            INSERT INTO kategoria (nev) VALUES (?)
-            ON DUPLICATE KEY UPDATE idkategoria = LAST_INSERT_ID(idkategoria)
-          `;
-          db.query(insertCatSql, [category], (err, catResult) => {
-            if (err) {
-              console.error('Hiba kategóriánál:', err);
-              return res.status(500).json({ success: false, message: 'Kategória hiba', error: err });
-            }
+          const insertCatSql =
+            "INSERT INTO kategoria (nev) VALUES (?) ON DUPLICATE KEY UPDATE idkategoria=LAST_INSERT_ID(idkategoria)";
+          db.query(insertCatSql, [category], (err4, catResult) => {
+            if (err4) return res.status(500).json({ success: false, message: "Kategória hiba", error: err4 });
             const catId = catResult.insertId;
 
-            // 5) Kapcsolótábla frissítése (játék-kategória)
-            const linkSql = 'INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)';
-            db.query(linkSql, [gameId, catId], (err) => {
-              if (err) {
-                console.error('Hiba kapcsolótáblánál:', err);
-                return res.status(500).json({ success: false, message: 'Kapcsolótábla hiba', error: err });
-              }
+            const linkSql = "INSERT INTO jatekokkategoriak (idjatekok, idkategoria) VALUES (?, ?)";
+            db.query(linkSql, [gameId, catId], (err5) => {
+              if (err5) return res.status(500).json({ success: false, message: "Kapcsolótábla hiba", error: err5 });
 
-              // ✅ Sikeres beszúrás – vissza JSON
               res.json({
                 success: true,
-                message: 'Játék hozzáadva!',
-                game: {
-                  id: gameId,
-                  title,
-                  developer,
-                  price,
-                  image,
-                  category,
-                  rating: numericRating,
-                  description: desc || '',
-                  requirements: { minimum: minReq || '', recommended: recReq || '' }
-                }
+                message: "Játék hozzáadva!",
+                game: { id: gameId, title, developer, price, image, category, rating: numericRating, description: desc },
               });
             });
           });
@@ -214,25 +151,48 @@ app.post('/jatekok', (req, res) => {
   });
 });
 
-// 📦 DELETE /jatekok/:id – CASCADE miatt elég a szülőt törölni
-app.delete('/jatekok/:id', (req, res) => {
-  const { id } = req.params;
-
-  const sql = 'DELETE FROM jatekok WHERE idjatekok = ?';
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error('Hiba a játék törlésekor:', err);
-      return res.status(500).json({ success: false, error: err });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Nincs ilyen játék.' });
-    }
-
-    res.json({ success: true, message: 'Játék törölve.' });
+// Játék törlés
+app.delete("/jatekok/:id", (req, res) => {
+  const id = req.params.id;
+  db.query("DELETE FROM jatekok WHERE idjatekok=?", [id], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen játék." });
+    res.json({ success: true, message: "Játék törölve." });
   });
 });
 
-app.listen(3001, () => {
-  console.log('Szerver fut a 3001-es porton');
+// EMAIL
+// EMAIL
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "gameverseprojekt@gmail.com",
+    pass: "rvsv wosp oglj jvpd", // app password
+  },
 });
+
+app.post("/api/send-email", async (req, res) => {
+  const { from, name, message, subject } = req.body;
+
+  if (!name || !from || !message) {
+    return res.status(400).json({ success: false, message: "Hiányzó adatok!" });
+  }
+
+  const mailOptions = {
+    from: "GameVerse <gameverseprojekt@gmail.com>",
+    to: "gameverseprojekt@gmail.com",
+    replyTo: from,
+    subject: subject || `GameVerse üzenet: ${name}`,
+    html: `<div><h3>Új üzenet</h3><p><b>Név:</b> ${name}</p><p><b>Email:</b> ${from}</p><p><b>Üzenet:</b><br/>${String(message).replace(/\n/g, "<br/>")}</p></div>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: "Email elküldve!" });
+  } catch (error) {
+    console.error("Email hiba:", error);
+    res.status(500).json({ success: false, message: "Email küldés sikertelen!", error: String(error) });
+  }
+});
+
+app.listen(3001, () => console.log("Szerver fut a 3001-es porton"));
