@@ -19,13 +19,7 @@ function Főoldal({ games }) {
         {user?.username === 'admin' && (
           <Link to="/addgame" className="nav-link">Új játék (admin)</Link>
         )}
-        {user?.role === "gamedev" && (
-  <Link to="/gamedev" className="nav-link">Új játék feltöltése</Link>
-)}
-
-        {user?.role === 'admin' && (
-          <Link to="/admin-dashboard" className="nav-link">Admin Dashboard</Link>
-        )}
+       
       </nav>
 
 

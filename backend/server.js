@@ -71,9 +71,9 @@ app.get("/jatekok", (req, res) => {
     FROM jatekok j
     JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
     JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
-    LEFT JOIN jatekokkategoriak jk ON j.idjatekok = jk.idjatekok
+    LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
     LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
-    LEFT JOIN jatekokplatformok jp ON j.idjatekok = jp.idjatekok
+    LEFT JOIN jatekok_platformok jp ON j.idjatekok = jp.idjatekok
     LEFT JOIN platform p ON jp.idplatform = p.idplatform
     GROUP BY j.idjatekok
   `;
@@ -134,7 +134,7 @@ app.post("/jatekok", (req, res) => {
             if (err4) return res.status(500).json({ success: false, message: "Kategória hiba", error: err4 });
             const catId = catResult.insertId;
 
-            const linkSql = "INSERT INTO jatekokkategoriak (idjatekok, idkategoria) VALUES (?, ?)";
+            const linkSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
             db.query(linkSql, [gameId, catId], (err5) => {
               if (err5) return res.status(500).json({ success: false, message: "Kapcsolótábla hiba", error: err5 });
 
@@ -161,13 +161,12 @@ app.delete("/jatekok/:id", (req, res) => {
   });
 });
 
-// EMAIL
-// EMAIL
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "gameverseprojekt@gmail.com",
-    pass: "rvsv wosp oglj jvpd", // app password
+    pass: "pqvx pnop ufxz ydpv",
   },
 });
 
@@ -183,7 +182,12 @@ app.post("/api/send-email", async (req, res) => {
     to: "gameverseprojekt@gmail.com",
     replyTo: from,
     subject: subject || `GameVerse üzenet: ${name}`,
-    html: `<div><h3>Új üzenet</h3><p><b>Név:</b> ${name}</p><p><b>Email:</b> ${from}</p><p><b>Üzenet:</b><br/>${String(message).replace(/\n/g, "<br/>")}</p></div>`,
+    html: `
+      <h3>Új üzenet</h3>
+      <p><b>Név:</b> ${name}</p>
+      <p><b>Email:</b> ${from}</p>
+      <p><b>Üzenet:</b><br/>${String(message).replace(/\n/g, "<br/>")}</p>
+    `,
   };
 
   try {
@@ -194,5 +198,6 @@ app.post("/api/send-email", async (req, res) => {
     res.status(500).json({ success: false, message: "Email küldés sikertelen!", error: String(error) });
   }
 });
+
 
 app.listen(3001, () => console.log("Szerver fut a 3001-es porton"));

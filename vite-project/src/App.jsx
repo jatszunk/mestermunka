@@ -54,10 +54,9 @@ function App() {
       })
       .catch(err => console.error("Hiba a felhasználók lekérésekor:", err));
 
-    // Játékok betöltése
-    const roleParam = user?.role ? `?role=${user.role}` : "";
 
-    axios.get(`http://localhost:3001/jatekok${roleParam}`)
+    axios.get("http://localhost:3001/jatekok")
+
 
       .then(res => {
         const mappedGames = res.data.games.map(game => ({
@@ -300,7 +299,7 @@ function App() {
           <span className="category-chip">{game.category}</span>
           <div className="game-requirements">
             <h4>Gépigény (minimum):</h4>
-            <p>{game.requirements.minimum}</p>
+            <p>{game.requirements?.minimum || "Nincs megadva"}</p>
           </div>
           <div style={{ marginTop: 12 }}>
             <b>Globális értékelés:</b> {globalRating}
@@ -889,109 +888,7 @@ function App() {
 
 
 
-  // 🔥 ADMIN JÓVÁHAGYÓ DASHBOARD
-  function AdminJovahagyas({ user, navigate, games, setGames }) {
-    const [pendingGames, setPendingGames] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-      fetch('http://localhost:3001/jatekok-pending')
-        .then(r => r.json())
-        .then(data => {
-          setPendingGames(data.games || []);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }, []);
-
-    const handleApprove = async (idjatekok) => {
-      try {
-        const res = await fetch(`http://localhost:3001/admin-jovahagy/${idjatekok}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ felhasznalonev: user.username })
-        });
-        const data = await res.json();
-        if (!data.success) return alert(data.message || "Hiba jóváhagyásnál!");
-
-        setPendingGames(prev => prev.filter(g => g.id !== idjatekok));
-        alert("Játék jóváhagyva!");
-      } catch {
-        alert("Hiba a jóváhagyásnál!");
-      }
-    };
-
-    const handleReject = async (idjatekok) => {
-      try {
-        const res = await fetch(`http://localhost:3001/admin-elutasit/${idjatekok}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ felhasznalonev: user.username })
-        });
-        const data = await res.json();
-        if (!data.success) return alert(data.message || "Hiba elutasításnál!");
-
-        setPendingGames(prev => prev.filter(g => g.id !== idjatekok));
-        alert("Játék elutasítva!");
-      } catch {
-        alert("Hiba az elutasításnál!");
-      }
-    };
-
-
-    if (!user || user.role !== 'admin') return (
-      <div className="maincenter" style={{ textAlign: 'center', color: '#ff41fa' }}>
-        <h2>🚫 Admin jogosultság szükséges!</h2>
-        <Link to="/">← Főoldal</Link>
-      </div>
-    );
-
-    return (
-      <div className="maincenter">
-        <nav style={{ marginBottom: '20px' }}>
-          <Link to="/" className="nav-link">🏠 Főoldal</Link>
-          <Link to="/profile" className="nav-link">👤 Profil</Link>
-          <button className="vissza-btn" onClick={() => navigate('/')}>← Vissza</button>
-        </nav>
-        <h2 style={{ color: '#19ffe3', textShadow: '0 0 15px #27e8ff' }}>⚙️ Admin Dashboard</h2>
-        <h3 style={{ color: '#ff41fa' }}>Függőben: {pendingGames.length} játék</h3>
-
-        {loading ? (
-          <div style={{ textAlign: 'center', color: '#27e8ff' }}>⏳ Betöltés...</div>
-        ) : pendingGames.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#27e8ff' }}>
-            ✅ Nincs függőben lévő játék
-          </div>
-        ) : (
-          <div className="games-grid">
-            {pendingGames.map((game) => (
-              <div key={game.id} className="game-card" style={{ maxWidth: '380px' }}>
-                <div className="game-image" style={{ backgroundImage: `url(${game.kepurl || defaultImage})` }}></div>
-                <div className="game-info">
-                  <h3 style={{ color: '#19ffe3' }}>{game.nev}</h3>
-                  <p><strong style={{ color: '#ff41fa' }}>Gamedev:</strong> {game.felhasznalonev}</p>
-                  <p><strong>Ár:</strong> {game.ar}</p>
-                  <p style={{ color: '#888', fontSize: '0.9em' }}>{game.leiras?.substring(0, 100)}...</p>
-                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                    <button className="login-btn" onClick={() => handleApprove(game.id)}>
-                      ✅ JÓVÁHAGY
-                    </button>
-
-                    <button
-                      className="vissza-btn"
-                      style={{ background: "#93000f", padding: "10px 15px" }}onClick={() => handleReject(game.id)}>
-                      ❌ ELUTASÍT
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
 
 
 
@@ -1012,22 +909,8 @@ function App() {
               : <Főoldal games={games} />
           }
         />
-        <Route
-          path="/gamedev"
-          element={
-            user?.role === 'gamedev'
-              ? <GamedevFeltoltes user={user} />
-              : <Főoldal games={games} />
-          }
-        />
-        <Route
-          path="/admin-dashboard"
-          element={
-            user?.role === 'admin'
-              ? <AdminJovahagyas user={user} games={games} setGames={setGames} />
-              : <Főoldal games={games} />
-          }
-        />
+        
+        
       </Routes>
     </BrowserRouter>
   );
