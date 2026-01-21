@@ -14,6 +14,7 @@ import NevjegyPage from './pages/Nevjegy.jsx';
 import LandingPage from './pages/landingpage.jsx';
 
 import defaultImage from './assets/default.jpg';
+import Footer from "./components/Footer.jsx";
 
 function App() {
   const [games, setGames] = useState([]);
@@ -218,6 +219,7 @@ function App() {
         <Route path="/nevjegy" element={<NevjegyPage />} />
 
       </Routes>
+      <Footer />
     </BrowserRouter>
   );
 }

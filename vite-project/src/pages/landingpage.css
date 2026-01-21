@@ -1,64 +1,149 @@
-/* A teljes oldal közepére igazítás */
+/* teljes landing nézet: foglalja ki a magasságot, hogy a footer alul üljön */
+.landing-root {
+  min-height: calc(100vh - 80px); /* kb. a footer magasságától függően finomhangolható */
+  display: flex;
+}
+
+/* csak a landing tartalom középre rakása */
 .landing-wrapper {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-  
-  /* A tartalom doboza */
-  .landing-container {
-    max-width: 800px;
-    width: 90%;
-    background: rgba(255, 255, 255, 0.08);
-    padding: 40px;
-    border-radius: 12px;
-    text-align: center;
-    color: #ffffff;
-  }
-  
-  /* Gombok sorban */
-  .landing-buttons {
-    margin-top: 30px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-  }
-  
-  /* Jogi rész lenyitó gomb */
-  .legal-toggle {
-    margin-top: 40px;
-    padding: 0.8em 1.4em;
-    background: #646cff;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1em;
-  }
-  
-  /* Jogi szöveg doboza */
-  .legal-box {
-    margin-top: 30px;
-    text-align: left;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 20px;
-    border-radius: 8px;
-  }
-  
-  /* Címek */
-  .legal-title {
-    font-size: 1.3em;
-    margin-top: 20px;
-    color: #e0e0ff;
-  }
-  
-  /* Szöveg */
-  .legal-text {
-    line-height: 1.6;
-    margin-top: 10px;
-    color: #d0d0d0;
-  }
-  
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* A tartalom doboza */
+.landing-container {
+  max-width: 800px;
+  width: 90%;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  color: #ffffff;
+}
+
+/* Gombok sorban */
+.landing-buttons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Jogi rész lenyitó gomb */
+.legal-toggle {
+  margin-top: 40px;
+  padding: 0.8em 1.4em;
+  background: #646cff;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+/* Jogi szöveg doboza */
+.legal-box {
+  margin-top: 30px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+/* Címek */
+.legal-title {
+  font-size: 1.3em;
+  margin-top: 20px;
+  color: #e0e0ff;
+}
+
+/* Szöveg */
+.legal-text {
+  line-height: 1.6;
+  margin-top: 10px;
+  color: #d0d0d0;
+}
+.app-footer {
+  width: 100vw;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #141418 60%, #3a186f 100%);
+  border-top: 2px solid #27e8ff88;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #19ffe3;
+  font-family: Orbitron, Segoe UI, Arial, sans-serif;
+  font-size: 0.85rem;
+  text-shadow: 0 0 10px #27e8ff, 0 0 18px #ff41fa66;
+}
+
+
+/* a teljes landing tartalom, footer FELETT, kicsit alacsonyabb, mint a viewport */
+.landing-root {
+  min-height: calc(100vh - 90px); /* ha kell, finomhangold 80–100 között */
+  display: flex;
+}
+
+/* középre húzza a kártyát, de nem absolute */
+.landing-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* A tartalom doboza */
+.landing-container {
+  max-width: 800px;
+  width: 90%;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  color: #ffffff;
+}
+
+/* Gombok sorban */
+.landing-buttons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Jogi rész lenyitó gomb */
+.legal-toggle {
+  margin-top: 40px;
+  padding: 0.8em 1.4em;
+  background: #646cff;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+/* Jogi szöveg doboza */
+.legal-box {
+  margin-top: 30px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+/* Címek */
+.legal-title {
+  font-size: 1.3em;
+  margin-top: 20px;
+  color: #e0e0ff;
+}
+
+/* Szöveg */
+.legal-text {
+  line-height: 1.6;
+  margin-top: 10px;
+  color: #d0d0d0;
+}
