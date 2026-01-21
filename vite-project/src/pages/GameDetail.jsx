@@ -125,7 +125,16 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
             {user?.username === 'admin' && (
               <button
                 type="button"
-                onClick={() => onDeleteGame(game.id)}
+                onClick={async () => {
+                  const ok = await onDeleteGame(game.id);
+                  if (ok) {
+                    alert("Játék sikeresen törölve!");
+                    navigate("/");
+                  } else {
+                    alert("A játék törlése sikertelen!");
+                  }
+                }}
+                
                 style={{
                   fontSize: '0.9em',
                   background: '#93000f',

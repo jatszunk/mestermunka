@@ -156,21 +156,26 @@ function App() {
 
   // ------------ DELETE GAME (admin only) ------------------
   async function onDeleteGame(gameId) {
-    if (!window.confirm("Biztosan törlöd?")) return;
-
+    if (!window.confirm("Biztosan törlöd?")) return false;
+  
     const res = await fetch(`http://localhost:3001/jatekok/${gameId}`, { method: "DELETE" });
     const data = await res.json();
-
+  
     if (data.success) {
       setGames((prev) => prev.filter((g) => g.id !== gameId));
-      alert("Törölve!");
-      setComments(prev => {
+  
+      setComments((prev) => {
         const copy = { ...prev };
         delete copy[gameId];
         return copy;
       });
-          }
+  
+      return true;
+    }
+  
+    return false;
   }
+  
 
   // ---------- PROFILE EDIT ------------------
   function handleProfileEdit(data) {
