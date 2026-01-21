@@ -399,4 +399,62 @@ h1, h2 {
   margin: 0;
 }
 
-/* hogy alul legyen, a maincenter már flex-column, min-height 100vh, ez jó alap [file:4] */
+/* ===== GameDetail: 3 oszlop (bal videó / közép kártya / jobb extra) ===== */
+
+.detail-3col{
+  width: min(1400px, 98vw);
+  display: grid;
+  grid-template-columns: 1fr 340px 1fr; /* középen fix kártya */
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 30px;
+}
+
+.detail-left,
+.detail-right{
+  background: linear-gradient(114deg, #141418 40%, #3a186f 100%);
+  border-radius: 21px;
+  padding: 16px;
+  box-sizing: border-box;
+  min-height: 200px;
+}
+
+.detail-center{
+  display: flex;
+  justify-content: center; /* a kártya középre */
+}
+
+.detail-center .detail-card{
+  max-width: 320px; /* maradjon gamecard-széles */
+  width: 100%;
+}
+
+.video-box{
+  background: #23272fbb;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+/* Mobil: egymás alá */
+@media (max-width: 1000px){
+  .detail-3col{
+    align-items: stretch; /* oszlopok egy magasságra nyúlnak */
+  }
+  
+  .detail-right{
+    min-height: calc(100vh - 220px); /* 220px: nav + cím kb., ha kell állítsd */
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
+  
+
+  .detail-center{
+    justify-content: stretch;
+  }
+
+  .detail-center .detail-card{
+    max-width: 98vw;
+  }
+}

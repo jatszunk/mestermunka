@@ -24,7 +24,16 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
       <div className="game-info" style={{ color: "white" }}>
         <h3 className="game-title">{game.title}</h3>
         <div className="game-developer">{game.developer}</div>
-        <span className="category-chip">{game.category}</span>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+  {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])
+    .filter(Boolean)
+    .map((cat) => (
+      <span key={cat} className="category-chip">
+        {cat}
+      </span>
+    ))}
+</div>
+
 
         <div className="game-requirements">
           <h4>Gépigény (minimum):</h4>

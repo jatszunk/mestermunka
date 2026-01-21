@@ -85,7 +85,7 @@ app.get("/jatekok", (req, res) => {
       id: game.id,
       title: game.title,
       developer: game.developer,
-      price: game.price === "0" ? "Ingyenes" : (game.price ? `${game.price}` : ""),
+      price: game.price === "0" ? "Ingyenes" : game.price ? `${game.price}` : "",
       image: game.image,
       requirements: { minimum: game.minimum, recommended: game.recommended },
       categories: game.categories ? game.categories.split(",").map((x) => x.trim()) : [],
@@ -98,16 +98,54 @@ app.get("/jatekok", (req, res) => {
   });
 });
 
+// Extra infók lekérése
+app.get("/jatekok/:id/extra", (req, res) => {
+  const gameId = req.params.id;
+
+  console.log("EXTRA endpoint HIT, gameId =", gameId);
+
+  db.query(
+    "SELECT megjelenes, steam_link AS steamLink, jatek_elmeny AS jatekElmeny, reszletes_leiras AS reszletesLeiras FROM jatekextra WHERE idjatekok = ? LIMIT 1",
+    [Number(gameId)],
+    (err, results) => {
+      console.log("EXTRA query err =", err);
+      console.log("EXTRA query results =", results);
+
+      if (err) return res.status(500).json({ success: false, error: err });
+      res.json({ success: true, extra: results[0] || null });
+    }
+  );
+});
+
 // Játék hozzáadás (admin oldalad használja)
 app.post("/jatekok", (req, res) => {
-  const { title, developer, price, category, image, minReq, recReq, desc, rating } = req.body;
+  const {
+    title,
+    developer,
+    price,
+    category,
+    image,
+    minReq,
+    recReq,
+    desc,
+    rating,
+    videos,
+    megjelenes,
+    steamLink,
+    jatekElmeny,
+    reszletesLeiras,
+  } = req.body;
 
-  if (!title || !developer || !price || !category || !image) {
-    return res.status(400).json({ success: false, message: "Hiányzó mezők!" });
+  const videoList = Array.isArray(videos) ? videos.map((v) => String(v).trim()).filter(Boolean) : [];
+
+  // kötelező: megjelenés + steam link + részletes leírás
+  if (!title || !developer || !price || !category || !image || !megjelenes || !steamLink || !reszletesLeiras) {
+    return res.status(400).json({ success: false, message: "Hiányzó kötelező mezők!" });
   }
 
   const insertDevSql =
     "INSERT INTO fejleszto (nev) VALUES (?) ON DUPLICATE KEY UPDATE idfejleszto=LAST_INSERT_ID(idfejleszto)";
+
   db.query(insertDevSql, [developer], (err, devResult) => {
     if (err) return res.status(500).json({ success: false, message: "Fejlesztő hiba", error: err });
     const devId = devResult.insertId;
@@ -121,35 +159,106 @@ app.post("/jatekok", (req, res) => {
         "INSERT INTO jatekok (nev, idfejleszto, ar, idrendszerkovetelmeny, leiras, ertekeles, kepurl) VALUES (?, ?, ?, ?, ?, ?, ?)";
       const numericRating = rating === null || rating === undefined ? 0 : Number(rating);
 
-      db.query(
-        insertGameSql,
-        [title, devId, price, reqId, desc || "", numericRating, image],
-        (err3, gameResult) => {
-          if (err3) return res.status(500).json({ success: false, message: "Játék hiba", error: err3 });
-          const gameId = gameResult.insertId;
+      db.query(insertGameSql, [title, devId, price, reqId, desc || "", numericRating, image], (err3, gameResult) => {
+        if (err3) return res.status(500).json({ success: false, message: "Játék hiba", error: err3 });
+        const gameId = gameResult.insertId;
 
-          const insertCatSql =
-            "INSERT INTO kategoria (nev) VALUES (?) ON DUPLICATE KEY UPDATE idkategoria=LAST_INSERT_ID(idkategoria)";
-          db.query(insertCatSql, [category], (err4, catResult) => {
-            if (err4) return res.status(500).json({ success: false, message: "Kategória hiba", error: err4 });
-            const catId = catResult.insertId;
+        // EXTRA mentése (új tábla)
+        const insertExtraSql = `
+          INSERT INTO jatekextra (idjatekok, megjelenes, steam_link, jatek_elmeny, reszletes_leiras)
+          VALUES (?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            megjelenes = VALUES(megjelenes),
+            steam_link = VALUES(steam_link),
+            jatek_elmeny = VALUES(jatek_elmeny),
+            reszletes_leiras = VALUES(reszletes_leiras)
+        `;
 
-            const linkSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
-            db.query(linkSql, [gameId, catId], (err5) => {
-              if (err5) return res.status(500).json({ success: false, message: "Kapcsolótábla hiba", error: err5 });
+        db.query(
+          insertExtraSql,
+          [gameId, megjelenes, steamLink, jatekElmeny || null, reszletesLeiras],
+          (errExtra) => {
+            if (errExtra)
+              return res.status(500).json({ success: false, message: "Extra infó mentési hiba", error: errExtra });
 
-              res.json({
-                success: true,
-                message: "Játék hozzáadva!",
-                game: { id: gameId, title, developer, price, image, category, rating: numericRating, description: desc },
-              });
+            // kategória mentés + linkelés
+            // kategóriák feldolgozása: "sandbox, survival" -> ["sandbox","survival"]
+            const categoryList = String(category || "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+
+            if (!categoryList.length) {
+              return res.status(400).json({ success: false, message: "Adj meg legalább 1 kategóriát!" });
+            }
+
+            // ne duplázzon, ha valamiért újra lenne futtatva
+            db.query("DELETE FROM jatekok_kategoriak WHERE idjatekok = ?", [gameId], (errDel) => {
+              if (errDel) return res.status(500).json({ success: false, message: "Kategória link törlés hiba", error: errDel });
+
+              const insertCatSql =
+                "INSERT INTO kategoria (nev) VALUES (?) ON DUPLICATE KEY UPDATE idkategoria=LAST_INSERT_ID(idkategoria)";
+              const linkSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
+
+              let i = 0;
+
+              const finish = () =>
+                res.json({
+                  success: true,
+                  message: "Játék hozzáadva!",
+                  game: {
+                    id: gameId,
+                    title,
+                    developer,
+                    price,
+                    image,
+                    category: categoryList.join(", "),
+                    categories: categoryList,
+                    rating: numericRating,
+                    description: desc,
+                    requirements: { minimum: minReq || "", recommended: recReq || "" },
+                  },
+                });
+
+              const saveVideosThenFinish = () => {
+                if (!videoList.length) return finish();
+
+                const values = videoList.map((url) => [gameId, url]);
+                db.query("INSERT INTO jatek_videok (idjatekok, url) VALUES ?", [values], (errVid) => {
+                  if (errVid) return res.status(500).json({ success: false, message: "Videó mentés hiba", error: errVid });
+                  return finish();
+                });
+              };
+
+              const linkNextCategory = () => {
+                if (i >= categoryList.length) return saveVideosThenFinish();
+
+                const catName = categoryList[i];
+
+                db.query(insertCatSql, [catName], (errCat, catResult) => {
+                  if (errCat) return res.status(500).json({ success: false, message: "Kategória hiba", error: errCat });
+
+                  const catId = catResult.insertId;
+
+                  db.query(linkSql, [gameId, catId], (errLink) => {
+                    if (errLink) return res.status(500).json({ success: false, message: "Kapcsolótábla hiba", error: errLink });
+
+                    i += 1;
+                    linkNextCategory();
+                  });
+                });
+              };
+
+              linkNextCategory();
             });
+
           });
-        }
+      }
       );
     });
   });
 });
+
 
 // Játék törlés
 app.delete("/jatekok/:id", (req, res) => {
@@ -160,7 +269,6 @@ app.delete("/jatekok/:id", (req, res) => {
     res.json({ success: true, message: "Játék törölve." });
   });
 });
-
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -199,7 +307,7 @@ app.post("/api/send-email", async (req, res) => {
   }
 });
 
-// Összes komment (játékID szerint csoportosítva a frontendhez)
+// Összes komment
 app.get("/kommentek", (req, res) => {
   const sql = `
     SELECT 
@@ -228,66 +336,45 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
     return res.status(400).json({ success: false, message: "Hiányzó adatok!" });
   }
 
-  // username -> idfelhasznalo
-  db.query(
-    "SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?",
-    [username],
-    (err, users) => {
-      if (err) return res.status(500).json({ success: false, error: err });
-      if (!users.length) {
-        return res.status(404).json({ success: false, message: "Nincs ilyen felhasználó." });
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, users) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (!users.length) return res.status(404).json({ success: false, message: "Nincs ilyen felhasználó." });
+
+    const userId = users[0].idfelhasznalo;
+
+    db.query(
+      "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
+      [userId, gameId, Number(rating), text],
+      (err2, result) => {
+        if (err2) return res.status(500).json({ success: false, error: err2 });
+
+        res.json({
+          success: true,
+          comment: { id: result.insertId, user: username, text, rating: Number(rating) },
+        });
       }
-
-      const userId = users[0].idfelhasznalo;
-
-      db.query(
-        "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
-        [userId, gameId, Number(rating), text],
-        (err2, result) => {
-          if (err2) return res.status(500).json({ success: false, error: err2 });
-
-          res.json({
-            success: true,
-            comment: { id: result.insertId, user: username, text, rating: Number(rating) }
-          });
-        }
-      );
-    }
-  );
+    );
+  });
 });
+
 // Komment törlése (admin)
 app.delete("/kommentek/:id", (req, res) => {
   const commentId = req.params.id;
 
   db.query("DELETE FROM kommentek WHERE idkommentek = ?", [commentId], (err, result) => {
     if (err) return res.status(500).json({ success: false, error: err });
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Nincs ilyen komment." });
-    }
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen komment." });
     res.json({ success: true });
   });
 });
 
-// Összes komment (Home-hoz, induláskor)
-app.get("/kommentek", (req, res) => {
-  const sql = `
-    SELECT 
-      k.idkommentek AS id,
-      k.idjatekok AS gameId,
-      f.felhasznalonev AS user,
-      k.tartalom AS text,
-      k.ertekeles AS rating
-    FROM kommentek k
-    JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
-    ORDER BY k.idkommentek DESC
-  `;
-
-  db.query(sql, (err, results) => {
+// Videók lekérése
+app.get("/jatekok/:id/videok", (req, res) => {
+  const gameId = req.params.id;
+  db.query("SELECT id, url FROM jatek_videok WHERE idjatekok = ? ORDER BY id DESC", [gameId], (err, results) => {
     if (err) return res.status(500).json({ success: false, error: err });
-    res.json({ success: true, comments: results });
+    res.json({ success: true, videos: results });
   });
 });
-
-
 
 app.listen(3001, () => console.log("Szerver fut a 3001-es porton"));

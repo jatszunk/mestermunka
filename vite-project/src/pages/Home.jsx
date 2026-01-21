@@ -8,7 +8,11 @@ function Home({ user, games, comments, filterSortGames, handleAddComment, handle
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('');
 
-  const categories = ["Összes", ...new Set(games.map(g => g.category))];
+  const categories = [
+    "Összes",
+    ...new Set(games.flatMap((g) => (Array.isArray(g.categories) ? g.categories : []))),
+  ];
+  
   const filteredGames = filterSortGames(games, search, selectedCategory, sort);
 
   return (

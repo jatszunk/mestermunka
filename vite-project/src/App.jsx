@@ -19,13 +19,14 @@ function App() {
   const [games, setGames] = useState([]);
   const [users, setUsers] = useState([]);
   const [user, setUser] = useState(null);
-  const [comments, setComments] = useState({}); // { [gameId]: [ {user,text,rating}, ... ] }
+  const [comments, setComments] = useState({}); // { [gameId]: [ {id,user,text,rating}, ... ] }
 
-  // ----- Fetch users + games -----
+  // ----- Fetch users + games + comments -----
   useEffect(() => {
+    // users
     axios.get("http://localhost:3001/felhasznalok").then((res) => {
       if (res.data.success) {
-        const mapped = res.data.users.map((u) => ({
+        const mapped = (res.data.users || []).map((u) => ({
           username: u.felhasznalonev,
           email: u.email,
           password: u.jelszo,
@@ -33,33 +34,33 @@ function App() {
           avatar: u.avatar || "",
           role: u.role || "",
         }));
-        
         setUsers(mapped);
       }
     });
 
+    // games
     axios.get("http://localhost:3001/jatekok").then((res) => {
-      const mappedGames = res.data.games.map((g) => ({
+      const mappedGames = (res.data.games || []).map((g) => ({
         id: g.id,
         title: g.title,
         developer: g.developer,
         price: g.price,
         image: g.image || defaultImage,
-        requirements: { minimum: g.minimum, recommended: g.recommended },
-        category: Array.isArray(g.categories)
-          ? g.categories[0] || "Egyéb"
-          : typeof g.categories === "string"
-            ? g.categories.split(", ")[0]
-            : "Egyéb",
+        requirements: g.requirements || { minimum: "-", recommended: "-" },
+        categories: Array.isArray(g.categories) ? g.categories : [],
+        category: Array.isArray(g.categories) && g.categories.length ? g.categories[0] : "Egyéb", // fallback (régi kódoknak)
+        platforms: Array.isArray(g.platforms) ? g.platforms : [],
         rating: g.rating || 0,
-        description: g.description,
+        description: g.description || "",
       }));
       setGames(mappedGames);
     });
+
+    // all comments (grouped)
     axios.get("http://localhost:3001/kommentek").then((res) => {
       if (res.data.success) {
         const grouped = {};
-        for (const c of res.data.comments) {
+        for (const c of res.data.comments || []) {
           if (!grouped[c.gameId]) grouped[c.gameId] = [];
           grouped[c.gameId].push(c);
         }
@@ -117,9 +118,16 @@ function App() {
 
   // ------------ COMMENTS (DB) ------------------
   async function fetchComments(gameId) {
-    const res = await axios.get(`http://localhost:3001/jatekok/${gameId}/kommentek`);
+    // Nálad a szerverben jelenleg nincs GET /jatekok/:id/kommentek endpoint,
+    // ezért itt a teljes /kommentek listát frissítjük és gameId szerint csoportosítjuk.
+    const res = await axios.get("http://localhost:3001/kommentek");
     if (res.data.success) {
-      setComments((prev) => ({ ...prev, [gameId]: res.data.comments }));
+      const grouped = {};
+      for (const c of res.data.comments || []) {
+        if (!grouped[c.gameId]) grouped[c.gameId] = [];
+        grouped[c.gameId].push(c);
+      }
+      setComments(grouped);
     }
   }
 
@@ -142,40 +150,37 @@ function App() {
 
   async function handleDeleteComment(gameId, commentId) {
     if (!user || user.username !== "admin") return;
-  
+
     const res = await axios.delete(`http://localhost:3001/kommentek/${commentId}`);
     if (res.data.success) {
-      setComments(prev => ({
+      setComments((prev) => ({
         ...prev,
-        [gameId]: (prev[gameId] || []).filter(c => c.id !== commentId)
+        [gameId]: (prev[gameId] || []).filter((c) => c.id !== commentId),
       }));
     }
   }
-  
- 
 
   // ------------ DELETE GAME (admin only) ------------------
   async function onDeleteGame(gameId) {
     if (!window.confirm("Biztosan törlöd?")) return false;
-  
+
     const res = await fetch(`http://localhost:3001/jatekok/${gameId}`, { method: "DELETE" });
     const data = await res.json();
-  
+
     if (data.success) {
       setGames((prev) => prev.filter((g) => g.id !== gameId));
-  
+
       setComments((prev) => {
         const copy = { ...prev };
         delete copy[gameId];
         return copy;
       });
-  
+
       return true;
     }
-  
+
     return false;
   }
-  
 
   // ---------- PROFILE EDIT ------------------
   function handleProfileEdit(data) {
@@ -196,14 +201,17 @@ function App() {
       );
     }
 
-    if (filter !== "Összes") filtered = filtered.filter((g) => g.category === filter);
+    // kategória szűrés: a categories tömbben keressük
+    if (filter !== "Összes") {
+      filtered = filtered.filter((g) => Array.isArray(g.categories) && g.categories.includes(filter));
+    }
 
     switch (sort) {
       case "Legolcsóbb":
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => Number(a.price) - Number(b.price));
         break;
       case "Legdrágább":
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => Number(b.price) - Number(a.price));
         break;
       case "Értékelés ↑":
         filtered.sort((a, b) => b.rating - a.rating);

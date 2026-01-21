@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2026. Jan 07. 11:18
+-- Létrehozás ideje: 2026. Jan 21. 13:19
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -32,6 +32,25 @@ CREATE TABLE `fejleszto` (
   `nev` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `fejleszto`
+--
+
+INSERT INTO `fejleszto` (`idfejleszto`, `nev`) VALUES
+(6, 'dfhs'),
+(7, 'hfd'),
+(8, 'dhf'),
+(9, 'ahf'),
+(10, 'hfa'),
+(11, 'fah'),
+(12, 'sdgag'),
+(13, 'fgjd'),
+(14, 'valaki'),
+(15, 'Tezuka Takashi'),
+(16, ' Mardonpol Inc.'),
+(17, 'Valve'),
+(18, 'PUBG Corporation');
+
 -- --------------------------------------------------------
 
 --
@@ -51,7 +70,34 @@ CREATE TABLE `felhasznalo` (
 --
 
 INSERT INTO `felhasznalo` (`idfelhasznalo`, `email`, `nev`, `jelszo`, `felhasznalonev`) VALUES
-(1, 'admin@games.com', 'admin', 'aaaa', 'admin');
+(1, 'admin@games.com', 'admin', 'aaaa', 'admin'),
+(2, 'korlev@hen.com', NULL, 'aaaa', 'admina'),
+(3, 'valami@valami.com', NULL, 'aaaa', 'sdgds');
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatekextra`
+--
+
+CREATE TABLE `jatekextra` (
+  `id` int(11) NOT NULL,
+  `idjatekok` int(11) NOT NULL,
+  `megjelenes` varchar(50) NOT NULL,
+  `steam_link` varchar(255) NOT NULL,
+  `jatek_elmeny` varchar(255) DEFAULT NULL,
+  `reszletes_leiras` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `jatekextra`
+--
+
+INSERT INTO `jatekextra` (`id`, `idjatekok`, `megjelenes`, `steam_link`, `jatek_elmeny`, `reszletes_leiras`, `created_at`) VALUES
+(2, 14, '2024. szept. 23.', 'https://store.steampowered.com/app/1713350/Project_Castaway/', 'Vegyes', 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight for survival.', '2026-01-21 11:56:57'),
+(3, 15, '2012. aug. 21.', 'https://store.steampowered.com/app/730/CounterStrike_2/', 'Nagyon Pozitív', 'Counter-Strike 2 is a multiplayer tactical first-person shooter, in which two teams, the Terrorists and Counter-Terrorists, compete to complete various objectives. The game includes two round-based objective scenarios: bomb defusal and hostage rescue, with the bomb defusal scenario making up the primary gameplay experience.', '2026-01-21 12:04:47'),
+(4, 16, ' 2017. dec. 21.', 'https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/', 'Izgalmas.', 'A PUBG (PlayerUnknown\'s Battlegrounds) egy online battle royale játék, amelyben a játékosok egy szigetre dobtak ki, és versenyeznek az utolsó túlélőért. A játék során a játékosok fegyvereket, orvosi felszereléseket és más tárgyakat gyűjtenek, hogy segítsék őket a túlélésért. A játék különböző játékmódokban játszható, például a többjátékos módban, duóban vagy csapatban. A játék célja, hogy a játékosok tapasztalatait és stratégiaikat fejtsenek ki, miközben a terület szűkül, és a játékosok egyre intenzívebb konfliktusokba kényszerülnek. ', '2026-01-21 12:16:24');
 
 -- --------------------------------------------------------
 
@@ -71,6 +117,15 @@ CREATE TABLE `jatekok` (
   `kepurl` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `jatekok`
+--
+
+INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`) VALUES
+(14, 'Project Castaway', NULL, 16, '3400', 14, 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight f', 5, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1713350/header.jpg?t=1768533750'),
+(15, 'Counter-Strike 2', NULL, 17, 'Ingyenes', 15, 'A Counter-Strike több mint két évtizede kínál elit versengő élményt, melyet játékosok milliói formálnak a világ minden tájáról. És most megkezdődik a CS történetének következő fejezete. Ez a Counter‑Strike 2.', 8, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/730/header.jpg?t=1749053861'),
+(16, 'PUBG: BATTLEGROUNDS', NULL, 18, 'Ingyenes', 16, 'PUBG: BATTLEGROUNDS, the high-stakes winner-take-all shooter that started the Battle Royale craze, is free-to-play! Drop into diverse maps, loot unique weapons and supplies, and survive in an ever-shrinking zone where every turn could be your last.', 7, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1764817633');
+
 -- --------------------------------------------------------
 
 --
@@ -82,6 +137,22 @@ CREATE TABLE `jatekok_kategoriak` (
   `idkategoria` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `jatekok_kategoriak`
+--
+
+INSERT INTO `jatekok_kategoriak` (`idjatekok`, `idkategoria`) VALUES
+(14, 14),
+(15, 15),
+(15, 16),
+(15, 17),
+(15, 18),
+(15, 19),
+(16, 20),
+(16, 21),
+(16, 22),
+(16, 23);
+
 -- --------------------------------------------------------
 
 --
@@ -92,6 +163,30 @@ CREATE TABLE `jatekok_platformok` (
   `idjatekok` int(11) NOT NULL,
   `idplatform` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatek_videok`
+--
+
+CREATE TABLE `jatek_videok` (
+  `id` int(11) NOT NULL,
+  `idjatekok` int(11) NOT NULL,
+  `url` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `jatek_videok`
+--
+
+INSERT INTO `jatek_videok` (`id`, `idjatekok`, `url`) VALUES
+(3, 14, 'https://youtu.be/1Y5f89tXNNo'),
+(4, 14, 'https://youtu.be/BbGDuNVS2Nw'),
+(5, 15, 'https://youtu.be/MFU6AGjVFWs'),
+(6, 15, 'https://youtu.be/Fu2yFoiCdxE'),
+(7, 16, 'https://youtu.be/e90WhwN2QdQ'),
+(8, 16, 'https://youtu.be/tzzg6Z5oKGY');
 
 -- --------------------------------------------------------
 
@@ -111,7 +206,27 @@ CREATE TABLE `kategoria` (
 INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
 (1, 'sgfd'),
 (2, 'dhf'),
-(3, 'sdgfs');
+(3, 'sdgfs'),
+(4, 'hdfs'),
+(5, 'fgd'),
+(6, 'had'),
+(7, 'af'),
+(8, 'fdha'),
+(9, 'ahf'),
+(10, 'agd'),
+(11, 'fgjd'),
+(12, 'RPG'),
+(13, 'többjátékos'),
+(14, 'Survival, SandBox'),
+(15, 'FPS'),
+(16, 'Versengő'),
+(17, 'Többjátékos'),
+(18, 'Akció'),
+(19, 'PVP'),
+(20, 'Túlélő'),
+(21, 'Lövöldözős'),
+(22, 'Battle Royale'),
+(23, 'FPS');
 
 -- --------------------------------------------------------
 
@@ -190,7 +305,20 @@ CREATE TABLE `rendszerkovetelmeny` (
 INSERT INTO `rendszerkovetelmeny` (`idrendszerkovetelmeny`, `minimum`, `ajanlott`) VALUES
 (1, 'sdf', 'gs'),
 (2, 'fghsfghgfh', 'sfghsghgfhsfghgfh'),
-(3, 'sgds', 'dsgsd');
+(3, 'sgds', 'dsgsd'),
+(4, 'hsf', 'dhsf'),
+(5, 'i,u', ',iut'),
+(6, 'dhfa', 'hdf'),
+(7, 'dfha', 'dfha'),
+(8, 'dhaf', 'hfa'),
+(9, 'haf', 'dfh'),
+(10, 'dsag', 'agd'),
+(11, 'fgdj', 'gjfd'),
+(12, 'nagyon gyengye', 'nagyon erős'),
+(13, '-', '-'),
+(14, 'Op. rendszer: Windows 10 Processzor: Intel Core i3-6100 or equivalent CPU Memória: 8 GB RAM Grafika: NVIDIA GeForce GTX 970 or AMD equivalent Tárhely: 4 GB szabad hely Egyéb megjegyzések: Does not work well with integrated GPUs', 'Op. rendszer: Windows 10 Processzor: Intel Core i5-9400 or equivalent CPU Memória: 12 GB RAM Grafika: NVidia GeForce RTX 2060 or AMD equivalent Tárhely: 5 GB szabad hely Egyéb megjegyzések: Does not work well with integrated GPUs'),
+(15, 'Minimum: Op. rendszer: Windows® 10 Processzor: 4 szálas processzor — Intel® Core™ i5 750 vagy jobb Memória: 8 GB RAM Grafika: A videokártyának legalább 1 GB-osnak és DirectX 11 kompatibilisnak kell lennie, Shader Model 5.0 támogatással. DirectX: Verzió: 1', '-'),
+(16, '64 bites processzor és operációs rendszer szükséges Op. rendszer: 64-bit Windows 10 Processzor: Intel Core i5-4430 / AMD FX-6300 Memória: 8 GB RAM Grafika: NVIDIA GeForce GTX 960 2GB / AMD Radeon R7 370 2GB DirectX: Verzió: 11 Hálózat: Széles sávú interne', '64 bites processzor és operációs rendszer szükséges Op. rendszer: 64-bit Windows 10 Processzor: Intel Core i5-6600K / AMD Ryzen 5 1600 Memória: 16 GB RAM Grafika: NVIDIA GeForce GTX 1060 3GB / AMD Radeon RX 580 4GB DirectX: Verzió: 11 Hálózat: Széles sávú');
 
 --
 -- Indexek a kiírt táblákhoz
@@ -207,6 +335,13 @@ ALTER TABLE `fejleszto`
 --
 ALTER TABLE `felhasznalo`
   ADD PRIMARY KEY (`idfelhasznalo`);
+
+--
+-- A tábla indexei `jatekextra`
+--
+ALTER TABLE `jatekextra`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_game_extra` (`idjatekok`);
 
 --
 -- A tábla indexei `jatekok`
@@ -230,6 +365,13 @@ ALTER TABLE `jatekok_kategoriak`
 ALTER TABLE `jatekok_platformok`
   ADD PRIMARY KEY (`idjatekok`,`idplatform`),
   ADD KEY `idplatform` (`idplatform`);
+
+--
+-- A tábla indexei `jatek_videok`
+--
+ALTER TABLE `jatek_videok`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idjatekok` (`idjatekok`);
 
 --
 -- A tábla indexei `kategoria`
@@ -284,25 +426,37 @@ ALTER TABLE `rendszerkovetelmeny`
 -- AUTO_INCREMENT a táblához `fejleszto`
 --
 ALTER TABLE `fejleszto`
-  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT a táblához `felhasznalo`
 --
 ALTER TABLE `felhasznalo`
-  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT a táblához `jatekextra`
+--
+ALTER TABLE `jatekextra`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT a táblához `jatekok`
 --
 ALTER TABLE `jatekok`
-  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT a táblához `jatek_videok`
+--
+ALTER TABLE `jatek_videok`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT a táblához `kategoria`
 --
 ALTER TABLE `kategoria`
-  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT a táblához `kiado`
@@ -314,7 +468,7 @@ ALTER TABLE `kiado`
 -- AUTO_INCREMENT a táblához `kommentek`
 --
 ALTER TABLE `kommentek`
-  MODIFY `idkommentek` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idkommentek` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT a táblához `platform`
@@ -332,11 +486,17 @@ ALTER TABLE `promociok`
 -- AUTO_INCREMENT a táblához `rendszerkovetelmeny`
 --
 ALTER TABLE `rendszerkovetelmeny`
-  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- Megkötések a kiírt táblákhoz
 --
+
+--
+-- Megkötések a táblához `jatekextra`
+--
+ALTER TABLE `jatekextra`
+  ADD CONSTRAINT `fk_jatekextra_jatekok` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
 
 --
 -- Megkötések a táblához `jatekok`
@@ -359,6 +519,12 @@ ALTER TABLE `jatekok_kategoriak`
 ALTER TABLE `jatekok_platformok`
   ADD CONSTRAINT `jatekok_platformok_ibfk_1` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
   ADD CONSTRAINT `jatekok_platformok_ibfk_2` FOREIGN KEY (`idplatform`) REFERENCES `platform` (`idplatform`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `jatek_videok`
+--
+ALTER TABLE `jatek_videok`
+  ADD CONSTRAINT `fk_jatek_videok_jatek` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
 
 --
 -- Megkötések a táblához `kommentek`
