@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// import '../App.css'; // opcionális, ha kell
 
-function Login({ handleLogin }) {
+function LoginPage({ user, handleLogin }) {
   const navigate = useNavigate();
   const [uname, setUname] = useState("");
   const [pass, setPass] = useState("");
@@ -12,17 +14,16 @@ function Login({ handleLogin }) {
 
       <form
         className="login-form"
-        onSubmit={(e) => {
+        onSubmit={e => {
           e.preventDefault();
           handleLogin(uname, pass, navigate);
-
         }}
       >
         <input
           type="text"
           placeholder="Felhasználónév"
           value={uname}
-          onChange={(e) => setUname(e.target.value)}
+          onChange={e => setUname(e.target.value)}
           required
           className="login-input"
         />
@@ -31,7 +32,7 @@ function Login({ handleLogin }) {
           type="password"
           placeholder="Jelszó"
           value={pass}
-          onChange={(e) => setPass(e.target.value)}
+          onChange={e => setPass(e.target.value)}
           required
           className="login-input"
         />
@@ -39,15 +40,11 @@ function Login({ handleLogin }) {
         <button type="submit" className="login-btn">Belépés</button>
       </form>
 
-      <button
-        className="vissza-btn"
-        style={{ marginTop: 20 }}
-        onClick={() => navigate('/')}
-      >
+      <button className="vissza-btn" style={{ marginTop: 20 }} onClick={() => navigate('/')}>
         ⬅ Vissza
       </button>
     </div>
   );
 }
 
-export default Login;
+export default LoginPage;
