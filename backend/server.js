@@ -199,5 +199,95 @@ app.post("/api/send-email", async (req, res) => {
   }
 });
 
+// Összes komment (játékID szerint csoportosítva a frontendhez)
+app.get("/kommentek", (req, res) => {
+  const sql = `
+    SELECT 
+      k.idkommentek AS id,
+      k.idjatekok AS gameId,
+      f.felhasznalonev AS user,
+      k.tartalom AS text,
+      k.ertekeles AS rating
+    FROM kommentek k
+    JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
+    ORDER BY k.idkommentek DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    res.json({ success: true, comments: results });
+  });
+});
+
+// Komment mentése
+app.post("/jatekok/:id/kommentek", (req, res) => {
+  const gameId = req.params.id;
+  const { username, text, rating } = req.body;
+
+  if (!username || !text || rating == null) {
+    return res.status(400).json({ success: false, message: "Hiányzó adatok!" });
+  }
+
+  // username -> idfelhasznalo
+  db.query(
+    "SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?",
+    [username],
+    (err, users) => {
+      if (err) return res.status(500).json({ success: false, error: err });
+      if (!users.length) {
+        return res.status(404).json({ success: false, message: "Nincs ilyen felhasználó." });
+      }
+
+      const userId = users[0].idfelhasznalo;
+
+      db.query(
+        "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
+        [userId, gameId, Number(rating), text],
+        (err2, result) => {
+          if (err2) return res.status(500).json({ success: false, error: err2 });
+
+          res.json({
+            success: true,
+            comment: { id: result.insertId, user: username, text, rating: Number(rating) }
+          });
+        }
+      );
+    }
+  );
+});
+// Komment törlése (admin)
+app.delete("/kommentek/:id", (req, res) => {
+  const commentId = req.params.id;
+
+  db.query("DELETE FROM kommentek WHERE idkommentek = ?", [commentId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Nincs ilyen komment." });
+    }
+    res.json({ success: true });
+  });
+});
+
+// Összes komment (Home-hoz, induláskor)
+app.get("/kommentek", (req, res) => {
+  const sql = `
+    SELECT 
+      k.idkommentek AS id,
+      k.idjatekok AS gameId,
+      f.felhasznalonev AS user,
+      k.tartalom AS text,
+      k.ertekeles AS rating
+    FROM kommentek k
+    JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
+    ORDER BY k.idkommentek DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    res.json({ success: true, comments: results });
+  });
+});
+
+
 
 app.listen(3001, () => console.log("Szerver fut a 3001-es porton"));

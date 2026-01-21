@@ -1,6 +1,6 @@
+import React, { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
   const ownRating = comments.find(c => c.user === (user && user.username));
@@ -107,7 +107,7 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
                 {user?.username === 'admin' && (
                   <button
                     type="button"
-                    onClick={() => onDeleteComment(game.id, i)}
+                    onClick={() => onDeleteComment(game.id, cmt.id)}
                     style={{
                       marginLeft: 7,
                       fontSize: '0.9em',

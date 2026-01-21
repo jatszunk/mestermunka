@@ -1,16 +1,24 @@
+import React, { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
-import React, { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-
-function GameDetail({ user, games, comments, onDeleteGame, handleAddComment }) {
+function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fetchComments }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const game = games.find(g => String(g.id) === id);
   const allComments = comments[game?.id] || [];
 
-  if (!game) return <div className='maincenter'><h2 style={{ color: '#19ffe3' }}>Játék nem található!</h2></div>;
+  useEffect(() => {
+    if (game?.id && typeof fetchComments === "function") {
+      fetchComments(game.id);
+    }
+  }, [game?.id, fetchComments]);
 
+  if (!game) return (
+    <div className='maincenter'>
+      <h2 style={{ color: '#19ffe3' }}>Játék nem található!</h2>
+    </div>
+  );
   const ownRating = allComments.find(c => c.user === (user && user.username));
   const globalRating = allComments.length
     ? (allComments.reduce((sum, v) => sum + v.rating, 0) / allComments.length).toFixed(2)
