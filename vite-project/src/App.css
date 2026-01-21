@@ -96,7 +96,7 @@ h1, h2 {
 .games-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+  gap: 32px;
   justify-items: center;
   padding-bottom: 38px;
   width: 100%;
@@ -105,12 +105,16 @@ h1, h2 {
   overflow-x: hidden !important;
 }
 
-.game-card, .detail-card {
-  background: linear-gradient(114deg,#23272f 68%,#3a186f 100%);
+
+.game-card,
+.detail-card {
+  /* background maradhat, vagy mehet át a wrapper alá, ahogy fent */
   border-radius: 21px;
-  box-shadow: 0 0 34px #ff41fa22, 0 0 12px #19ffe322;
-  border: 2px solid #27e8ff33;
-  transition: transform 0.14s, box-shadow 0.13s;
+  /* EZEKET TÖRÖLD vagy vedd minimálisra:
+  box-shadow: ...;
+  border: ...;
+  */
+  transition: transform 0.14s;
   position: relative;
   width: 100%;
   max-width: 320px;
@@ -118,13 +122,53 @@ h1, h2 {
   flex-direction: column;
   min-height: 340px;
 }
-.detail-card { max-width: 430px;}
-.game-card:hover, .detail-card:hover {
-  transform: scale(1.03);
-  box-shadow: 0 0 54px #ff41fa, 0 0 12px #19ffe3;
-  border: 2px solid #ff41fa;
+
+.game-card {
+  margin-top: 4px;
+}
+
+.game-card:hover,
+.detail-card:hover {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 28px rgba(255, 65, 250, 0.9),
+    0 0 14px rgba(39, 232, 255, 0.7);
+  border: 1px solid #ff41fa;
   z-index: 2;
 }
+/* külső neon aura, kicsit nagyobb doboz */
+.neon-card-wrapper {
+  position: relative;
+  border-radius: 24px;
+  padding: 2px; /* a neon keret vastagsága */
+  background: radial-gradient(circle at top left, #ff41fa, transparent 55%),
+              radial-gradient(circle at bottom right, #27e8ff, transparent 55%);
+  box-shadow:
+    0 0 25px rgba(255, 65, 250, 0.6),
+    0 0 35px rgba(39, 232, 255, 0.4);
+}
+
+/* maga a kártya picit beljebb, hogy a neon kívül maradjon */
+.neon-card-wrapper .game-card {
+  background: linear-gradient(114deg, #141418 40%, #3a186f 100%);
+  border-radius: 21px;
+  border: none; /* ne legyen külön sötét keret */
+  box-shadow: none; /* neon a wrapperen van */
+  overflow: hidden; /* ne lógjon ki semmi a sarkoknál */
+}
+.neon-card-wrapper:hover {
+  box-shadow:
+    0 0 35px rgba(255, 65, 250, 0.9),
+    0 0 45px rgba(39, 232, 255, 0.7);
+  transform: translateY(-1px);
+}
+
+.neon-card-wrapper:hover .game-card {
+  transform: scale(1.01);
+}
+
+
+
 .game-image {
   position: relative;
   width: 100%;
@@ -134,7 +178,14 @@ h1, h2 {
   border-radius: 21px 21px 0 0;
   overflow: hidden;
 }
-.game-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 17px 17px 0 0; display: block;}
+
+.game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 21px 21px 0 0; /* 17px helyett 21px */
+  display: block;
+}
 .game-rating-badge {
   position: absolute;
   bottom: 10px;

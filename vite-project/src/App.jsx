@@ -219,7 +219,7 @@ function App() {
         <Route path="/nevjegy" element={<NevjegyPage />} />
 
       </Routes>
-      <Footer />
+      <Footer user={user} />
     </BrowserRouter>
   );
 }

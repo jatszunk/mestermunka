@@ -11,6 +11,7 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
   const [localRating, setLocalRating] = useState(5);
 
   return (
+     
     <div className="game-card">
       <div className="game-image">
         <img src={game.image} alt={game.title} />
