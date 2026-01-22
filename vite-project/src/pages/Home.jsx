@@ -21,8 +21,14 @@ function Home({ user, games, comments, filterSortGames, handleAddComment, handle
         <Link to="/" className="nav-link">Főoldal</Link>
         <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="nav-link">Admin Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+        )}
         {user?.username === 'admin' && (
-          <Link to="/addgame" className="nav-link">Új játék (admin)</Link>
+          <Link to="/addgame" className="nav-link">Új játék (régi)</Link>
         )}
       </nav>
 

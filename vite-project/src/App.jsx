@@ -11,6 +11,8 @@ import ProfilePage from "./pages/Profile.jsx";
 import AddGamePage from "./pages/AddGamePage.jsx";
 import NevjegyPage from "./pages/Nevjegy.jsx";
 import LandingPage from "./pages/landingpage.jsx";
+import AdminPanel from "./pages/AdminPanel.jsx";
+import GameDevUpload from "./pages/GameDevUpload.jsx";
 
 import defaultImage from "./assets/default.jpg";
 import Footer from "./components/Footer.jsx";
@@ -27,12 +29,14 @@ function App() {
     axios.get("http://localhost:3001/felhasznalok").then((res) => {
       if (res.data.success) {
         const mapped = (res.data.users || []).map((u) => ({
+          id: u.idfelhasznalo,
           username: u.felhasznalonev,
           email: u.email,
           password: u.jelszo,
           bio: u.bio || "",
           avatar: u.avatar || "",
-          role: u.role || "",
+          role: u.role || "user",
+          name: u.nev || "",
         }));
         setUsers(mapped);
       }
@@ -80,11 +84,13 @@ function App() {
         if (res.data.success) {
           const u = res.data.user;
           setUser({
+            id: u.idfelhasznalo,
             username: u.felhasznalonev,
             email: u.email,
-            role: u.role,
+            role: u.role || "user",
             bio: u.bio || "",
             avatar: u.avatar || "",
+            name: u.nev || "",
           });
           navigate("/");
         } else {
@@ -93,13 +99,21 @@ function App() {
       });
   }
 
-  function handleRegister(uname, email, pass, cb) {
+  function handleRegister(uname, email, pass, role = 'user', cb) {
     if (users.some((u) => u.username === uname)) {
       alert("Ez a név már foglalt!");
       return;
     }
 
-    const newUser = { username: uname, email, password: pass, bio: "", avatar: "" };
+    const newUser = { 
+      username: uname, 
+      email, 
+      password: pass, 
+      role,
+      bio: "", 
+      avatar: "",
+      name: ""
+    };
     setUsers((prev) => [...prev, newUser]);
     setUser(newUser);
 
@@ -107,6 +121,7 @@ function App() {
       felhasznalonev: uname,
       email,
       jelszo: pass,
+      role,
     });
 
     cb && cb();
@@ -287,6 +302,28 @@ function App() {
         />
 
         <Route path="/nevjegy" element={<NevjegyPage />} />
+
+        <Route
+          path="/admin"
+          element={
+            user?.role === 'admin' ? (
+              <AdminPanel user={user} />
+            ) : (
+              <LoginPage handleLogin={handleLogin} />
+            )
+          }
+        />
+
+        <Route
+          path="/gamedev-upload"
+          element={
+            user?.role === 'gamedev' || user?.role === 'admin' ? (
+              <GameDevUpload user={user} />
+            ) : (
+              <LoginPage handleLogin={handleLogin} />
+            )
+          }
+        />
       </Routes>
 
       <Footer user={user} />
