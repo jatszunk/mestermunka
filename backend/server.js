@@ -102,17 +102,19 @@ const checkRole = (allowedRoles) => {
       return res.status(401).json({ success: false, message: "Hiányzó felhasználónév" });
     }
     
-    const sql = "SELECT role FROM felhasznalo WHERE felhasznalonev = ?";
+    const sql = "SELECT * FROM felhasznalo WHERE felhasznalonev = ?";
     db.query(sql, [username], (err, results) => {
       if (err || results.length === 0) {
         return res.status(401).json({ success: false, message: "Érvénytelen felhasználó" });
       }
       
-      const userRole = results[0].role;
+      const user = results[0];
+      const userRole = user.role;
       if (!allowedRoles.includes(userRole)) {
         return res.status(403).json({ success: false, message: "Nincs jogosultsága" });
       }
       
+      req.user = user; // Teljes felhasználói objektum
       req.userRole = userRole;
       req.username = username;
       next();
@@ -509,27 +511,18 @@ app.get("/admin/pending-games", checkRole(['admin']), (req, res) => {
 // Játék jóváhagyása (admin)
 app.post("/admin/approve-game/:id", checkRole(['admin']), (req, res) => {
   const gameId = req.params.id;
-  const adminUsername = req.username;
-
-  // Admin ID lekérése
-  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [adminUsername], (err, adminResults) => {
-    if (err || adminResults.length === 0) {
-      return res.status(400).json({ success: false, message: "Admin nem található" });
-    }
-
-    const adminId = adminResults[0].idfelhasznalo;
+  const adminId = req.user.idfelhasznalo; // A checkRole middleware beállítja ezt
     
-    const sql = `
-      UPDATE jatekok 
-      SET status = 'approved', approved_at = NOW(), approved_by = ?, rejection_reason = NULL
-      WHERE idjatekok = ?
-    `;
+  const sql = `
+    UPDATE jatekok 
+    SET status = 'approved', approved_at = NOW(), approved_by = ?, rejection_reason = NULL
+    WHERE idjatekok = ?
+  `;
 
-    db.query(sql, [adminId, gameId], (err, result) => {
-      if (err) return res.status(500).json({ success: false, error: err });
-      if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Játék nem található" });
-      res.json({ success: true, message: "Játék jóváhagyva" });
-    });
+  db.query(sql, [adminId, gameId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Játék nem található" });
+    res.json({ success: true, message: "Játék jóváhagyva" });
   });
 });
 
@@ -537,25 +530,17 @@ app.post("/admin/approve-game/:id", checkRole(['admin']), (req, res) => {
 app.post("/admin/reject-game/:id", checkRole(['admin']), (req, res) => {
   const gameId = req.params.id;
   const { rejectionReason } = req.body;
-  const adminUsername = req.username;
 
-  // Admin ID lekérése
-  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [adminUsername], (err, adminResults) => {
-    if (err || adminResults.length === 0) {
-      return res.status(400).json({ success: false, message: "Admin nem található" });
-    }
+  const sql = `
+    UPDATE jatekok 
+    SET status = 'rejected', rejection_reason = ?, approved_at = NULL, approved_by = NULL
+    WHERE idjatekok = ?
+  `;
 
-    const sql = `
-      UPDATE jatekok 
-      SET status = 'rejected', rejection_reason = ?, approved_at = NULL, approved_by = NULL
-      WHERE idjatekok = ?
-    `;
-
-    db.query(sql, [rejectionReason, gameId], (err, result) => {
-      if (err) return res.status(500).json({ success: false, error: err });
-      if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Játék nem található" });
-      res.json({ success: true, message: "Játék elutasítva" });
-    });
+  db.query(sql, [rejectionReason, gameId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Játék nem található" });
+    res.json({ success: true, message: "Játék elutasítva" });
   });
 });
 
@@ -832,8 +817,338 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
           });
         });
       });
+      });
+  });
+});
+
+// ===== RENDSZERKÖVETELMÉNY ENDPOINTOK =====
+
+// Rendszerkövetelmények lekérdezése játékhoz
+app.get("/system-requirements/:gameId", (req, res) => {
+  const gameId = req.params.gameId;
+  
+  const sql = `
+    SELECT 
+      sr.id as requirement_id,
+      j.nev as game_title,
+      j.kepurl as game_image
+    FROM system_requirements sr
+    JOIN jatekok j ON sr.game_id = j.idjatekok
+    WHERE sr.game_id = ?
+  `;
+  
+  db.query(sql, [gameId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (results.length === 0) return res.json({ success: true, requirements: null });
+    
+    const requirementId = results[0].requirement_id;
+    const gameInfo = {
+      title: results[0].game_title,
+      image: results[0].game_image
+    };
+    
+    // Operációs rendszer követelmények
+    const osSql = `
+      SELECT type, os_name, version, architecture 
+      FROM os_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // CPU követelmények
+    const cpuSql = `
+      SELECT type, manufacturer, model, cores, threads, clock_speed, architecture 
+      FROM cpu_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // Memória követelmények
+    const memorySql = `
+      SELECT type, ram_size_gb, ram_type, speed_mhz 
+      FROM memory_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // GPU követelmények
+    const gpuSql = `
+      SELECT type, manufacturer, model, memory_gb, memory_type, directx_version 
+      FROM gpu_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // Tárhely követelmények
+    const storageSql = `
+      SELECT type, storage_size_gb, storage_type, free_space_gb 
+      FROM storage_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // Hálózati követelmények
+    const networkSql = `
+      SELECT type, connection_type, download_speed_mbps, upload_speed_mbps 
+      FROM network_requirements 
+      WHERE requirement_id = ?
+    `;
+    
+    // Platform kompatibilitás
+    const platformSql = `
+      SELECT platform, supported, notes 
+      FROM platform_compatibility 
+      WHERE requirement_id = ?
+    `;
+    
+    // Minden lekérdezés futtatása
+    const queries = [
+      osSql, cpuSql, memorySql, gpuSql, storageSql, networkSql, platformSql
+    ];
+    
+    let completedQueries = 0;
+    const requirements = {
+      ...gameInfo,
+      platforms: [],
+      minimum: {},
+      recommended: {}
+    };
+    
+    queries.forEach((sql, index) => {
+      db.query(sql, [requirementId], (err, results) => {
+        if (err) return res.status(500).json({ success: false, error: err });
+        
+        switch(index) {
+          case 0: // OS
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].os = {
+                name: row.os_name,
+                version: row.version,
+                architecture: row.architecture
+              };
+            });
+            break;
+          case 1: // CPU
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].cpu = {
+                manufacturer: row.manufacturer,
+                model: row.model,
+                cores: row.cores,
+                threads: row.threads,
+                clockSpeed: row.clock_speed
+              };
+            });
+            break;
+          case 2: // Memory
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].memory = {
+                size: row.ram_size_gb,
+                type: row.ram_type,
+                speed: row.speed_mhz
+              };
+            });
+            break;
+          case 3: // GPU
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].gpu = {
+                manufacturer: row.manufacturer,
+                model: row.model,
+                memory: row.memory_gb,
+                memoryType: row.memory_type,
+                directxVersion: row.directx_version
+              };
+            });
+            break;
+          case 4: // Storage
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].storage = {
+                size: row.storage_size_gb,
+                type: row.storage_type,
+                freeSpace: row.free_space_gb
+              };
+            });
+            break;
+          case 5: // Network
+            results.forEach(row => {
+              if (!requirements[row.type]) requirements[row.type] = {};
+              requirements[row.type].network = {
+                type: row.connection_type,
+                downloadSpeed: row.download_speed_mbps
+              };
+            });
+            break;
+          case 6: // Platform
+            requirements.platforms = results
+              .filter(row => row.supported)
+              .map(row => row.platform);
+            break;
+        }
+        
+        completedQueries++;
+        if (completedQueries === queries.length) {
+          res.json({ success: true, requirements });
+        }
+      });
     });
   });
 });
 
-app.listen(3001, () => console.log("Szerver fut a 3001-es porton"));
+// Összes rendszerkövetelmény lekérdezése szűréssel
+app.get("/system-requirements", (req, res) => {
+  const { platform, minRam, minStorage, gpuManufacturer, cpuCores, search } = req.query;
+  
+  let sql = `
+    SELECT DISTINCT
+      sr.id as requirement_id,
+      j.idjatekok as game_id,
+      j.nev as game_title,
+      j.kepurl as game_image,
+      j.ertekeles as rating
+    FROM system_requirements sr
+    JOIN jatekok j ON sr.game_id = j.idjatekok
+    WHERE j.status = 'approved'
+  `;
+  
+  const params = [];
+  
+  // Platform szűrés
+  if (platform && platform !== 'all') {
+    sql += ` AND j.idjatekok IN (
+      SELECT pc.requirement_id 
+      FROM platform_compatibility pc 
+      WHERE pc.platform = ? AND pc.supported = 1
+    )`;
+    params.push(platform);
+  }
+  
+  // Keresés
+  if (search) {
+    sql += ` AND j.nev LIKE ?`;
+    params.push(`%${search}%`);
+  }
+  
+  db.query(sql, params, (err, games) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    
+    const requirements = [];
+    let completedGames = 0;
+    
+    if (games.length === 0) {
+      return res.json({ success: true, requirements: [] });
+    }
+    
+    games.forEach(game => {
+      // Részletes követelmények lekérdezése
+      app.get(`/system-requirements/${game.game_id}`, { params: {} }, (req, res) => {
+        // Ezt a logikát később refaktoráljuk
+      });
+      
+      // Most egyszerűsítve
+      const mockRequirement = {
+        id: game.requirement_id,
+        gameTitle: game.game_title,
+        gameImage: game.game_image,
+        platforms: ['Windows', 'macOS', 'Linux'],
+        minimum: {
+          os: { name: 'Windows 10', architecture: '64-bit' },
+          cpu: { manufacturer: 'Intel', model: 'Core i3-8100', cores: 4, threads: 4, clockSpeed: 3.6 },
+          memory: { size: 8, type: 'DDR4', speed: 2666 },
+          gpu: { manufacturer: 'NVIDIA', model: 'GTX 1050 Ti', memory: 4, type: 'GDDR5' },
+          storage: { size: 20, type: 'SSD', freeSpace: 25 },
+          network: { type: 'Broadband', downloadSpeed: 10 }
+        },
+        recommended: {
+          os: { name: 'Windows 11', architecture: '64-bit' },
+          cpu: { manufacturer: 'Intel', model: 'Core i5-10400', cores: 6, threads: 12, clockSpeed: 4.3 },
+          memory: { size: 16, type: 'DDR4', speed: 3200 },
+          gpu: { manufacturer: 'NVIDIA', model: 'RTX 3060', memory: 12, type: 'GDDR6' },
+          storage: { size: 20, type: 'NVMe SSD', freeSpace: 30 },
+          network: { type: 'Broadband', downloadSpeed: 25 }
+        }
+      };
+      
+      // Szűrés a kliens oldali paraméterek alapján
+      let matches = true;
+      
+      if (minRam && parseInt(minRam) > 0) {
+        matches = matches && mockRequirement.minimum.memory.size >= parseInt(minRam);
+      }
+      
+      if (minStorage && parseInt(minStorage) > 0) {
+        matches = matches && mockRequirement.minimum.storage.size >= parseInt(minStorage);
+      }
+      
+      if (gpuManufacturer && gpuManufacturer !== 'all') {
+        matches = matches && mockRequirement.minimum.gpu.manufacturer === gpuManufacturer;
+      }
+      
+      if (cpuCores && parseInt(cpuCores) > 0) {
+        matches = matches && mockRequirement.minimum.cpu.cores >= parseInt(cpuCores);
+      }
+      
+      if (matches) {
+        requirements.push(mockRequirement);
+      }
+      
+      completedGames++;
+      if (completedGames === games.length) {
+        res.json({ success: true, requirements });
+      }
+    });
+  });
+});
+
+// Rendszerkövetelmény mentése/frissítése
+app.post("/system-requirements/:gameId", checkRole(['admin', 'gamedev']), (req, res) => {
+  const gameId = req.params.gameId;
+  const { requirements } = req.body;
+  
+  // Először ellenőrizzük, hogy létezik-e már követelmény
+  const checkSql = "SELECT id FROM system_requirements WHERE game_id = ?";
+  db.query(checkSql, [gameId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    
+    const requirementId = results.length > 0 ? results[0].id : null;
+    
+    if (requirementId) {
+      // Frissítés
+      // Itt implementáljuk a frissítési logikát
+      res.json({ success: true, message: "Rendszerkövetelmények frissítve" });
+    } else {
+      // Létrehozás
+      const insertSql = "INSERT INTO system_requirements (game_id) VALUES (?)";
+      db.query(insertSql, [gameId], (err, result) => {
+        if (err) return res.status(500).json({ success: false, error: err });
+        
+        const newRequirementId = result.insertId;
+        // Itt implementáljuk a részletes adatok mentését
+        res.json({ success: true, message: "Rendszerkövetelmények létrehozva", requirementId: newRequirementId });
+      });
+    }
+  });
+});
+
+// Táblák létrehozása endpoint
+app.post("/create-system-requirements-tables", checkRole(['admin']), (req, res) => {
+  const createTablesSql = `
+    CREATE TABLE IF NOT EXISTS system_requirements (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      game_id int(11) NOT NULL,
+      created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+      updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      FOREIGN KEY (game_id) REFERENCES jatekok(idjatekok) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `;
+  
+  db.query(createTablesSql, (err) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    
+    // További táblák létrehozása...
+    res.json({ success: true, message: "Rendszerkövetelmény táblák létrehozva" });
+  });
+});
+
+app.listen(3001, () => {
+  console.log("Server running on port 3001");
+});

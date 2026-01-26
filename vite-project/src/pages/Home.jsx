@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import GameCard from '../components/GameCard.jsx';
+import SteamGameCard from '../components/SteamGameCard.jsx';
 import AdvancedSearch from '../components/AdvancedSearch.jsx';
 import GameComparison from '../components/GameComparison.jsx';
 
@@ -18,6 +18,7 @@ function Home({ user, games, comments, handleAddComment, handleDeleteComment }) 
       <nav>
         <Link to="/" className="nav-link">Főoldal</Link>
         <Link to="/statistics" className="nav-link">Statisztikák</Link>
+        <Link to="/system-requirements" className="nav-link">Rendszerkövetelmények</Link>
         <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
         {user?.role === 'admin' && (
@@ -25,9 +26,6 @@ function Home({ user, games, comments, handleAddComment, handleDeleteComment }) 
         )}
         {(user?.role === 'gamedev' || user?.role === 'admin') && (
           <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-        )}
-        {user?.username === 'admin' && (
-          <Link to="/addgame" className="nav-link">Új játék (régi)</Link>
         )}
       </nav>
 
@@ -46,15 +44,13 @@ function Home({ user, games, comments, handleAddComment, handleDeleteComment }) 
         </button>
       </div>
 
-      <div className="games-grid">
+      <div className="steam-games-grid">
         {filteredGames.map(game => (
-          <GameCard
-            key={game.id}
+          <SteamGameCard
+            key={game.id || game.idjatekok}
             game={game}
-            user={user}
-            comments={comments[game.id] || []}
-            onAddComment={handleAddComment}
-            onDeleteComment={handleDeleteComment}
+            onAddToWishlist={(game) => console.log('Added to wishlist:', game)}
+            onQuickView={(game) => console.log('Quick view:', game)}
           />
         ))}
       </div>

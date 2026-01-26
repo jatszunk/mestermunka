@@ -236,7 +236,7 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
                   Vissza
                 </button>
 
-                {user?.username === "admin" && (
+                {user?.role === 'admin' && (
                   <button
                     type="button"
                     onClick={async () => {

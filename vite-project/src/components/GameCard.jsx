@@ -113,7 +113,7 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
                   <b>{cmt.user}</b>: {cmt.text} <span style={{ color: '#19ffe3' }}>({cmt.rating})</span>
                 </div>
 
-                {user?.username === 'admin' && (
+                {user?.role === 'admin' && (
                   <button
                     type="button"
                     onClick={() => onDeleteComment(game.id, cmt.id)}

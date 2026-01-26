@@ -14,9 +14,10 @@ import AdminPanel from "./pages/AdminPanel.jsx";
 import GameDevUpload from "./pages/GameDevUpload.jsx";
 import Statistics from "./pages/Statistics.jsx";
 import UserProfile from "./components/UserProfile.jsx";
+import SystemRequirementsSearch from "./components/SystemRequirementsSearch.jsx";
+import Footer from "./components/Footer.jsx";
 
 import defaultImage from "./assets/default.jpg";
-import Footer from "./components/Footer.jsx";
 
 function App() {
   const [games, setGames] = useState([]);
@@ -27,52 +28,84 @@ function App() {
   // ----- Fetch users + games + comments -----
   useEffect(() => {
     // users
-    axios.get("http://localhost:3001/felhasznalok").then((res) => {
-      if (res.data.success) {
-        const mapped = (res.data.users || []).map((u) => ({
-          id: u.idfelhasznalo,
-          username: u.felhasznalonev,
-          email: u.email,
-          password: u.jelszo,
-          bio: u.bio || "",
-          avatar: u.avatar || "",
-          role: u.role || "user",
-          name: u.nev || "",
-        }));
-        setUsers(mapped);
-      }
-    });
+    axios.get("http://localhost:3001/felhasznalok")
+      .then((res) => {
+        if (res.data.success) {
+          const mapped = (res.data.users || []).map((u) => ({
+            id: u.idfelhasznalo,
+            username: u.felhasznalonev,
+            email: u.email,
+            password: u.jelszo,
+            bio: u.bio || "",
+            avatar: u.avatar || "",
+            role: u.role || "user",
+            name: u.nev || "",
+          }));
+          setUsers(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching users:', err);
+      });
 
     // games
-    axios.get("http://localhost:3001/jatekok").then((res) => {
-      const mappedGames = (res.data.games || []).map((g) => ({
-        id: g.id,
-        title: g.title,
-        developer: g.developer,
-        price: g.price,
-        image: g.image || defaultImage,
-        requirements: g.requirements || { minimum: "-", recommended: "-" },
-        categories: Array.isArray(g.categories) ? g.categories : [],
-        category: Array.isArray(g.categories) && g.categories.length ? g.categories[0] : "Egyéb", // fallback (régi kódoknak)
-        platforms: Array.isArray(g.platforms) ? g.platforms : [],
-        rating: g.rating || 0,
-        description: g.description || "",
-      }));
-      setGames(mappedGames);
-    });
+    axios.get("http://localhost:3001/jatekok")
+      .then((res) => {
+        const mappedGames = (res.data.games || []).map((g) => ({
+          id: g.id || g.idjatekok,
+          title: g.title || g.nev,
+          developer: g.developer || g.fejleszto,
+          price: g.price || g.ar,
+          image: g.image || g.kepurl || defaultImage,
+          requirements: g.requirements || { minimum: "-", recommended: "-" },
+          categories: Array.isArray(g.categories) ? g.categories : [],
+          category: Array.isArray(g.categories) && g.categories.length ? g.categories[0] : "Egyéb", // fallback (régi kódoknak)
+          platforms: Array.isArray(g.platforms) ? g.platforms : [],
+          rating: g.rating || g.ertekeles || 0,
+          description: g.description || g.leiras || "",
+          // Megtartjuk az eredeti mezőneveket is
+          idjatekok: g.idjatekok,
+          nev: g.nev,
+          fejleszto: g.fejleszto,
+          ar: g.ar,
+          kepurl: g.kepurl,
+          ertekeles: g.ertekeles,
+          leiras: g.leiras,
+        }));
+        setGames(mappedGames);
+      })
+      .catch((err) => {
+        console.error('Error fetching games:', err);
+      });
 
     // all comments (grouped)
-    axios.get("http://localhost:3001/kommentek").then((res) => {
-      if (res.data.success) {
-        const grouped = {};
-        for (const c of res.data.comments || []) {
-          if (!grouped[c.gameId]) grouped[c.gameId] = [];
-          grouped[c.gameId].push(c);
+    axios.get("http://localhost:3001/kommentek")
+      .then((res) => {
+        if (res.data.success) {
+          const grouped = {};
+          for (const c of res.data.comments || []) {
+            const gameId = c.gameId || c.idjatekok;
+            if (!grouped[gameId]) grouped[gameId] = [];
+            grouped[gameId].push({
+              ...c,
+              // Biztosítjuk, hogy mindkét mezőnév elérhető
+              gameId: gameId,
+              idjatekok: gameId,
+              user: c.user || c.felhasznalo,
+              felhasznalo: c.felhasznalo || c.user,
+              text: c.text || c.tartalom,
+              tartalom: c.tartalom || c.text,
+              rating: c.rating || c.ertekeles,
+              ertekeles: c.ertekeles || c.rating,
+            });
+          }
+          setComments(grouped);
         }
-        setComments(grouped);
-      }
-    });
-  }, [user?.role]);
+      })
+      .catch((err) => {
+        console.error('Error fetching comments:', err);
+      });
+  }, []); // Minden esetben töltse be az adatokat, nem csak bejelentkezett felhasználóknak
 
   // ------------ AUTH ------------------
   function handleLogin(uname, pass, navigate) {
@@ -165,7 +198,7 @@ function App() {
   }
 
   async function handleDeleteComment(gameId, commentId) {
-    if (!user || user.username !== "admin") return;
+    if (!user || user.role !== "admin") return;
 
     const res = await axios.delete(`http://localhost:3001/kommentek/${commentId}`);
     if (res.data.success) {
@@ -296,10 +329,10 @@ function App() {
         <Route
           path="/addgame"
           element={
-            user?.username === "admin" ? (
+            user?.role === 'admin' ? (
               <AddGamePage setGames={setGames} />
             ) : (
-              <Home user={user} games={games} comments={comments} filterSortGames={filterSortGames} />
+              <Home user={user} games={games} comments={comments} />
             )
           }
         />
@@ -315,6 +348,11 @@ function App() {
               users={users}
             />
           }
+        />
+
+        <Route
+          path="/system-requirements"
+          element={<SystemRequirementsSearch />}
         />
 
         <Route

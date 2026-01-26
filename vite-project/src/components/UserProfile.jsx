@@ -19,22 +19,34 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
   }, [user, comments, games]);
 
   const calculateUserStats = () => {
-    const userComments = Object.values(comments).flat().filter(c => c.user === user.username);
+    // Összes komment kinyerése az objektumból
+    const allComments = Object.values(comments).flat();
+    const userComments = allComments.filter(c => 
+      c.user === user.username || c.felhasznalo === user.username
+    );
     const totalComments = userComments.length;
     
-    const ratings = userComments.map(c => c.rating);
+    const ratings = userComments.map(c => c.rating || c.ertekeles || 0).filter(r => r > 0);
     const averageRating = ratings.length > 0 
       ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
       : 0;
 
-    const commentedGameIds = [...new Set(userComments.map(c => c.gameId))];
-    const commentedGames = games.filter(game => commentedGameIds.includes(game.id));
+    const commentedGameIds = [...new Set(userComments.map(c => c.gameId || c.idjatekok))];
+    const commentedGames = games.filter(game => commentedGameIds.includes(game.id || game.idjatekok));
 
     const favoriteCategories = {};
     commentedGames.forEach(game => {
-      (game.categories || []).forEach(category => {
-        favoriteCategories[category] = (favoriteCategories[category] || 0) + 1;
-      });
+      const categories = game.categories || game.category || [];
+      if (Array.isArray(categories)) {
+        categories.forEach(category => {
+          favoriteCategories[category] = (favoriteCategories[category] || 0) + 1;
+        });
+      } else if (typeof categories === 'string') {
+        const categoryList = categories.split(',').map(c => c.trim());
+        categoryList.forEach(category => {
+          favoriteCategories[category] = (favoriteCategories[category] || 0) + 1;
+        });
+      }
     });
 
     setUserStats({
@@ -43,7 +55,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
       favoriteCategories,
       commentedGames,
       wishlist: [], // TODO: Implement wishlist functionality
-      collection: [] // TODO: Implement game collection functionality
+      collection: [] // TODO: Implement collection functionality
     });
   };
 
@@ -181,17 +193,19 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                 <div className="activity-list">
                   {Object.values(comments)
                     .flat()
-                    .filter(c => c.user === user.username)
-                    .sort((a, b) => b.id - a.id)
+                    .filter(c => c.user === user.username || c.felhasznalo === user.username)
+                    .sort((a, b) => (b.id || 0) - (a.id || 0))
                     .slice(0, 5)
                     .map((comment) => {
-                      const game = games.find(g => g.id === comment.gameId);
+                      const game = games.find(g => 
+                        (g.id || g.idjatekok) === (comment.gameId || comment.idjatekok)
+                      );
                       return (
                         <div key={comment.id} className="activity-item">
                           <div className="activity-content">
-                            <span className="rating">{comment.rating}/10</span>
-                            <span className="game-title">{game?.title || 'Ismeretlen játék'}</span>
-                            <span className="comment-text">{comment.text}</span>
+                            <span className="rating">{comment.rating || comment.ertekeles}/10</span>
+                            <span className="game-title">{game?.title || game?.nev || 'Ismeretlen játék'}</span>
+                            <span className="comment-text">{comment.text || comment.tartalom}</span>
                           </div>
                         </div>
                       );
@@ -208,25 +222,28 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                 {userStats.commentedGames.map(game => {
                   const gameComments = Object.values(comments)
                     .flat()
-                    .filter(c => c.user === user.username && c.gameId === game.id);
+                    .filter(c => 
+                      (c.user === user.username || c.felhasznalo === user.username) && 
+                      (c.gameId || c.idjatekok) === (game.id || game.idjatekok)
+                    );
                   
                   return (
-                    <div key={game.id} className="game-comments-card">
+                    <div key={game.id || game.idjatekok} className="game-comments-card">
                       <div className="game-info">
-                        <img src={game.image} alt={game.title} className="game-thumbnail" />
+                        <img src={game.image || game.kepurl} alt={game.title || game.nev} className="game-thumbnail" />
                         <div>
-                          <h4>{game.title}</h4>
-                          <p>{game.developer}</p>
+                          <h4>{game.title || game.nev}</h4>
+                          <p>{game.developer || game.fejleszto}</p>
                         </div>
                       </div>
                       <div className="comments-list">
                         {gameComments.map(comment => (
                           <div key={comment.id} className="comment-item">
                             <div className="comment-header">
-                              <span className="rating-badge">{comment.rating}/10</span>
+                              <span className="rating-badge">{comment.rating || comment.ertekeles}/10</span>
                               <span className="comment-date">{formatDate(comment.date)}</span>
                             </div>
-                            <p className="comment-text">{comment.text}</p>
+                            <p className="comment-text">{comment.text || comment.tartalom}</p>
                           </div>
                         ))}
                       </div>
