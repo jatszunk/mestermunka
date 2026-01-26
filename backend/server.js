@@ -2,6 +2,8 @@ const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const SteamAPI = require("./steamAPI");
+const SteamSyncScheduler = require("./steamSyncScheduler");
 
 const app = express();
 app.use(cors());
@@ -87,7 +89,11 @@ const query = async (sql, params, retries = 3) => {
   }
 };
 
-app.get("/", (req, res) => res.send("fut a szerver"));
+// Steam API példány létrehozása
+const steamAPI = new SteamAPI();
+
+// Steam Sync Scheduler inicializálása
+const steamSync = new SteamSyncScheduler(db, steamAPI);
 
 // Middleware - jogosultság ellenőrzése
 const checkRole = (allowedRoles) => {
@@ -122,7 +128,7 @@ const checkRole = (allowedRoles) => {
   };
 };
 
-// Regisztráció
+app.get("/", (req, res) => res.send("fut a szerver"));
 app.post("/register", (req, res) => {
   const { felhasznalonev, email, jelszo, role = 'user' } = req.body;
   const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, role) VALUES (?, ?, ?, ?)";
@@ -1147,6 +1153,237 @@ app.post("/create-system-requirements-tables", checkRole(['admin']), (req, res) 
     // További táblák létrehozása...
     res.json({ success: true, message: "Rendszerkövetelmény táblák létrehozva" });
   });
+});
+
+// Steam API endpointok
+
+// Steam játék keresése
+app.get("/steam/search", async (req, res) => {
+  const { query, limit = 10 } = req.query;
+  
+  if (!query) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Keresési kulcsszó megadása kötelező" 
+    });
+  }
+
+  try {
+    const games = await steamAPI.searchGames(query, parseInt(limit));
+    res.json({ 
+      success: true, 
+      games: games,
+      count: games.length 
+    });
+  } catch (error) {
+    console.error("Steam keresési hiba:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Hiba a Steam keresés során" 
+    });
+  }
+});
+
+// Steam játék részleteinek lekérése
+app.get("/steam/game/:appId", async (req, res) => {
+  const { appId } = req.params;
+  
+  if (!appId || isNaN(appId)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Érvénytelen Steam App ID" 
+    });
+  }
+
+  try {
+    const gameData = await steamAPI.getAppDetails(parseInt(appId));
+    
+    if (!gameData) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "A játék nem található a Steam-en" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      game: gameData 
+    });
+  } catch (error) {
+    console.error("Steam játék részlet hiba:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Hiba a Steam adatok lekérése során" 
+    });
+  }
+});
+
+// Steam játék szinkronizálása adatbázisba
+app.post("/steam/sync/:appId", async (req, res) => {
+  const { appId } = req.params;
+  
+  if (!appId || isNaN(appId)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Érvénytelen Steam App ID" 
+    });
+  }
+
+  const syncStartTime = Date.now();
+
+  try {
+    // Steam adatok lekérése
+    const steamData = await steamAPI.getAppDetails(parseInt(appId));
+    
+    if (!steamData) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "A játék nem található a Steam-en" 
+      });
+    }
+
+    // Ellenőrizzük, hogy a játék már létezik-e
+    const existingGame = await query(
+      "SELECT idjatekok FROM jatekok WHERE steam_app_id = ? OR steam_link = ?",
+      [steamData.steam_app_id, steamData.steam_link]
+    );
+
+    let gameId;
+    let isUpdate = false;
+
+    if (existingGame.length > 0) {
+      // Meglévő játék frissítése
+      gameId = existingGame[0].idjatekok;
+      isUpdate = true;
+
+      await query(`
+        UPDATE jatekok SET 
+          nev = ?, leiras = ?, reszletes_leiras = ?, kepurl = ?, 
+          background_url = ?, website = ?, megjelenes_datuma = ?, 
+          ar = ?, penznem = ?, ertekeles = ?, steam_link = ?,
+          steam_app_id = ?, steam_last_updated = NOW(),
+          multiplayer = ?, co_op = ?, controller_support = ?,
+          achievements = ?, vr_support = ?
+        WHERE idjatekok = ?
+      `, [
+        steamData.nev, steamData.leiras, steamData.reszletes_leiras, 
+        steamData.kepurl, steamData.background_url, steamData.website, 
+        steamData.megjelenes_datuma, steamData.ar, steamData.penznem, 
+        steamData.ertekeles, steamData.steam_link, steamData.steam_app_id,
+        steamData.multiplayer ? 1 : 0, steamData.co_op ? 1 : 0, 
+        steamData.controller_support ? 1 : 0, steamData.achievements ? 1 : 0,
+        steamData.vr_support ? 1 : 0, gameId
+      ]);
+    } else {
+      // Új játék hozzáadása
+      const insertResult = await query(`
+        INSERT INTO jatekok (
+          nev, slug, leiras, reszletes_leiras, kepurl, background_url,
+          website, megjelenes_datuma, ar, penznem, ertekeles, steam_link,
+          steam_app_id, steam_last_updated, status, multiplayer, co_op,
+          controller_support, achievements, vr_support
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        steamData.nev, steamData.nev.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        steamData.leiras, steamData.reszletes_leiras, steamData.kepurl,
+        steamData.background_url, steamData.website, steamData.megjelenes_datuma,
+        steamData.ar, steamData.penznem, steamData.ertekeles, steamData.steam_link,
+        steamData.steam_app_id, new Date(), 'approved',
+        steamData.multiplayer ? 1 : 0, steamData.co_op ? 1 : 0,
+        steamData.controller_support ? 1 : 0, steamData.achievements ? 1 : 0,
+        steamData.vr_support ? 1 : 0
+      ]);
+
+      gameId = insertResult.insertId;
+    }
+
+    // Szinkronizációs napló bejegyzés
+    await query(`
+      INSERT INTO steam_sync_log (
+        sync_type, steam_app_id, status, games_processed, 
+        games_updated, games_added, sync_completed_at, duration_ms
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      'single_game', steamData.steam_app_id, 'success', 1,
+      isUpdate ? 1 : 0, isUpdate ? 0 : 1, new Date(), Date.now() - syncStartTime
+    ]);
+
+    res.json({
+      success: true,
+      message: isUpdate ? "Játék sikeresen frissítve" : "Játék sikeresen hozzáadva",
+      gameId: gameId,
+      steamAppId: steamData.steam_app_id,
+      isUpdate: isUpdate
+    });
+
+  } catch (error) {
+    console.error("Steam szinkronizációs hiba:", error);
+    
+    // Hiba naplózása
+    await query(`
+      INSERT INTO steam_sync_log (
+        sync_type, steam_app_id, status, message, sync_completed_at, duration_ms, error_details
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      'single_game', parseInt(appId), 'error', error.message, new Date(), 
+      Date.now() - syncStartTime, JSON.stringify({ stack: error.stack })
+    ]);
+
+    res.status(500).json({ 
+      success: false, 
+      message: "Hiba a Steam szinkronizáció során" 
+    });
+  }
+});
+
+// Steam szinkronizációs napló lekérése
+app.get("/steam/sync-log", async (req, res) => {
+  const { limit = 50, status } = req.query;
+  
+  try {
+    let sql = "SELECT * FROM steam_sync_log";
+    let params = [];
+    
+    if (status) {
+      sql += " WHERE status = ?";
+      params.push(status);
+    }
+    
+    sql += " ORDER BY sync_started_at DESC LIMIT ?";
+    params.push(parseInt(limit));
+    
+    const logs = await query(sql, params);
+    
+    res.json({
+      success: true,
+      logs: logs
+    });
+  } catch (error) {
+    console.error("Steam sync log hiba:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Hiba a napló lekérése során" 
+    });
+  }
+});
+
+// Manuális szinkronizáció indítása
+app.post("/steam/sync-manual", async (req, res) => {
+  const { type = 'price_update' } = req.body;
+  
+  try {
+    await steamSync.manualSync(type);
+    res.json({
+      success: true,
+      message: `${type} szinkronizáció sikeresen elindítva`
+    });
+  } catch (error) {
+    console.error("Manuális szinkronizációs hiba:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Hiba a szinkronizáció indítása során" 
+    });
+  }
 });
 
 app.listen(3001, () => {
