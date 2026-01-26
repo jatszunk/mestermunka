@@ -9,10 +9,10 @@ const AdminPanel = ({ user }) => {
   const [pendingGames, setPendingGames] = useState([]);
   const [approvedGames, setApprovedGames] = useState([]);
   const [users, setUsers] = useState([]);
-  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingGame, setEditingGame] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+  const [comments, setComments] = useState([]);
 
   useEffect(() => {
     fetchStatistics();
@@ -21,19 +21,6 @@ const AdminPanel = ({ user }) => {
     fetchUsers();
     fetchComments();
   }, []);
-
-  const fetchComments = async () => {
-    try {
-      const res = await axios.get("http://localhost:3001/kommentek", {
-        headers: { username: user.username }
-      });
-      if (res.data.success) {
-        setComments(res.data.comments);
-      }
-    } catch (error) {
-      console.error("Kommentek hiba:", error);
-    }
-  };
 
   const fetchStatistics = async () => {
     try {
@@ -244,6 +231,38 @@ const AdminPanel = ({ user }) => {
     setEditFormData({});
   };
 
+  const fetchComments = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/kommentek");
+      if (res.data.success) {
+        setComments(res.data.comments);
+      }
+    } catch (error) {
+      console.error("Kommentek hiba:", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm("Biztosan törli ezt a kommentet?")) return;
+    
+    try {
+      const res = await axios.delete(`http://localhost:3001/kommentek/${commentId}`, {
+        headers: { username: user.username }
+      });
+      
+      if (res.data.success) {
+        alert("Komment törölve!");
+        await fetchComments();
+        await fetchStatistics();
+        // Kis késleltetés a state frissülésére
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      console.error("Komment törlés hiba:", error);
+      alert("Hiba történt a törlés során!");
+    }
+  };
+
   const StatCard = ({ title, value, color = "blue" }) => (
     <div className={`bg-white p-6 rounded-lg shadow-md border-l-4 border-${color}-500`}>
       <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
@@ -272,7 +291,7 @@ const AdminPanel = ({ user }) => {
       </div>
 
       <div className="admin-tabs">
-        {["dashboard", "pending-games", "approved-games", "users"].map((tab) => (
+        {["dashboard", "pending-games", "approved-games", "users", "comments"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -282,6 +301,7 @@ const AdminPanel = ({ user }) => {
             {tab === "pending-games" && "Várakozó játékok"}
             {tab === "approved-games" && "Jóváhagyott játékok"}
             {tab === "users" && "Felhasználók"}
+            {tab === "comments" && "Kommentek"}
           </button>
         ))}
       </div>
@@ -566,6 +586,37 @@ const AdminPanel = ({ user }) => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeTab === "comments" && (
+          <div>
+            <h2>Kommentek ({comments.length})</h2>
+            {comments.length === 0 ? (
+              <p className="no-data">Nincsenek kommentek.</p>
+            ) : (
+              <div className="comments-list">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="comment-card">
+                    <div className="comment-info">
+                      <h3>Komment ID: {comment.id}</h3>
+                      <p>Felhasználó: {comment.user}</p>
+                      <p>Játék ID: {comment.gameId}</p>
+                      <p>Értékelés: {comment.rating}/10</p>
+                      <p className="comment-text">{comment.text}</p>
+                    </div>
+                    <div className="comment-actions">
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="reject-btn"
+                      >
+                        Törlés
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

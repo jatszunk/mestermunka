@@ -62,17 +62,18 @@ CREATE TABLE `felhasznalo` (
   `email` varchar(45) DEFAULT NULL,
   `nev` varchar(45) DEFAULT NULL,
   `jelszo` varchar(45) DEFAULT NULL,
-  `felhasznalonev` varchar(45) DEFAULT NULL
+  `felhasznalonev` varchar(45) DEFAULT NULL,
+  `role` enum('user','gamedev','admin') NOT NULL DEFAULT 'user'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- A tábla adatainak kiíratása `felhasznalo`
 --
 
-INSERT INTO `felhasznalo` (`idfelhasznalo`, `email`, `nev`, `jelszo`, `felhasznalonev`) VALUES
-(1, 'admin@games.com', 'admin', 'aaaa', 'admin'),
-(2, 'korlev@hen.com', NULL, 'aaaa', 'admina'),
-(3, 'valami@valami.com', NULL, 'aaaa', 'sdgds');
+INSERT INTO `felhasznalo` (`idfelhasznalo`, `email`, `nev`, `jelszo`, `felhasznalonev`, `role`) VALUES
+(1, 'admin@games.com', 'admin', 'aaaa', 'admin', 'admin'),
+(2, 'korlev@hen.com', NULL, 'aaaa', 'admina', 'user'),
+(3, 'valami@valami.com', NULL, 'aaaa', 'sdgds', 'user');
 
 -- --------------------------------------------------------
 
@@ -114,17 +115,22 @@ CREATE TABLE `jatekok` (
   `idrendszerkovetelmeny` int(11) DEFAULT NULL,
   `leiras` varchar(255) DEFAULT NULL,
   `ertekeles` int(11) NOT NULL,
-  `kepurl` varchar(255) DEFAULT NULL
+  `kepurl` varchar(255) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
+  `uploaded_by` int(11) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `rejection_reason` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- A tábla adatainak kiíratása `jatekok`
 --
 
-INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`) VALUES
-(14, 'Project Castaway', NULL, 16, '3400', 14, 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight f', 5, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1713350/header.jpg?t=1768533750'),
-(15, 'Counter-Strike 2', NULL, 17, 'Ingyenes', 15, 'A Counter-Strike több mint két évtizede kínál elit versengő élményt, melyet játékosok milliói formálnak a világ minden tájáról. És most megkezdődik a CS történetének következő fejezete. Ez a Counter‑Strike 2.', 8, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/730/header.jpg?t=1749053861'),
-(16, 'PUBG: BATTLEGROUNDS', NULL, 18, 'Ingyenes', 16, 'PUBG: BATTLEGROUNDS, the high-stakes winner-take-all shooter that started the Battle Royale craze, is free-to-play! Drop into diverse maps, loot unique weapons and supplies, and survive in an ever-shrinking zone where every turn could be your last.', 7, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1764817633');
+INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`, `status`, `uploaded_by`, `approved_at`, `approved_by`) VALUES
+(14, 'Project Castaway', NULL, 16, '3400', 14, 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight f', 5, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1713350/header.jpg?t=1768533750', 'approved', 1, '2026-01-21 12:00:00', 1),
+(15, 'Counter-Strike 2', NULL, 17, 'Ingyenes', 15, 'A Counter-Strike több mint két évtizede kínál elit versengő élményt, melyet játékosok milliói formálnak a világ minden tájáról. És most megkezdődik a CS történetének következő fejezete. Ez a Counter‑Strike 2.', 8, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/730/header.jpg?t=1749053861', 'approved', 1, '2026-01-21 12:00:00', 1),
+(16, 'PUBG: BATTLEGROUNDS', NULL, 18, 'Ingyenes', 16, 'PUBG: BATTLEGROUNDS, the high-stakes winner-take-all shooter that started the Battle Royale craze, is free-to-play! Drop into diverse maps, loot unique weapons and supplies, and survive in an ever-shrinking zone where every turn could be your last.', 7, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1764817633', 'approved', 1, '2026-01-21 12:00:00', 1);
 
 -- --------------------------------------------------------
 
@@ -253,6 +259,19 @@ CREATE TABLE `kommentek` (
   `tartalom` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- A tábla adatainak kiíratása `kommentek`
+--
+
+INSERT INTO `kommentek` (`idkommentek`, `idfelhasznalo`, `idjatekok`, `ertekeles`, `tartalom`) VALUES
+(1, 2, 14, 8, 'Nagyon jó játék, szeretem a survival elemeket!'),
+(2, 3, 14, 6, 'Kicsit unalmas volt, de a grafika szép.'),
+(3, 2, 15, 10, 'A legjobb FPS játék valaha!'),
+(4, 3, 15, 9, 'Sokat játszom, nagyon addictív.'),
+(5, 2, 16, 7, 'Battle Royale jó, de van hova fejlődni.'),
+(6, 3, 16, 8, 'Élvezem a játékot, barátokkal a legjobb.'),
+(7, 1, 15, 10, 'Klasszikus, ami sosem unalmas.');
+
 -- --------------------------------------------------------
 
 --
@@ -334,7 +353,8 @@ ALTER TABLE `fejleszto`
 -- A tábla indexei `felhasznalo`
 --
 ALTER TABLE `felhasznalo`
-  ADD PRIMARY KEY (`idfelhasznalo`);
+  ADD PRIMARY KEY (`idfelhasznalo`),
+  ADD KEY `idx_felhasznalo_role` (`role`);
 
 --
 -- A tábla indexei `jatekextra`
@@ -350,7 +370,10 @@ ALTER TABLE `jatekok`
   ADD PRIMARY KEY (`idjatekok`),
   ADD KEY `idkiado` (`idkiado`),
   ADD KEY `idfejleszto` (`idfejleszto`),
-  ADD KEY `idrendszerkovetelmeny` (`idrendszerkovetelmeny`);
+  ADD KEY `idrendszerkovetelmeny` (`idrendszerkovetelmeny`),
+  ADD KEY `idx_jatekok_status` (`status`),
+  ADD KEY `idx_jatekok_uploaded_by` (`uploaded_by`),
+  ADD KEY `idx_jatekok_approved_by` (`approved_by`);
 
 --
 -- A tábla indexei `jatekok_kategoriak`
@@ -504,7 +527,9 @@ ALTER TABLE `jatekextra`
 ALTER TABLE `jatekok`
   ADD CONSTRAINT `jatekok_ibfk_1` FOREIGN KEY (`idkiado`) REFERENCES `kiado` (`idkiado`) ON DELETE CASCADE,
   ADD CONSTRAINT `jatekok_ibfk_2` FOREIGN KEY (`idfejleszto`) REFERENCES `fejleszto` (`idfejleszto`) ON DELETE CASCADE,
-  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`) ON DELETE CASCADE;
+  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo`(`idfelhasznalo`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `felhasznalo`(`idfelhasznalo`) ON DELETE SET NULL;
 
 --
 -- Megkötések a táblához `jatekok_kategoriak`

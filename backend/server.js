@@ -7,60 +7,85 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MySQL kapcsolat
-const db = mysql.createConnection({
+// Globális hibakezelés
+process.on('uncaughtException', (err) => {
+  console.error('Váratlan hiba:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Kezeletlen Promise rejection:', reason);
+  process.exit(1);
+});
+
+// MySQL kapcsolat pool beállítása
+const db = mysql.createPool({
+  connectionLimit: 10,
   host: "localhost",
   port: 3307,
   user: "root",
   password: "",
   database: "jatekhirdeto",
   multipleStatements: true,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
+  charset: 'utf8mb4'
 });
 
-db.connect((err) => {
-  if (err) console.error("Nem sikerült csatlakozni a MySQL-hez:", err);
-  else {
-    console.log("MySQL kapcsolat létrejött.");
-    initializeDatabase();
+// Kapcsolat ellenőrzése
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("Nem sikerült csatlakozni a MySQL-hez:", err);
+    return;
   }
+  console.log("MySQL kapcsolat létrejött.");
+  connection.release();
 });
 
-// Adatbázis inicializálása
-function initializeDatabase() {
-  const updates = [
-    // Role mező hozzáadása
-    "ALTER TABLE `felhasznalo` ADD COLUMN IF NOT EXISTS `role` ENUM('user', 'gamedev', 'admin') NOT NULL DEFAULT 'user'",
-    
-    // Játék státusz mező hozzáadása
-    "ALTER TABLE `jatekok` ADD COLUMN IF NOT EXISTS `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending'",
-    
-    // GameDev által feltöltött játékhoz kapcsolódó mező
-    "ALTER TABLE `jatekok` ADD COLUMN IF NOT EXISTS `uploaded_by` INT NULL",
-    
-    // Jóváhagyás időpontja és adminja
-    "ALTER TABLE `jatekok` ADD COLUMN IF NOT EXISTS `approved_at` TIMESTAMP NULL",
-    "ALTER TABLE `jatekok` ADD COLUMN IF NOT EXISTS `approved_by` INT NULL",
-    
-    // Elutasítás oka
-    "ALTER TABLE `jatekok` ADD COLUMN IF NOT EXISTS `rejection_reason` TEXT NULL",
-    
-    // Mezők frissítése a meglévő adatokhoz
-    "UPDATE `felhasznalo` SET `role` = 'admin' WHERE `felhasznalonev` = 'admin'",
-    
-    // Meglévő játékok jóváhagyása
-    "UPDATE `jatekok` SET `status` = 'approved', `approved_at` = NOW() WHERE `status` = 'pending' AND `status` IS NOT NULL"
-  ];
-
-  updates.forEach((sql, index) => {
-    db.query(sql, (err) => {
-      if (err && !err.message.includes('Duplicate column name') && !err.message.includes('check that column')) {
-        console.error(`Adatbázis frissítés hiba (${index + 1}):`, err.message);
-      } else if (!err) {
-        console.log(`Adatbázis frissítés sikeres (${index + 1})`);
-      }
-    });
+// Hiba kezelése a pool szintjén
+db.on('connection', function (connection) {
+  console.log('MySQL kapcsolat létrehozva a poolból');
+  
+  connection.on('error', function(err) {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('Adatbázis kapcsolat elveszett, újra csatlakozás...');
+    } else {
+      throw err;
+    }
   });
-}
+  
+  connection.on('end', function() {
+    console.log('Adatbázis kapcsolat lezárva');
+  });
+});
+
+// Segédfüggvény a lekérdezésekhez retry logikával
+const query = async (sql, params, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await new Promise((resolve, reject) => {
+        db.query(sql, params, (error, results) => {
+          if (error) {
+            console.error(`Adatbázis hiba (kísérlet ${i + 1}/${retries}):`, error);
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+    } catch (error) {
+      if (i === retries - 1) {
+        console.error('Adatbázis hiba, minden kísérlet sikertelen:', error);
+        throw error;
+      }
+      
+      // Várjunk egy kicsit az újrapróbálás előtt
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      console.log(`Adatbázis kapcsolat újrapróbálása (${i + 2}/${retries})...`);
+    }
+  }
+};
 
 app.get("/", (req, res) => res.send("fut a szerver"));
 
@@ -172,22 +197,20 @@ app.get("/jatekok", (req, res) => {
 });
 
 // Extra infók lekérése
-app.get("/jatekok/:id/extra", (req, res) => {
+app.get("/jatekok/:id/extra", async (req, res) => {
   const gameId = req.params.id;
 
-  console.log("EXTRA endpoint HIT, gameId =", gameId);
-
-  db.query(
-    "SELECT megjelenes, steam_link AS steamLink, jatek_elmeny AS jatekElmeny, reszletes_leiras AS reszletesLeiras FROM jatekextra WHERE idjatekok = ? LIMIT 1",
-    [Number(gameId)],
-    (err, results) => {
-      console.log("EXTRA query err =", err);
-      console.log("EXTRA query results =", results);
-
-      if (err) return res.status(500).json({ success: false, error: err });
-      res.json({ success: true, extra: results[0] || null });
-    }
-  );
+  try {
+    const results = await query(
+      "SELECT megjelenes, steam_link AS steamLink, jatek_elmeny AS jatekElmeny, reszletes_leiras AS reszletesLeiras FROM jatekextra WHERE idjatekok = ? LIMIT 1",
+      [Number(gameId)]
+    );
+    
+    res.json({ success: true, extra: results[0] || null });
+  } catch (err) {
+    console.error("EXTRA endpoint hiba:", err);
+    res.status(500).json({ success: false, error: "Adatbázis hiba történt" });
+  }
 });
 
 // Játék hozzáadás (admin oldalad használja)
@@ -431,13 +454,13 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
 });
 
 // Komment törlése (admin)
-app.delete("/kommentek/:id", (req, res) => {
+app.delete("/kommentek/:id", checkRole(['admin']), (req, res) => {
   const commentId = req.params.id;
 
   db.query("DELETE FROM kommentek WHERE idkommentek = ?", [commentId], (err, result) => {
     if (err) return res.status(500).json({ success: false, error: err });
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen komment." });
-    res.json({ success: true });
+    res.json({ success: true, message: "Komment törölve" });
   });
 });
 

@@ -7,12 +7,13 @@ import Home from "./pages/Home.jsx";
 import GameDetail from "./pages/GameDetail.jsx";
 import LoginPage from "./pages/Login.jsx";
 import RegisterPage from "./pages/Register.jsx";
-import ProfilePage from "./pages/Profile.jsx";
 import AddGamePage from "./pages/AddGamePage.jsx";
 import NevjegyPage from "./pages/Nevjegy.jsx";
 import LandingPage from "./pages/landingpage.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import GameDevUpload from "./pages/GameDevUpload.jsx";
+import Statistics from "./pages/Statistics.jsx";
+import UserProfile from "./components/UserProfile.jsx";
 
 import defaultImage from "./assets/default.jpg";
 import Footer from "./components/Footer.jsx";
@@ -252,7 +253,6 @@ function App() {
                 user={user}
                 games={games}
                 comments={comments}
-                filterSortGames={filterSortGames}
                 handleAddComment={handleAddComment}
                 handleDeleteComment={handleDeleteComment}
               />
@@ -282,11 +282,14 @@ function App() {
         <Route
           path="/profile"
           element={
-            user ? (
-              <ProfilePage user={user} handleProfileEdit={handleProfileEdit} handleLogout={handleLogout} />
-            ) : (
-              <LoginPage handleLogin={handleLogin} />
-            )
+            <UserProfile 
+              user={user}
+              users={users}
+              comments={comments}
+              games={games}
+              onProfileEdit={handleProfileEdit}
+              onLogout={handleLogout}
+            />
           }
         />
 
@@ -302,6 +305,17 @@ function App() {
         />
 
         <Route path="/nevjegy" element={<NevjegyPage />} />
+
+        <Route
+          path="/statistics"
+          element={
+            <Statistics 
+              games={games}
+              comments={comments}
+              users={users}
+            />
+          }
+        />
 
         <Route
           path="/admin"

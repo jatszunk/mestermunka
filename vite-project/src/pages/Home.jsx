@@ -2,23 +2,22 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import GameCard from '../components/GameCard.jsx';
+import AdvancedSearch from '../components/AdvancedSearch.jsx';
+import GameComparison from '../components/GameComparison.jsx';
 
-function Home({ user, games, comments, filterSortGames, handleAddComment, handleDeleteComment }) {
-  const [selectedCategory, setSelectedCategory] = useState('Összes');
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('');
+function Home({ user, games, comments, handleAddComment, handleDeleteComment }) {
+  const [filteredGames, setFilteredGames] = useState(games);
+  const [showComparison, setShowComparison] = useState(false);
 
-  const categories = [
-    "Összes",
-    ...new Set(games.flatMap((g) => (Array.isArray(g.categories) ? g.categories : []))),
-  ];
-  
-  const filteredGames = filterSortGames(games, search, selectedCategory, sort);
+  const handleFilterChange = (filtered) => {
+    setFilteredGames(filtered);
+  };
 
   return (
     <div className="maincenter">
       <nav>
         <Link to="/" className="nav-link">Főoldal</Link>
+        <Link to="/statistics" className="nav-link">Statisztikák</Link>
         <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
         {user?.role === 'admin' && (
@@ -34,37 +33,17 @@ function Home({ user, games, comments, filterSortGames, handleAddComment, handle
 
       <h1>Játéklista</h1>
 
-      <div className="fooldal-filters">
-        <input
-          type="text"
-          placeholder="Keresés cím/fejlesztő/leírás..."
-          className="login-input"
-          style={{ width: "130px", fontSize: ".98em", marginBottom: "2px" }}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+      <div className="action-bar">
+        <AdvancedSearch 
+          games={games} 
+          onFilterChange={handleFilterChange}
         />
-        <select
-          value={selectedCategory}
-          onChange={e => setSelectedCategory(e.target.value)}
-          className="login-input"
-          style={{ width: "110px" }}
+        <button 
+          className="comparison-toggle-btn"
+          onClick={() => setShowComparison(true)}
         >
-          {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
-          ))}
-        </select>
-        <select
-          value={sort}
-          onChange={e => setSort(e.target.value)}
-          className="login-input"
-          style={{ width: "115px" }}
-        >
-          <option value="">Rendezés</option>
-          <option value="Legolcsóbb">Ár ↑</option>
-          <option value="Legdrágább">Ár ↓</option>
-          <option value="Értékelés ↑">Értékelés ↑</option>
-          <option value="Értékelés ↓">Értékelés ↓</option>
-        </select>
+          🔄 Játékok Összehasonlítása
+        </button>
       </div>
 
       <div className="games-grid">
@@ -79,6 +58,19 @@ function Home({ user, games, comments, filterSortGames, handleAddComment, handle
           />
         ))}
       </div>
+      
+      {filteredGames.length === 0 && (
+        <div className="no-results">
+          <p>Nem található a keresési feltételeknek megfelelő játék.</p>
+        </div>
+      )}
+
+      {showComparison && (
+        <GameComparison 
+          games={games} 
+          onClose={() => setShowComparison(false)}
+        />
+      )}
     </div>
   );
 }
