@@ -5,7 +5,7 @@ import GameCard from '../components/GameCard.jsx';
 import AdvancedSearch from '../components/AdvancedSearch.jsx';
 import GameComparison from '../components/GameComparison.jsx';
 
-function Home({ user, games, comments, handleAddComment, handleDeleteComment }) {
+function Home({ user, games, comments, handleAddComment, handleAddToWishlist, handleAddToCollection }) {
   const [filteredGames, setFilteredGames] = useState(games);
   const [showComparison, setShowComparison] = useState(false);
 
@@ -23,11 +23,11 @@ function Home({ user, games, comments, handleAddComment, handleDeleteComment }) 
         {user?.role === 'admin' && (
           <Link to="/admin" className="nav-link">Admin Panel</Link>
         )}
-        {(user?.role === 'gamedev' || user?.role === 'admin') && (
-          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-        )}
-        {user?.username === 'admin' && (
-          <Link to="/addgame" className="nav-link">Új játék (régi)</Link>
+        {user?.role === 'gamedev' && (
+          <>
+            <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
+            <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+          </>
         )}
       </nav>
 
@@ -54,7 +54,8 @@ function Home({ user, games, comments, handleAddComment, handleDeleteComment }) 
             user={user}
             comments={comments[game.id] || []}
             onAddComment={handleAddComment}
-            onDeleteComment={handleDeleteComment}
+            onAddToWishlist={handleAddToWishlist}
+            onAddToCollection={handleAddToCollection}
           />
         ))}
       </div>

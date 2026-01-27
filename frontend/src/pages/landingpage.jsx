@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
-import "./LandingPage.css";
+import "../styles/Landingpage.css";
 
 export default function LandingPage() {
   const [showLegal, setShowLegal] = useState(false);

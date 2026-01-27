@@ -1,3 +1,13 @@
+/* Main App CSS - Import all styles */
+@import './styles/index.css';
+
+/* App-specific overrides */
+.App {
+  text-align: center;
+}
+
+/* Additional app-specific styles can go here */
+
 html, body {
   width: 100vw;
   min-height: 100vh;

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2026. Jan 21. 13:19
+-- Létrehozás ideje: 2026. Jan 27. 12:03
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -24,32 +24,35 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Tábla szerkezet ehhez a táblához `developer_stats`
+--
+
+CREATE TABLE `developer_stats` (
+  `developerUsername` varchar(255) NOT NULL,
+  `totalGames` int(11) DEFAULT 0,
+  `approvedGames` int(11) DEFAULT 0,
+  `pendingGames` int(11) DEFAULT 0,
+  `rejectedGames` int(11) DEFAULT 0,
+  `totalDownloads` int(11) DEFAULT 0,
+  `totalRatings` int(11) DEFAULT 0,
+  `averageRating` decimal(3,2) DEFAULT 0.00,
+  `totalRevenue` decimal(15,2) DEFAULT 0.00,
+  `lastGameUpload` timestamp NULL DEFAULT NULL,
+  `lastActivity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tábla szerkezet ehhez a táblához `fejleszto`
 --
 
 CREATE TABLE `fejleszto` (
   `idfejleszto` int(11) NOT NULL,
-  `nev` varchar(100) NOT NULL
+  `nev` varchar(100) NOT NULL,
+  `leiras` text DEFAULT NULL,
+  `weboldal` varchar(500) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `fejleszto`
---
-
-INSERT INTO `fejleszto` (`idfejleszto`, `nev`) VALUES
-(6, 'dfhs'),
-(7, 'hfd'),
-(8, 'dhf'),
-(9, 'ahf'),
-(10, 'hfa'),
-(11, 'fah'),
-(12, 'sdgag'),
-(13, 'fgjd'),
-(14, 'valaki'),
-(15, 'Tezuka Takashi'),
-(16, ' Mardonpol Inc.'),
-(17, 'Valve'),
-(18, 'PUBG Corporation');
 
 -- --------------------------------------------------------
 
@@ -59,46 +62,305 @@ INSERT INTO `fejleszto` (`idfejleszto`, `nev`) VALUES
 
 CREATE TABLE `felhasznalo` (
   `idfelhasznalo` int(11) NOT NULL,
-  `email` varchar(45) DEFAULT NULL,
-  `nev` varchar(45) DEFAULT NULL,
-  `jelszo` varchar(45) DEFAULT NULL,
-  `felhasznalonev` varchar(45) DEFAULT NULL,
-  `role` enum('user','gamedev','admin') NOT NULL DEFAULT 'user'
+  `felhasznalonev` varchar(50) NOT NULL,
+  `jelszo` varchar(255) NOT NULL,
+  `nev` varchar(100) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `szerepkor` enum('felhasznalo','admin','gamedev') DEFAULT 'felhasznalo',
+  `regisztracio_datum` timestamp NOT NULL DEFAULT current_timestamp(),
+  `bio` text DEFAULT NULL,
+  `avatar` varchar(500) DEFAULT NULL,
+  `favoriteGenres` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`favoriteGenres`)),
+  `preferredPlatforms` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferredPlatforms`)),
+  `country` varchar(100) DEFAULT NULL,
+  `birthYear` int(11) DEFAULT NULL,
+  `discord` varchar(100) DEFAULT NULL,
+  `twitter` varchar(100) DEFAULT NULL,
+  `youtube` varchar(200) DEFAULT NULL,
+  `twitch` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `felhasznalo`
---
-
-INSERT INTO `felhasznalo` (`idfelhasznalo`, `email`, `nev`, `jelszo`, `felhasznalonev`, `role`) VALUES
-(1, 'admin@games.com', 'admin', 'aaaa', 'admin', 'admin'),
-(2, 'korlev@hen.com', NULL, 'aaaa', 'admina', 'user'),
-(3, 'valami@valami.com', NULL, 'aaaa', 'sdgds', 'user');
 
 -- --------------------------------------------------------
 
 --
--- Tábla szerkezet ehhez a táblához `jatekextra`
+-- Tábla szerkezet ehhez a táblához `games_extended`
 --
 
-CREATE TABLE `jatekextra` (
+CREATE TABLE `games_extended` (
   `id` int(11) NOT NULL,
-  `idjatekok` int(11) NOT NULL,
-  `megjelenes` varchar(50) NOT NULL,
-  `steam_link` varchar(255) NOT NULL,
-  `jatek_elmeny` varchar(255) DEFAULT NULL,
-  `reszletes_leiras` text NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `developer` varchar(255) NOT NULL,
+  `publisher` varchar(255) DEFAULT NULL,
+  `releaseDate` date DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT 0.00,
+  `categories` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`categories`)),
+  `platforms` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`platforms`)),
+  `images` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`images`)),
+  `videos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`videos`)),
+  `systemRequirements` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`systemRequirements`)),
+  `features` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`features`)),
+  `languages` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`languages`)),
+  `ageRating` varchar(50) DEFAULT NULL,
+  `multiplayer` tinyint(1) DEFAULT 0,
+  `gameMode` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`gameMode`)),
+  `estimatedPlaytime` varchar(100) DEFAULT NULL,
+  `website` varchar(500) DEFAULT NULL,
+  `socialLinks` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`socialLinks`)),
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `uploadDate` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reviewDate` timestamp NULL DEFAULT NULL,
+  `reviewer` varchar(255) DEFAULT NULL,
+  `rejectionReason` text DEFAULT NULL,
+  `developer_username` varchar(255) NOT NULL,
+  `downloads` int(11) DEFAULT 0,
+  `averageRating` decimal(3,2) DEFAULT 0.00,
+  `ratingCount` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- A tábla adatainak kiíratása `jatekextra`
+-- Eseményindítók `games_extended`
+--
+DELIMITER $$
+CREATE TRIGGER `update_developer_stats_after_game_upload` AFTER INSERT ON `games_extended` FOR EACH ROW BEGIN
+  INSERT INTO developer_stats (developerUsername, totalGames, lastGameUpload)
+  VALUES (NEW.developer_username, 1, NEW.uploadDate)
+  ON DUPLICATE KEY UPDATE
+    totalGames = totalGames + 1,
+    lastGameUpload = NEW.uploadDate;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `update_developer_stats_after_status_change` AFTER UPDATE ON `games_extended` FOR EACH ROW BEGIN
+  IF OLD.status != NEW.status THEN
+    UPDATE developer_stats 
+    SET 
+      approvedGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = NEW.developer_username AND status = 'approved'),
+      pendingGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = NEW.developer_username AND status = 'pending'),
+      rejectedGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = NEW.developer_username AND status = 'rejected'),
+      lastActivity = CURRENT_TIMESTAMP
+    WHERE developerUsername = NEW.developer_username;
+  END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_activity`
 --
 
-INSERT INTO `jatekextra` (`id`, `idjatekok`, `megjelenes`, `steam_link`, `jatek_elmeny`, `reszletes_leiras`, `created_at`) VALUES
-(2, 14, '2024. szept. 23.', 'https://store.steampowered.com/app/1713350/Project_Castaway/', 'Vegyes', 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight for survival.', '2026-01-21 11:56:57'),
-(3, 15, '2012. aug. 21.', 'https://store.steampowered.com/app/730/CounterStrike_2/', 'Nagyon Pozitív', 'Counter-Strike 2 is a multiplayer tactical first-person shooter, in which two teams, the Terrorists and Counter-Terrorists, compete to complete various objectives. The game includes two round-based objective scenarios: bomb defusal and hostage rescue, with the bomb defusal scenario making up the primary gameplay experience.', '2026-01-21 12:04:47'),
-(4, 16, ' 2017. dec. 21.', 'https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/', 'Izgalmas.', 'A PUBG (PlayerUnknown\'s Battlegrounds) egy online battle royale játék, amelyben a játékosok egy szigetre dobtak ki, és versenyeznek az utolsó túlélőért. A játék során a játékosok fegyvereket, orvosi felszereléseket és más tárgyakat gyűjtenek, hogy segítsék őket a túlélésért. A játék különböző játékmódokban játszható, például a többjátékos módban, duóban vagy csapatban. A játék célja, hogy a játékosok tapasztalatait és stratégiaikat fejtsenek ki, miközben a terület szűkül, és a játékosok egyre intenzívebb konfliktusokba kényszerülnek. ', '2026-01-21 12:16:24');
+CREATE TABLE `game_activity` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `activityType` enum('download','rating','comment','wishlist_add','collection_add') NOT NULL,
+  `activityData` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`activityData`)),
+  `activityDate` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_collection`
+--
+
+CREATE TABLE `game_collection` (
+  `id` int(11) NOT NULL,
+  `idfelhasznalo` int(11) NOT NULL,
+  `idjatekok` int(11) NOT NULL,
+  `status` enum('owned','played','completed','abandoned') NOT NULL DEFAULT 'owned',
+  `rating` int(11) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `added_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_downloads`
+--
+
+CREATE TABLE `game_downloads` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `downloadDate` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ipAddress` varchar(45) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Eseményindítók `game_downloads`
+--
+DELIMITER $$
+CREATE TRIGGER `update_game_stats_after_download` AFTER INSERT ON `game_downloads` FOR EACH ROW BEGIN
+  UPDATE game_stats 
+  SET 
+    totalDownloads = (SELECT COUNT(*) FROM game_downloads WHERE gameId = NEW.gameId),
+    lastUpdated = CURRENT_TIMESTAMP
+  WHERE gameId = NEW.gameId;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_moderation_history`
+--
+
+CREATE TABLE `game_moderation_history` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `moderatorUsername` varchar(255) NOT NULL,
+  `actionType` enum('approved','rejected','suspended','deleted','edited') NOT NULL,
+  `previousStatus` varchar(50) DEFAULT NULL,
+  `newStatus` varchar(50) DEFAULT NULL,
+  `reason` text DEFAULT NULL,
+  `actionData` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`actionData`)),
+  `actionDate` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_ratings`
+--
+
+CREATE TABLE `game_ratings` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `rating` decimal(3,2) NOT NULL CHECK (`rating` >= 0 and `rating` <= 10),
+  `comment` text DEFAULT NULL,
+  `reviewDate` timestamp NOT NULL DEFAULT current_timestamp(),
+  `helpfulCount` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Eseményindítók `game_ratings`
+--
+DELIMITER $$
+CREATE TRIGGER `update_game_stats_after_rating` AFTER INSERT ON `game_ratings` FOR EACH ROW BEGIN
+  UPDATE game_stats 
+  SET 
+    totalRatings = (SELECT COUNT(*) FROM game_ratings WHERE gameId = NEW.gameId),
+    averageRating = (SELECT AVG(rating) FROM game_ratings WHERE gameId = NEW.gameId),
+    lastUpdated = CURRENT_TIMESTAMP
+  WHERE gameId = NEW.gameId;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_recommendations`
+--
+
+CREATE TABLE `game_recommendations` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `recommendedGameId` int(11) NOT NULL,
+  `recommendationType` enum('similar','popular','new','trending') DEFAULT 'similar',
+  `score` decimal(3,2) DEFAULT 0.00,
+  `algorithm` varchar(100) DEFAULT NULL,
+  `createdDate` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_reports`
+--
+
+CREATE TABLE `game_reports` (
+  `id` int(11) NOT NULL,
+  `gameId` int(11) NOT NULL,
+  `reporterUsername` varchar(255) NOT NULL,
+  `reportType` enum('inappropriate_content','copyright_violation','malware','spam','other') NOT NULL,
+  `reportReason` text NOT NULL,
+  `status` enum('pending','under_review','resolved','dismissed') DEFAULT 'pending',
+  `moderatorUsername` varchar(255) DEFAULT NULL,
+  `moderatorNotes` text DEFAULT NULL,
+  `createdDate` timestamp NOT NULL DEFAULT current_timestamp(),
+  `resolvedDate` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_stats`
+--
+
+CREATE TABLE `game_stats` (
+  `gameId` int(11) NOT NULL,
+  `totalDownloads` int(11) DEFAULT 0,
+  `totalRatings` int(11) DEFAULT 0,
+  `averageRating` decimal(3,2) DEFAULT 0.00,
+  `totalWishlist` int(11) DEFAULT 0,
+  `totalCollection` int(11) DEFAULT 0,
+  `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_tags`
+--
+
+CREATE TABLE `game_tags` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `color` varchar(7) DEFAULT '#27e8ff',
+  `usageCount` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `game_tags`
+--
+
+INSERT INTO `game_tags` (`id`, `name`, `description`, `color`, `usageCount`) VALUES
+(1, 'Action', 'Akció játékok', '#ff6b6b', 0),
+(2, 'Adventure', 'Kaland játékok', '#4ecdc4', 0),
+(3, 'RPG', 'Szerepjátékok', '#f9ca24', 0),
+(4, 'Strategy', 'Stratégiai játékok', '#5f27cd', 0),
+(5, 'Sports', 'Sport játékok', '#00d2d3', 0),
+(6, 'Racing', 'Verseny játékok', '#ee5a24', 0),
+(7, 'Horror', 'Horrort játékok', '#8b008b', 0),
+(8, 'Puzzle', 'Logikai játékok', '#2c3e50', 0),
+(9, 'Platformer', 'Platform ugrós játékok', '#e67e22', 0),
+(10, 'Shooter', 'Lövöldözős játékok', '#e74c3c', 0),
+(11, 'MMO', 'Többjátékos online játékok', '#9b59b6', 0),
+(12, 'Simulation', 'Szimulátor játékok', '#34495e', 0),
+(13, 'Indie', 'Független fejlesztésű játékok', '#95a5a6', 0),
+(14, 'Co-op', 'Kooperatív játékok', '#16a085', 0),
+(15, 'Multiplayer', 'Többjátékos', '#2980b9', 0),
+(16, 'Single Player', 'Egyjátékos', '#27ae60', 0),
+(17, 'VR', 'Virtuális valóság', '#8e44ad', 0),
+(18, 'Free to Play', 'Ingyenes játékok', '#27ae60', 0),
+(19, 'Early Access', 'Korai hozzáférés', '#f39c12', 0),
+(20, 'Cross-platform', 'Keresztplatformos', '#3498db', 0),
+(21, 'Retro', 'Retro stílusú', '#95a5a6', 0),
+(22, 'Casual', 'Könnyedű játékok', '#1abc9c', 0),
+(23, 'Hardcore', 'Kemény mag játékok', '#e74c3c', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `game_tag_relations`
+--
+
+CREATE TABLE `game_tag_relations` (
+  `gameId` int(11) NOT NULL,
+  `tagId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -108,131 +370,14 @@ INSERT INTO `jatekextra` (`id`, `idjatekok`, `megjelenes`, `steam_link`, `jatek_
 
 CREATE TABLE `jatekok` (
   `idjatekok` int(11) NOT NULL,
-  `nev` varchar(100) DEFAULT NULL,
+  `nev` varchar(255) NOT NULL,
+  `leiras` text DEFAULT NULL,
+  `kepurl` varchar(500) DEFAULT NULL,
+  `ar` int(11) DEFAULT 0,
+  `idfejleszto` int(11) NOT NULL,
   `idkiado` int(11) DEFAULT NULL,
-  `idfejleszto` int(11) DEFAULT NULL,
-  `ar` varchar(255) DEFAULT NULL,
-  `idrendszerkovetelmeny` int(11) DEFAULT NULL,
-  `leiras` varchar(255) DEFAULT NULL,
-  `ertekeles` int(11) NOT NULL,
-  `kepurl` varchar(255) DEFAULT NULL,
-  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
-  `uploaded_by` int(11) DEFAULT NULL,
-  `approved_at` timestamp NULL DEFAULT NULL,
-  `approved_by` int(11) DEFAULT NULL,
-  `rejection_reason` text DEFAULT NULL
+  `megjelenesi_datum` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `jatekok`
---
-
-INSERT INTO `jatekok` (`idjatekok`, `nev`, `idkiado`, `idfejleszto`, `ar`, `idrendszerkovetelmeny`, `leiras`, `ertekeles`, `kepurl`, `status`, `uploaded_by`, `approved_at`, `approved_by`) VALUES
-(14, 'Project Castaway', NULL, 16, '3400', 14, 'Project Castaway is a survival crafting title set in the Pacific Ocean. Live the life of a stranded castaway, with only yourself - and the island\'s inhabitants - for company! Sail the ocean, hunt, explore unique islands and gather resources as you fight f', 5, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1713350/header.jpg?t=1768533750', 'approved', 1, '2026-01-21 12:00:00', 1),
-(15, 'Counter-Strike 2', NULL, 17, 'Ingyenes', 15, 'A Counter-Strike több mint két évtizede kínál elit versengő élményt, melyet játékosok milliói formálnak a világ minden tájáról. És most megkezdődik a CS történetének következő fejezete. Ez a Counter‑Strike 2.', 8, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/730/header.jpg?t=1749053861', 'approved', 1, '2026-01-21 12:00:00', 1),
-(16, 'PUBG: BATTLEGROUNDS', NULL, 18, 'Ingyenes', 16, 'PUBG: BATTLEGROUNDS, the high-stakes winner-take-all shooter that started the Battle Royale craze, is free-to-play! Drop into diverse maps, loot unique weapons and supplies, and survive in an ever-shrinking zone where every turn could be your last.', 7, 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1764817633', 'approved', 1, '2026-01-21 12:00:00', 1);
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `jatekok_kategoriak`
---
-
-CREATE TABLE `jatekok_kategoriak` (
-  `idjatekok` int(11) NOT NULL,
-  `idkategoria` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `jatekok_kategoriak`
---
-
-INSERT INTO `jatekok_kategoriak` (`idjatekok`, `idkategoria`) VALUES
-(14, 14),
-(15, 15),
-(15, 16),
-(15, 17),
-(15, 18),
-(15, 19),
-(16, 20),
-(16, 21),
-(16, 22),
-(16, 23);
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `jatekok_platformok`
---
-
-CREATE TABLE `jatekok_platformok` (
-  `idjatekok` int(11) NOT NULL,
-  `idplatform` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `jatek_videok`
---
-
-CREATE TABLE `jatek_videok` (
-  `id` int(11) NOT NULL,
-  `idjatekok` int(11) NOT NULL,
-  `url` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `jatek_videok`
---
-
-INSERT INTO `jatek_videok` (`id`, `idjatekok`, `url`) VALUES
-(3, 14, 'https://youtu.be/1Y5f89tXNNo'),
-(4, 14, 'https://youtu.be/BbGDuNVS2Nw'),
-(5, 15, 'https://youtu.be/MFU6AGjVFWs'),
-(6, 15, 'https://youtu.be/Fu2yFoiCdxE'),
-(7, 16, 'https://youtu.be/e90WhwN2QdQ'),
-(8, 16, 'https://youtu.be/tzzg6Z5oKGY');
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `kategoria`
---
-
-CREATE TABLE `kategoria` (
-  `idkategoria` int(11) NOT NULL,
-  `nev` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `kategoria`
---
-
-INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
-(1, 'sgfd'),
-(2, 'dhf'),
-(3, 'sdgfs'),
-(4, 'hdfs'),
-(5, 'fgd'),
-(6, 'had'),
-(7, 'af'),
-(8, 'fdha'),
-(9, 'ahf'),
-(10, 'agd'),
-(11, 'fgjd'),
-(12, 'RPG'),
-(13, 'többjátékos'),
-(14, 'Survival, SandBox'),
-(15, 'FPS'),
-(16, 'Versengő'),
-(17, 'Többjátékos'),
-(18, 'Akció'),
-(19, 'PVP'),
-(20, 'Túlélő'),
-(21, 'Lövöldözős'),
-(22, 'Battle Royale'),
-(23, 'FPS');
 
 -- --------------------------------------------------------
 
@@ -242,7 +387,9 @@ INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
 
 CREATE TABLE `kiado` (
   `idkiado` int(11) NOT NULL,
-  `nev` varchar(100) NOT NULL
+  `nev` varchar(100) NOT NULL,
+  `leiras` text DEFAULT NULL,
+  `weboldal` varchar(500) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -252,96 +399,36 @@ CREATE TABLE `kiado` (
 --
 
 CREATE TABLE `kommentek` (
-  `idkommentek` int(11) NOT NULL,
+  `idkomment` int(11) NOT NULL,
+  `idjatekok` int(11) NOT NULL,
+  `idfelhasznalo` int(11) NOT NULL,
+  `szoveg` text NOT NULL,
+  `ertekeles` int(11) DEFAULT 0,
+  `datum` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `wishlist`
+--
+
+CREATE TABLE `wishlist` (
+  `id` int(11) NOT NULL,
   `idfelhasznalo` int(11) NOT NULL,
   `idjatekok` int(11) NOT NULL,
-  `ertekeles` int(11) NOT NULL,
-  `tartalom` varchar(255) DEFAULT NULL
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `kommentek`
---
-
-INSERT INTO `kommentek` (`idkommentek`, `idfelhasznalo`, `idjatekok`, `ertekeles`, `tartalom`) VALUES
-(1, 2, 14, 8, 'Nagyon jó játék, szeretem a survival elemeket!'),
-(2, 3, 14, 6, 'Kicsit unalmas volt, de a grafika szép.'),
-(3, 2, 15, 10, 'A legjobb FPS játék valaha!'),
-(4, 3, 15, 9, 'Sokat játszom, nagyon addictív.'),
-(5, 2, 16, 7, 'Battle Royale jó, de van hova fejlődni.'),
-(6, 3, 16, 8, 'Élvezem a játékot, barátokkal a legjobb.'),
-(7, 1, 15, 10, 'Klasszikus, ami sosem unalmas.');
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `platform`
---
-
-CREATE TABLE `platform` (
-  `idplatform` int(11) NOT NULL,
-  `nev` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `promociok`
---
-
-CREATE TABLE `promociok` (
-  `idpromocio` int(11) NOT NULL,
-  `nev` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `promociosjatekok`
---
-
-CREATE TABLE `promociosjatekok` (
-  `idpromocio` int(11) NOT NULL,
-  `idjatekok` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Tábla szerkezet ehhez a táblához `rendszerkovetelmeny`
---
-
-CREATE TABLE `rendszerkovetelmeny` (
-  `idrendszerkovetelmeny` int(11) NOT NULL,
-  `minimum` varchar(255) DEFAULT NULL,
-  `ajanlott` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- A tábla adatainak kiíratása `rendszerkovetelmeny`
---
-
-INSERT INTO `rendszerkovetelmeny` (`idrendszerkovetelmeny`, `minimum`, `ajanlott`) VALUES
-(1, 'sdf', 'gs'),
-(2, 'fghsfghgfh', 'sfghsghgfhsfghgfh'),
-(3, 'sgds', 'dsgsd'),
-(4, 'hsf', 'dhsf'),
-(5, 'i,u', ',iut'),
-(6, 'dhfa', 'hdf'),
-(7, 'dfha', 'dfha'),
-(8, 'dhaf', 'hfa'),
-(9, 'haf', 'dfh'),
-(10, 'dsag', 'agd'),
-(11, 'fgdj', 'gjfd'),
-(12, 'nagyon gyengye', 'nagyon erős'),
-(13, '-', '-'),
-(14, 'Op. rendszer: Windows 10 Processzor: Intel Core i3-6100 or equivalent CPU Memória: 8 GB RAM Grafika: NVIDIA GeForce GTX 970 or AMD equivalent Tárhely: 4 GB szabad hely Egyéb megjegyzések: Does not work well with integrated GPUs', 'Op. rendszer: Windows 10 Processzor: Intel Core i5-9400 or equivalent CPU Memória: 12 GB RAM Grafika: NVidia GeForce RTX 2060 or AMD equivalent Tárhely: 5 GB szabad hely Egyéb megjegyzések: Does not work well with integrated GPUs'),
-(15, 'Minimum: Op. rendszer: Windows® 10 Processzor: 4 szálas processzor — Intel® Core™ i5 750 vagy jobb Memória: 8 GB RAM Grafika: A videokártyának legalább 1 GB-osnak és DirectX 11 kompatibilisnak kell lennie, Shader Model 5.0 támogatással. DirectX: Verzió: 1', '-'),
-(16, '64 bites processzor és operációs rendszer szükséges Op. rendszer: 64-bit Windows 10 Processzor: Intel Core i5-4430 / AMD FX-6300 Memória: 8 GB RAM Grafika: NVIDIA GeForce GTX 960 2GB / AMD Radeon R7 370 2GB DirectX: Verzió: 11 Hálózat: Széles sávú interne', '64 bites processzor és operációs rendszer szükséges Op. rendszer: 64-bit Windows 10 Processzor: Intel Core i5-6600K / AMD Ryzen 5 1600 Memória: 16 GB RAM Grafika: NVIDIA GeForce GTX 1060 3GB / AMD Radeon RX 580 4GB DirectX: Verzió: 11 Hálózat: Széles sávú');
 
 --
 -- Indexek a kiírt táblákhoz
 --
+
+--
+-- A tábla indexei `developer_stats`
+--
+ALTER TABLE `developer_stats`
+  ADD PRIMARY KEY (`developerUsername`);
 
 --
 -- A tábla indexei `fejleszto`
@@ -354,53 +441,116 @@ ALTER TABLE `fejleszto`
 --
 ALTER TABLE `felhasznalo`
   ADD PRIMARY KEY (`idfelhasznalo`),
-  ADD KEY `idx_felhasznalo_role` (`role`);
+  ADD UNIQUE KEY `felhasznalonev` (`felhasznalonev`),
+  ADD UNIQUE KEY `email` (`email`);
 
 --
--- A tábla indexei `jatekextra`
+-- A tábla indexei `games_extended`
 --
-ALTER TABLE `jatekextra`
+ALTER TABLE `games_extended`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_game_extra` (`idjatekok`);
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_developer` (`developer_username`),
+  ADD KEY `idx_releaseDate` (`releaseDate`),
+  ADD KEY `idx_price` (`price`),
+  ADD KEY `idx_rating` (`averageRating`),
+  ADD KEY `idx_games_extended_status` (`status`),
+  ADD KEY `idx_games_extended_developer` (`developer_username`),
+  ADD KEY `idx_games_extended_release_date` (`releaseDate`),
+  ADD KEY `idx_games_extended_price` (`price`),
+  ADD KEY `idx_games_extended_rating` (`averageRating`);
+
+--
+-- A tábla indexei `game_activity`
+--
+ALTER TABLE `game_activity`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_game_activity_game_id` (`gameId`),
+  ADD KEY `idx_game_activity_username` (`username`),
+  ADD KEY `idx_game_activity_type` (`activityType`),
+  ADD KEY `idx_game_activity_date` (`activityDate`);
+
+--
+-- A tábla indexei `game_collection`
+--
+ALTER TABLE `game_collection`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_game_collection` (`idfelhasznalo`,`idjatekok`),
+  ADD KEY `idfelhasznalo_collection` (`idfelhasznalo`),
+  ADD KEY `idjatekok_collection` (`idjatekok`),
+  ADD KEY `status_collection` (`status`);
+
+--
+-- A tábla indexei `game_downloads`
+--
+ALTER TABLE `game_downloads`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `username` (`username`),
+  ADD KEY `idx_game_downloads_game_id` (`gameId`),
+  ADD KEY `idx_game_downloads_date` (`downloadDate`);
+
+--
+-- A tábla indexei `game_moderation_history`
+--
+ALTER TABLE `game_moderation_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `gameId` (`gameId`),
+  ADD KEY `moderatorUsername` (`moderatorUsername`);
+
+--
+-- A tábla indexei `game_ratings`
+--
+ALTER TABLE `game_ratings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_game_rating` (`gameId`,`username`),
+  ADD KEY `idx_game_ratings_game_id` (`gameId`),
+  ADD KEY `idx_game_ratings_username` (`username`),
+  ADD KEY `idx_game_ratings_rating` (`rating`);
+
+--
+-- A tábla indexei `game_recommendations`
+--
+ALTER TABLE `game_recommendations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_recommendation` (`gameId`,`recommendedGameId`,`recommendationType`),
+  ADD KEY `recommendedGameId` (`recommendedGameId`);
+
+--
+-- A tábla indexei `game_reports`
+--
+ALTER TABLE `game_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `gameId` (`gameId`),
+  ADD KEY `reporterUsername` (`reporterUsername`),
+  ADD KEY `moderatorUsername` (`moderatorUsername`);
+
+--
+-- A tábla indexei `game_stats`
+--
+ALTER TABLE `game_stats`
+  ADD PRIMARY KEY (`gameId`);
+
+--
+-- A tábla indexei `game_tags`
+--
+ALTER TABLE `game_tags`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`name`);
+
+--
+-- A tábla indexei `game_tag_relations`
+--
+ALTER TABLE `game_tag_relations`
+  ADD PRIMARY KEY (`gameId`,`tagId`),
+  ADD KEY `tagId` (`tagId`);
 
 --
 -- A tábla indexei `jatekok`
 --
 ALTER TABLE `jatekok`
   ADD PRIMARY KEY (`idjatekok`),
-  ADD KEY `idkiado` (`idkiado`),
   ADD KEY `idfejleszto` (`idfejleszto`),
-  ADD KEY `idrendszerkovetelmeny` (`idrendszerkovetelmeny`),
-  ADD KEY `idx_jatekok_status` (`status`),
-  ADD KEY `idx_jatekok_uploaded_by` (`uploaded_by`),
-  ADD KEY `idx_jatekok_approved_by` (`approved_by`);
-
---
--- A tábla indexei `jatekok_kategoriak`
---
-ALTER TABLE `jatekok_kategoriak`
-  ADD PRIMARY KEY (`idjatekok`,`idkategoria`),
-  ADD KEY `idkategoria` (`idkategoria`);
-
---
--- A tábla indexei `jatekok_platformok`
---
-ALTER TABLE `jatekok_platformok`
-  ADD PRIMARY KEY (`idjatekok`,`idplatform`),
-  ADD KEY `idplatform` (`idplatform`);
-
---
--- A tábla indexei `jatek_videok`
---
-ALTER TABLE `jatek_videok`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idjatekok` (`idjatekok`);
-
---
--- A tábla indexei `kategoria`
---
-ALTER TABLE `kategoria`
-  ADD PRIMARY KEY (`idkategoria`);
+  ADD KEY `idkiado` (`idkiado`);
 
 --
 -- A tábla indexei `kiado`
@@ -412,34 +562,18 @@ ALTER TABLE `kiado`
 -- A tábla indexei `kommentek`
 --
 ALTER TABLE `kommentek`
-  ADD PRIMARY KEY (`idkommentek`),
-  ADD KEY `idfelhasznalo` (`idfelhasznalo`),
-  ADD KEY `idjatekok` (`idjatekok`);
+  ADD PRIMARY KEY (`idkomment`),
+  ADD KEY `idjatekok` (`idjatekok`),
+  ADD KEY `idfelhasznalo` (`idfelhasznalo`);
 
 --
--- A tábla indexei `platform`
+-- A tábla indexei `wishlist`
 --
-ALTER TABLE `platform`
-  ADD PRIMARY KEY (`idplatform`);
-
---
--- A tábla indexei `promociok`
---
-ALTER TABLE `promociok`
-  ADD PRIMARY KEY (`idpromocio`);
-
---
--- A tábla indexei `promociosjatekok`
---
-ALTER TABLE `promociosjatekok`
-  ADD PRIMARY KEY (`idpromocio`,`idjatekok`),
-  ADD KEY `idjatekok` (`idjatekok`);
-
---
--- A tábla indexei `rendszerkovetelmeny`
---
-ALTER TABLE `rendszerkovetelmeny`
-  ADD PRIMARY KEY (`idrendszerkovetelmeny`);
+ALTER TABLE `wishlist`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_game_wishlist` (`idfelhasznalo`,`idjatekok`),
+  ADD KEY `idfelhasznalo_wishlist` (`idfelhasznalo`),
+  ADD KEY `idjatekok_wishlist` (`idjatekok`);
 
 --
 -- A kiírt táblák AUTO_INCREMENT értéke
@@ -449,37 +583,73 @@ ALTER TABLE `rendszerkovetelmeny`
 -- AUTO_INCREMENT a táblához `fejleszto`
 --
 ALTER TABLE `fejleszto`
-  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `idfejleszto` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT a táblához `felhasznalo`
 --
 ALTER TABLE `felhasznalo`
-  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT a táblához `jatekextra`
+-- AUTO_INCREMENT a táblához `games_extended`
 --
-ALTER TABLE `jatekextra`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `games_extended`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_activity`
+--
+ALTER TABLE `game_activity`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_collection`
+--
+ALTER TABLE `game_collection`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_downloads`
+--
+ALTER TABLE `game_downloads`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_moderation_history`
+--
+ALTER TABLE `game_moderation_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_ratings`
+--
+ALTER TABLE `game_ratings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_recommendations`
+--
+ALTER TABLE `game_recommendations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_reports`
+--
+ALTER TABLE `game_reports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `game_tags`
+--
+ALTER TABLE `game_tags`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT a táblához `jatekok`
 --
 ALTER TABLE `jatekok`
-  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT a táblához `jatek_videok`
---
-ALTER TABLE `jatek_videok`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT a táblához `kategoria`
---
-ALTER TABLE `kategoria`
-  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT a táblához `kiado`
@@ -491,79 +661,99 @@ ALTER TABLE `kiado`
 -- AUTO_INCREMENT a táblához `kommentek`
 --
 ALTER TABLE `kommentek`
-  MODIFY `idkommentek` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `idkomment` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT a táblához `platform`
+-- AUTO_INCREMENT a táblához `wishlist`
 --
-ALTER TABLE `platform`
-  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT a táblához `promociok`
---
-ALTER TABLE `promociok`
-  MODIFY `idpromocio` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT a táblához `rendszerkovetelmeny`
---
-ALTER TABLE `rendszerkovetelmeny`
-  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+ALTER TABLE `wishlist`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Megkötések a kiírt táblákhoz
 --
 
 --
--- Megkötések a táblához `jatekextra`
+-- Megkötések a táblához `developer_stats`
 --
-ALTER TABLE `jatekextra`
-  ADD CONSTRAINT `fk_jatekextra_jatekok` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
+ALTER TABLE `developer_stats`
+  ADD CONSTRAINT `developer_stats_ibfk_1` FOREIGN KEY (`developerUsername`) REFERENCES `felhasznalo` (`felhasznalonev`);
 
 --
--- Megkötések a táblához `jatekok`
+-- Megkötések a táblához `games_extended`
 --
-ALTER TABLE `jatekok`
-  ADD CONSTRAINT `jatekok_ibfk_1` FOREIGN KEY (`idkiado`) REFERENCES `kiado` (`idkiado`) ON DELETE CASCADE,
-  ADD CONSTRAINT `jatekok_ibfk_2` FOREIGN KEY (`idfejleszto`) REFERENCES `fejleszto` (`idfejleszto`) ON DELETE CASCADE,
-  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo`(`idfelhasznalo`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `felhasznalo`(`idfelhasznalo`) ON DELETE SET NULL;
+ALTER TABLE `games_extended`
+  ADD CONSTRAINT `games_extended_ibfk_1` FOREIGN KEY (`developer_username`) REFERENCES `felhasznalo` (`felhasznalonev`);
 
 --
--- Megkötések a táblához `jatekok_kategoriak`
+-- Megkötések a táblához `game_activity`
 --
-ALTER TABLE `jatekok_kategoriak`
-  ADD CONSTRAINT `jatekok_kategoriak_ibfk_1` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
-  ADD CONSTRAINT `jatekok_kategoriak_ibfk_2` FOREIGN KEY (`idkategoria`) REFERENCES `kategoria` (`idkategoria`) ON DELETE CASCADE;
+ALTER TABLE `game_activity`
+  ADD CONSTRAINT `game_activity_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_activity_ibfk_2` FOREIGN KEY (`username`) REFERENCES `felhasznalo` (`felhasznalonev`);
 
 --
--- Megkötések a táblához `jatekok_platformok`
+-- Megkötések a táblához `game_collection`
 --
-ALTER TABLE `jatekok_platformok`
-  ADD CONSTRAINT `jatekok_platformok_ibfk_1` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
-  ADD CONSTRAINT `jatekok_platformok_ibfk_2` FOREIGN KEY (`idplatform`) REFERENCES `platform` (`idplatform`) ON DELETE CASCADE;
+ALTER TABLE `game_collection`
+  ADD CONSTRAINT `fk_collection_game` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_collection_user` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE;
 
 --
--- Megkötések a táblához `jatek_videok`
+-- Megkötések a táblához `game_downloads`
 --
-ALTER TABLE `jatek_videok`
-  ADD CONSTRAINT `fk_jatek_videok_jatek` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
+ALTER TABLE `game_downloads`
+  ADD CONSTRAINT `game_downloads_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_downloads_ibfk_2` FOREIGN KEY (`username`) REFERENCES `felhasznalo` (`felhasznalonev`);
 
 --
--- Megkötések a táblához `kommentek`
+-- Megkötések a táblához `game_moderation_history`
 --
-ALTER TABLE `kommentek`
-  ADD CONSTRAINT `kommentek_ibfk_1` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE,
-  ADD CONSTRAINT `kommentek_ibfk_2` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
+ALTER TABLE `game_moderation_history`
+  ADD CONSTRAINT `game_moderation_history_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_moderation_history_ibfk_2` FOREIGN KEY (`moderatorUsername`) REFERENCES `felhasznalo` (`felhasznalonev`);
 
 --
--- Megkötések a táblához `promociosjatekok`
+-- Megkötések a táblához `game_ratings`
 --
-ALTER TABLE `promociosjatekok`
-  ADD CONSTRAINT `promociosjatekok_ibfk_1` FOREIGN KEY (`idpromocio`) REFERENCES `promociok` (`idpromocio`) ON DELETE CASCADE,
-  ADD CONSTRAINT `promociosjatekok_ibfk_2` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
+ALTER TABLE `game_ratings`
+  ADD CONSTRAINT `game_ratings_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_ratings_ibfk_2` FOREIGN KEY (`username`) REFERENCES `felhasznalo` (`felhasznalonev`);
+
+--
+-- Megkötések a táblához `game_recommendations`
+--
+ALTER TABLE `game_recommendations`
+  ADD CONSTRAINT `game_recommendations_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_recommendations_ibfk_2` FOREIGN KEY (`recommendedGameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `game_reports`
+--
+ALTER TABLE `game_reports`
+  ADD CONSTRAINT `game_reports_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_reports_ibfk_2` FOREIGN KEY (`reporterUsername`) REFERENCES `felhasznalo` (`felhasznalonev`),
+  ADD CONSTRAINT `game_reports_ibfk_3` FOREIGN KEY (`moderatorUsername`) REFERENCES `felhasznalo` (`felhasznalonev`);
+
+--
+-- Megkötések a táblához `game_stats`
+--
+ALTER TABLE `game_stats`
+  ADD CONSTRAINT `game_stats_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `game_tag_relations`
+--
+ALTER TABLE `game_tag_relations`
+  ADD CONSTRAINT `game_tag_relations_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `game_tag_relations_ibfk_2` FOREIGN KEY (`tagId`) REFERENCES `game_tags` (`id`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `wishlist`
+--
+ALTER TABLE `wishlist`
+  ADD CONSTRAINT `fk_wishlist_game` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wishlist_user` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

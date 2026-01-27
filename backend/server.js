@@ -122,10 +122,16 @@ const checkRole = (allowedRoles) => {
 
 // Regisztráció
 app.post("/register", (req, res) => {
-  const { felhasznalonev, email, jelszo, role = 'user' } = req.body;
-  const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, role) VALUES (?, ?, ?, ?)";
-  db.query(sql, [felhasznalonev, email, jelszo, role], (err) => {
-    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+  const { felhasznalonev, email, jelszo, szerepkor = 'felhasznalo' } = req.body;
+  console.log('Regisztrációs kérés:', { felhasznalonev, email, szerepkor });
+  
+  const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, szerepkor) VALUES (?, ?, ?, ?)";
+  db.query(sql, [felhasznalonev, email, jelszo, szerepkor], (err) => {
+    if (err) {
+      console.error('Regisztrációs hiba:', err);
+      return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+    }
+    console.log('Regisztráció sikeres:', felhasznalonev);
     res.json({ success: true });
   });
 });
@@ -133,11 +139,21 @@ app.post("/register", (req, res) => {
 // Bejelentkezés
 app.post("/login", (req, res) => {
   const { felhasznalonev, jelszo } = req.body;
+  console.log('Bejelentkezési kérés:', { felhasznalonev });
+  
   const sql = "SELECT * FROM felhasznalo WHERE felhasznalonev=? AND jelszo=?";
   db.query(sql, [felhasznalonev, jelszo], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
-    if (results.length > 0) return res.json({ success: true, user: results[0] });
-    res.status(401).json({ success: false, message: "Hibás adatok" });
+    if (err) {
+      console.error('Bejelentkezési hiba:', err);
+      return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+    }
+    if (results.length > 0) {
+      console.log('Bejelentkezés sikeres:', felhasznalonev);
+      res.json({ success: true, user: results[0] });
+    } else {
+      console.log('Bejelentkezés sikertelen:', felhasznalonev);
+      res.status(401).json({ success: false, message: "Hibás adatok" });
+    }
   });
 });
 
@@ -157,22 +173,22 @@ app.get("/jatekok", (req, res) => {
       j.nev AS title,
       f.nev AS developer,
       j.ar AS price,
-      r.minimum AS minimum,
-      r.ajanlott AS recommended,
+      COALESCE(r.minimum, '-') AS minimum,
+      COALESCE(r.ajanlott, '-') AS recommended,
       j.leiras AS description,
       j.kepurl AS image,
-      j.ertekeles AS rating,
-      j.status,
+      COALESCE(j.ertekeles, 0) AS rating,
+      COALESCE(j.status, 'approved') AS status,
       GROUP_CONCAT(DISTINCT k.nev SEPARATOR ', ') AS categories,
       GROUP_CONCAT(DISTINCT p.nev SEPARATOR ', ') AS platforms
     FROM jatekok j
-    JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
-    JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
+    LEFT JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    LEFT JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
     LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
     LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
     LEFT JOIN jatekok_platformok jp ON j.idjatekok = jp.idjatekok
     LEFT JOIN platform p ON jp.idplatform = p.idplatform
-    WHERE j.status = 'approved'
+    WHERE (j.status = 'approved' OR j.status IS NULL)
     GROUP BY j.idjatekok
   `;
 
@@ -355,17 +371,6 @@ app.post("/jatekok", (req, res) => {
   });
 });
 
-
-// Játék törlés
-app.delete("/jatekok/:id", (req, res) => {
-  const id = req.params.id;
-  db.query("DELETE FROM jatekok WHERE idjatekok=?", [id], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen játék." });
-    res.json({ success: true, message: "Játék törölve." });
-  });
-});
-
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -413,12 +418,15 @@ app.get("/kommentek", (req, res) => {
       k.tartalom AS text,
       k.ertekeles AS rating
     FROM kommentek k
-    JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
+    LEFT JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
     ORDER BY k.idkommentek DESC
   `;
 
   db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ success: false, error: err });
+    if (err) {
+      console.error('Kommentek lekérési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
     res.json({ success: true, comments: results });
   });
 });
@@ -450,17 +458,6 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
         });
       }
     );
-  });
-});
-
-// Komment törlése (admin)
-app.delete("/kommentek/:id", checkRole(['admin']), (req, res) => {
-  const commentId = req.params.id;
-
-  db.query("DELETE FROM kommentek WHERE idkommentek = ?", [commentId], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen komment." });
-    res.json({ success: true, message: "Komment törölve" });
   });
 });
 
@@ -678,7 +675,7 @@ app.put("/admin/games/:id", checkRole(['admin']), (req, res) => {
 
 // Felhasználók kezelése (admin)
 app.get("/admin/users", checkRole(['admin']), (req, res) => {
-  const sql = "SELECT idfelhasznalo, felhasznalonev, email, role, nev FROM felhasznalo ORDER BY role, felhasznalonev";
+  const sql = "SELECT idfelhasznalo, felhasznalonev, email, szerepkor, nev FROM felhasznalo ORDER BY szerepkor, felhasznalonev";
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ success: false, error: err });
     res.json({ success: true, users: results });
@@ -688,17 +685,17 @@ app.get("/admin/users", checkRole(['admin']), (req, res) => {
 // Felhasználó role módosítása (admin)
 app.put("/admin/users/:id/role", checkRole(['admin']), (req, res) => {
   const userId = req.params.id;
-  const { role } = req.body;
+  const { szerepkor } = req.body;
 
-  if (!['user', 'gamedev', 'admin'].includes(role)) {
-    return res.status(400).json({ success: false, message: "Érvénytelen role" });
+  if (!['felhasznalo', 'gamedev', 'admin'].includes(szerepkor)) {
+    return res.status(400).json({ success: false, message: "Érvénytelen szerepkör" });
   }
 
-  const sql = "UPDATE felhasznalo SET role = ? WHERE idfelhasznalo = ?";
-  db.query(sql, [role, userId], (err, result) => {
+  const sql = "UPDATE felhasznalo SET szerepkor = ? WHERE idfelhasznalo = ?";
+  db.query(sql, [szerepkor, userId], (err, result) => {
     if (err) return res.status(500).json({ success: false, error: err });
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Felhasználó nem található" });
-    res.json({ success: true, message: "Role frissítve" });
+    res.json({ success: true, message: "Szerepkör frissítve" });
   });
 });
 
@@ -707,9 +704,9 @@ app.get("/admin/statistics", checkRole(['admin']), (req, res) => {
   const sql = `
     SELECT 
       (SELECT COUNT(*) FROM felhasznalo) AS total_users,
-      (SELECT COUNT(*) FROM felhasznalo WHERE role = 'user') AS regular_users,
-      (SELECT COUNT(*) FROM felhasznalo WHERE role = 'gamedev') AS gamedev_users,
-      (SELECT COUNT(*) FROM felhasznalo WHERE role = 'admin') AS admin_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'felhasznalo') AS regular_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'gamedev') AS gamedev_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'admin') AS admin_users,
       (SELECT COUNT(*) FROM jatekok) AS total_games,
       (SELECT COUNT(*) FROM jatekok WHERE status = 'approved') AS approved_games,
       (SELECT COUNT(*) FROM jatekok WHERE status = 'pending') AS pending_games,
@@ -833,6 +830,947 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
         });
       });
     });
+  });
+});
+
+// ===== GAMEDEV PANEL VÉGPONTOK =====
+
+// GameDev játékainak lekérdezése
+app.get("/gamedev/:username/games", (req, res) => {
+  const { username } = req.params;
+  
+  const sql = `
+    SELECT 
+      ge.*,
+      u.nev as developerName,
+      u.email as developerEmail
+    FROM games_extended ge
+    JOIN felhasznalo u ON ge.developer_username = u.felhasznalonev
+    WHERE ge.developer_username = ?
+    ORDER BY ge.uploadDate DESC
+  `;
+
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      console.error('Hiba a GameDev játékainak lekérdezésekor:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    // Parse JSON fields
+    const games = results.map(game => ({
+      ...game,
+      categories: game.categories ? JSON.parse(game.categories) : [],
+      platforms: game.platforms ? JSON.parse(game.platforms) : [],
+      images: game.images ? JSON.parse(game.images) : [],
+      videos: game.videos ? JSON.parse(game.videos) : [],
+      systemRequirements: game.systemRequirements ? JSON.parse(game.systemRequirements) : {},
+      features: game.features ? JSON.parse(game.features) : [],
+      languages: game.languages ? JSON.parse(game.languages) : [],
+      socialLinks: game.socialLinks ? JSON.parse(game.socialLinks) : {},
+      gameMode: game.gameMode ? JSON.parse(game.gameMode) : []
+    }));
+    
+    res.json({ success: true, games });
+  });
+});
+
+// GameDev statisztikák lekérdezése
+app.get("/gamedev/:username/stats", (req, res) => {
+  const { username } = req.params;
+  
+  const sql = `
+    SELECT 
+      COUNT(*) as totalGames,
+      SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approvedGames,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingGames,
+      SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejectedGames,
+      COALESCE(SUM(downloads), 0) as totalDownloads,
+      COALESCE(AVG(rating), 0) as averageRating,
+      COALESCE(COUNT(rating), 0) as totalRatings
+    FROM games_extended ge
+    LEFT JOIN game_stats gs ON ge.id = gs.gameId
+    LEFT JOIN game_ratings gr ON ge.id = gr.gameId
+    WHERE ge.developer_username = ?
+    GROUP BY ge.developer_username
+  `;
+
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      console.error('Hiba a GameDev statisztikák lekérdezésekor:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    const stats = results.length > 0 ? results[0] : {
+      totalGames: 0,
+      approvedGames: 0,
+      pendingGames: 0,
+      rejectedGames: 0,
+      totalDownloads: 0,
+      averageRating: 0,
+      totalRatings: 0
+    };
+    
+    res.json({ success: true, stats });
+  });
+});
+
+// Játék feltöltés végpont (bővített)
+app.post("/games/upload", (req, res) => {
+  const {
+    title,
+    description,
+    developer,
+    publisher,
+    releaseDate,
+    price,
+    categories,
+    platforms,
+    images,
+    videos,
+    systemRequirements,
+    features,
+    languages,
+    ageRating,
+    multiplayer,
+    gameMode,
+    estimatedPlaytime,
+    website,
+    socialLinks,
+    developer_username
+  } = req.body;
+
+  if (!title || !description || !developer_username) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Hiányzó kötelező mezők: cím, leírás, fejlesztő" 
+    });
+  }
+
+  const sql = `
+    INSERT INTO games_extended (
+      title, description, developer, publisher, releaseDate, price,
+      categories, platforms, images, videos, systemRequirements,
+      features, languages, ageRating, multiplayer, gameMode,
+      estimatedPlaytime, website, socialLinks, status,
+      developer_username, uploadDate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+  `;
+
+  const values = [
+    title,
+    description,
+    developer,
+    publisher || null,
+    releaseDate || null,
+    price || 0,
+    JSON.stringify(categories || []),
+    JSON.stringify(platforms || []),
+    JSON.stringify(images || []),
+    JSON.stringify(videos || []),
+    JSON.stringify(systemRequirements || {}),
+    JSON.stringify(features || []),
+    JSON.stringify(languages || []),
+    ageRating || null,
+    multiplayer || false,
+    JSON.stringify(gameMode || []),
+    estimatedPlaytime || null,
+    website || null,
+    JSON.stringify(socialLinks || {}),
+    developer_username
+  ];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('Hiba a játék feltöltésekor:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+
+    // Game statisztika létrehozása
+    const statsSql = `
+      INSERT INTO game_stats (gameId, totalDownloads, totalRatings, averageRating)
+      VALUES (?, 0, 0, 0)
+    `;
+    
+    db.query(statsSql, [result.insertId], (statsErr) => {
+      if (statsErr) {
+        console.error('Hiba a game statisztika létrehozásakor:', statsErr);
+      }
+    });
+
+    // Developer statisztikák frissítése
+    const devStatsSql = `
+      INSERT INTO developer_stats (developerUsername, totalGames, lastGameUpload)
+      VALUES (?, 1, NOW())
+      ON DUPLICATE KEY UPDATE 
+        totalGames = VALUES(totalGames + 1),
+        lastGameUpload = VALUES(lastGameUpload)
+    `;
+    
+    db.query(devStatsSql, [developer_username], (devErr) => {
+      if (devErr) {
+        console.error('Hiba a developer statisztikák frissítésekor:', devErr);
+      }
+    });
+
+    // Kategória statisztikák frissítése
+    if (categories && categories.length > 0) {
+      categories.forEach(category => {
+        const catStatsSql = `
+          INSERT INTO category_stats (categoryName, gameCount)
+          VALUES (?, 1)
+          ON DUPLICATE KEY UPDATE 
+            gameCount = VALUES(gameCount + 1)
+        `;
+        db.query(catStatsSql, [category], (catErr) => {
+          if (catErr) {
+            console.error('Hiba a kategória statisztikák frissítésékora:', catErr);
+          }
+        });
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Játék sikeresen feltöltve, jóváhagyásra vár!",
+      game: {
+        id: result.insertId,
+        title,
+        status: 'pending'
+      }
+    });
+  });
+});
+
+// Játék felülvizsgálása (admin)
+app.put("/games/:gameId/review", (req, res) => {
+  const { gameId } = req.params;
+  const { status, rejectionReason, reviewer } = req.body;
+  
+  if (!['status'] || !reviewer) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Hiányzó státusz vagy felülvizgáló" 
+    });
+  }
+
+  const sql = `
+    UPDATE games_extended 
+    SET status = ?, 
+        rejectionReason = ?,
+        reviewer = ?,
+        reviewDate = NOW()
+    WHERE id = ?
+  `;
+
+  db.query(sql, [status, rejectionReason || null, reviewer, gameId], (err, result) => {
+    if (err) {
+      console.error('Hiba a játék felülvizsgálásakor:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: "Játék nem található" });
+    }
+
+    // Moderációs előzmény rögzítése
+    const historySql = `
+      INSERT INTO game_moderation_history (gameId, moderatorUsername, actionType, previousStatus, newStatus, reason, actionDate)
+      VALUES (?, ?, 'status_change', ?, ?, ?, NOW())
+    `;
+    
+    db.query(historySql, [gameId, reviewer, 'unknown', status, rejectionReason || null], (historyErr) => {
+      if (historyErr) {
+        console.error('Hiba a moderációs előzmény rögzítésekor:', historyErr);
+      }
+    });
+
+    // Developer statisztikák frissítése
+    const gameSql = `SELECT developer_username FROM games_extended WHERE id = ?`;
+    db.query(gameSql, [gameId], (gameErr, gameResults) => {
+      if (gameErr || gameResults.length === 0) return;
+      
+      const developerUsername = gameResults[0].developer_username;
+      
+      const devStatsSql = `
+        UPDATE developer_stats 
+        SET 
+          approvedGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = ? AND status = 'approved'),
+          pendingGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = ? AND status = 'pending'),
+          rejectedGames = (SELECT COUNT(*) FROM games_extended WHERE developer_username = ? AND status = 'rejected'),
+          lastActivity = NOW()
+        WHERE developerUsername = ?
+      `;
+      
+      db.query(devStatsSql, [developerUsername, developerUsername, developerUsername, developerUsername], (devErr) => {
+        if (devErr) {
+          console.error('Hiba a developer statisztikák frissítésékora:', devErr);
+        }
+      });
+    });
+
+    res.json({ 
+      success: true, 
+      message: `Játék státusza frissítve: ${status === 'approved' ? 'Elfogadva' : status === 'rejected' ? 'Elutasítva' : 'Feldolgozás alatt'}`,
+      status,
+      rejectionReason
+    });
+  });
+});
+
+// Játék letöltési statisztika növelése
+app.post("/games/:gameId/download", (req, res) => {
+  const { gameId } = req.params;
+  const { username } = req.body;
+  
+  if (!username) {
+    return res.status(400).json({ success: false, error: "Hiányzó felhasználónév" });
+  }
+
+  // Ellenőrizzük, hogy a felhasználó létezik-e
+  const userSql = "SELECT felhasznalonev FROM felhasznalo WHERE felhasznalonev = ?";
+  db.query(userSql, [username], (err, userResults) => {
+    if (err || userResults.length === 0) {
+      return res.status(401).json({ success: false, error: "Érvénytelen felhasználó" });
+    }
+
+    // Letöltés rögzítése
+    const downloadSql = `
+      INSERT INTO game_downloads (gameId, username, downloadDate, ipAddress)
+      VALUES (?, ?, NOW(), ?)
+    `;
+    
+    db.query(downloadSql, [gameId, username, req.ip || 'unknown'], (err, result) => {
+      if (err) {
+        console.error('Hiba a letöltés rögzítésekor:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+
+      // Játék statisztikák frissítése
+      const statsSql = `
+        UPDATE game_stats 
+        SET totalDownloads = (SELECT COUNT(*) FROM game_downloads WHERE gameId = ?),
+            lastUpdated = NOW()
+        WHERE gameId = ?
+      `;
+      
+      db.query(statsSql, [gameId], (statsErr) => {
+        if (statsErr) {
+          console.error('Hiba a játék statisztikák frissítésékora:', statsErr);
+        }
+      });
+
+      res.json({ success: true, message: "Letöltés rögzítve" });
+    });
+  });
+});
+
+// Játék értékelés hozzáadása
+app.post("/games/:gameId/rating", (req, res) => {
+  const { gameId } = req.params;
+  const { username, rating, comment } = req.body;
+  
+  if (!username || rating === undefined) {
+    return res.status(400).json({ success: false, error: "Hiányzó felhasználónév vagy értékelés" });
+  }
+
+  if (rating < 0 || rating > 10) {
+    return res.status(400).json({ success: false, error: "Az értékelés 0 és 10 között kell legyen" });
+  }
+
+  // Ellenőrizzük, hogy a felhasználó létezik-e
+  const userSql = "SELECT felhasznalonev FROM felhasznalo WHERE felhasznalonev = ?";
+  db.query(userSql, [username], (err, userResults) => {
+    if (err || userResults.length === 0) {
+      return res.status(401).json({ success: false, error: "Érvénytelen felhasználó" });
+    }
+
+    // Értékelés mentése
+    const ratingSql = `
+      INSERT INTO game_ratings (gameId, username, rating, comment, reviewDate)
+      VALUES (?, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE 
+        rating = VALUES(rating),
+        comment = VALUES(comment),
+        reviewDate = VALUES(reviewDate)
+    `;
+    
+    db.query(ratingSql, [gameId, username, rating, comment], (err, result) => {
+      if (err) {
+        console.error('Hiba az értékelés mentésekor:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+
+      // Játék statisztikák frissítése
+      const statsSql = `
+        UPDATE game_stats 
+        SET 
+          totalRatings = (SELECT COUNT(*) FROM game_ratings WHERE gameId = ?),
+          averageRating = (SELECT AVG(rating) FROM game_ratings WHERE gameId = ?),
+          lastUpdated = NOW()
+        WHERE gameId = ?
+      `;
+      
+      db.query(statsSql, [gameId, gameId], (statsErr) => {
+        if (statsErr) {
+          console.error('Hiba a játék statisztikák frissítésékora:', statsErr);
+        }
+      });
+
+      // Aktivitás rögzítése
+      const activitySql = `
+        INSERT INTO game_activity (gameId, username, activityType, activityData, activityDate)
+        VALUES (?, ?, 'rating', ?, NOW())
+      `;
+      
+      db.query(activitySql, [gameId, username, JSON.stringify({ rating, comment })], (activityErr) => {
+        if (activityErr) {
+          console.error('Hiba az aktivitás rögzítésekor:', activityErr);
+        }
+      });
+
+      res.json({ success: true, message: "Értékelés mentve" });
+    });
+  });
+});
+
+// Játékok keresése és szűrése (bővített)
+app.post("/games/search", (req, res) => {
+  const { searchTerm, filters } = req.body;
+  
+  let sql = `
+    SELECT 
+      ge.*,
+      u.nev as developerName,
+      gs.totalDownloads,
+      gs.averageRating,
+      gs.totalRatings
+    FROM games_extended ge
+    JOIN felhasznalo u ON ge.developer_username = u.felhasznalonev
+    LEFT JOIN game_stats gs ON ge.id = gs.gameId
+    WHERE ge.status = 'approved'
+  `;
+  
+  const params = [];
+  const conditions = [];
+
+  // Keresési feltételek
+  if (searchTerm) {
+    conditions.push(`(ge.title LIKE ? OR ge.description LIKE ? OR u.nev LIKE ?)`);
+    params.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
+  }
+
+  // Kategória szűrés
+  if (filters && filters.categories && filters.categories.length > 0) {
+    const categoryConditions = filters.categories.map(() => `JSON_CONTAINS(categories, ?)`);
+    conditions.push(`(${categoryConditions.join(' OR ')})`);
+    params.push(...filters.categories.map(JSON.stringify));
+  }
+
+  // Platform szűrés
+  if (filters && filters.platforms && filters.platforms.length > 0) {
+    const platformConditions = filters.platforms.map(() => `JSON_CONTAINS(platforms, ?)`);
+    conditions.push(`(${platformConditions.join(' OR ')})`);
+    params.push(...filters.platforms.map(JSON.stringify));
+  }
+
+  // Ár tartomány szűrés
+  if (filters && filters.priceRange) {
+    if (filters.priceRange.min > 0) {
+      conditions.push(`ge.price >= ?`);
+      params.push(filters.priceRange.min);
+    }
+    if (filters.priceRange.max < 50000) {
+      conditions.push(`ge.price <= ?`);
+      params.push(filters.priceRange.max);
+    }
+  }
+
+  // Értékelés tartomány szűrés
+  if (filters && filters.rating) {
+    if (filters.rating.min > 0) {
+      conditions.push(`gs.averageRating >= ?`);
+      params.push(filters.rating.min);
+    }
+    if (filters.rating.max < 10) {
+      conditions.push(`gs.averageRating <= ?`);
+      params.push(filters.rating.max);
+    }
+  }
+
+  // Rendszerkövetelmény szűrés
+  if (filters && filters.systemRequirements) {
+    if (filters.systemRequirements.os) {
+      conditions.push(`JSON_CONTAINS(systemRequirements, JSON_OBJECT('os', ?))`);
+      params.push(filters.systemRequirements.os);
+    }
+    if (filters.systemRequirements.cpu) {
+      conditions.push(`JSON_CONTAINS(systemRequirements, JSON_OBJECT('cpu', ?))`);
+      params.push(filters.systemRequirements.cpu);
+    }
+    if (filters.systemRequirements.gpu) {
+      conditions.push(`JSON_CONTAINS(systemRequirements, JSON_OBJECT('gpu', ?))`);
+      params.push(filters.systemRequirements.gpu);
+    }
+    if (filters.systemRequirements.ram) {
+      conditions.push(`JSON_CONTAINS(systemRequirements, JSON_OBJECT('ram', ?))`);
+      params.push(filters.systemRequirements.ram);
+    }
+    if (filters.systemRequirements.storage) {
+      conditions.push(`JSON_CONTAINS(systemRequirements, JSON_OBJECT('storage', ?))`);
+      params.push(filters.systemRequirements.storage);
+    }
+  }
+
+  // Jellemzők szűrés
+  if (filters && filters.features && filters.features.length > 0) {
+    const featureConditions = filters.features.map(() => `JSON_CONTAINS(features, ?)`);
+    conditions.push(`(${featureConditions.join(' OR ')})`);
+    params.push(...filters.features.map(JSON.stringify));
+  }
+
+  // Nyelvek szűrés
+  if (filters && filters.languages && filters.languages.length > 0) {
+    const languageConditions = filters.languages.map(() => `JSON_CONTAINS(languages, ?)`);
+    conditions.push(`(${languageConditions.join(' OR ')})`);
+    params.push(...filters.languages.map(JSON.stringify));
+  }
+
+  // Többjátékos szűrés
+  if (filters && filters.multiplayer !== null) {
+    conditions.push(`ge.multiplayer = ?`);
+    params.push(filters.multiplayer);
+  }
+
+  // Korhatár szűrés
+  if (filters && filters.ageRating) {
+    conditions.push(`ge.ageRating = ?`);
+    params.push(filters.ageRating);
+  }
+
+  // Megjelenési év szűrés
+  if (filters && filters.releaseYear) {
+    if (filters.releaseYear.min > 2000) {
+      conditions.push(`YEAR(ge.releaseDate) >= ?`);
+      params.push(filters.releaseYear.min);
+    }
+    if (filters.releaseYear.max < new Date().getFullYear()) {
+      conditions.push(`YEAR(ge.releaseDate) <= ?`);
+      params.push(filters.releaseYear.max);
+    }
+  }
+
+  if (conditions.length > 0) {
+    sql += ` AND ${conditions.join(' AND ')}`;
+  }
+
+  sql += ` ORDER BY gs.totalDownloads DESC, gs.averageRating DESC LIMIT 100`;
+
+  db.query(sql, params, (err, results) => {
+    if (err) {
+      console.error('Hiba a játékok keresésekor:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+
+    // Parse JSON fields
+    const games = results.map(game => ({
+      ...game,
+      categories: game.categories ? JSON.parse(game.categories) : [],
+      platforms: game.platforms ? JSON.parse(game.platforms) : [],
+      images: game.images ? JSON.parse(game.images) : [],
+      videos: game.videos ? JSON.parse(game.videos) : [],
+      systemRequirements: game.systemRequirements ? JSON.parse(game.systemRequirements) : {},
+      features: game.features ? JSON.parse(game.features) : [],
+      languages: game.languages ? JSON.parse(game.languages) : [],
+      socialLinks: game.socialLinks ? JSON.parse(game.socialLinks) : {},
+      gameMode: game.gameMode ? JSON.parse(game.gameMode) : []
+    }));
+    
+    res.json({ success: true, games });
+  });
+});
+
+// ===== WISHLIST ÉS COLLECTION VÉGPONTOK =====
+
+// Kívánságlista táblák létrehozása ha nem léteznek
+const createWishlistCollectionTables = () => {
+  const createWishlistTable = `
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      idfelhasznalo int(11) NOT NULL,
+      idjatekok int(11) NOT NULL,
+      created_at timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (id),
+      UNIQUE KEY unique_user_game_wishlist (idfelhasznalo,idjatekok),
+      KEY idfelhasznalo_wishlist (idfelhasznalo),
+      KEY idjatekok_wishlist (idjatekok),
+      CONSTRAINT fk_wishlist_user FOREIGN KEY (idfelhasznalo) REFERENCES felhasznalo (idfelhasznalo) ON DELETE CASCADE,
+      CONSTRAINT fk_wishlist_game FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createCollectionTable = `
+    CREATE TABLE IF NOT EXISTS game_collection (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      idfelhasznalo int(11) NOT NULL,
+      idjatekok int(11) NOT NULL,
+      status enum('owned','played','completed','abandoned') NOT NULL DEFAULT 'owned',
+      rating int(11) DEFAULT NULL,
+      notes text DEFAULT NULL,
+      added_at timestamp NOT NULL DEFAULT current_timestamp(),
+      updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+      PRIMARY KEY (id),
+      UNIQUE KEY unique_user_game_collection (idfelhasznalo,idjatekok),
+      KEY idfelhasznalo_collection (idfelhasznalo),
+      KEY idjatekok_collection (idjatekok),
+      KEY status_collection (status),
+      CONSTRAINT fk_collection_user FOREIGN KEY (idfelhasznalo) REFERENCES felhasznalo (idfelhasznalo) ON DELETE CASCADE,
+      CONSTRAINT fk_collection_game FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  db.query(createWishlistTable, (err) => {
+    if (err) console.error('Hiba a wishlist tábla létrehozásakor:', err);
+    else console.log('Wishlist tábla létrehozva vagy már létezik');
+  });
+
+  db.query(createCollectionTable, (err) => {
+    if (err) console.error('Hiba a collection tábla létrehozásakor:', err);
+    else console.log('Collection tábla létrehozva vagy már létezik');
+  });
+};
+
+// Táblák létrehozása a szerver indításakor
+createWishlistCollectionTables();
+
+// Felhasználói tábla kiegészítése
+const updateUserTable = () => {
+  const alterTable = `
+    ALTER TABLE felhasznalo 
+    ADD COLUMN IF NOT EXISTS bio TEXT NULL,
+    ADD COLUMN IF NOT EXISTS avatar VARCHAR(500) NULL,
+    ADD COLUMN IF NOT EXISTS favoriteGenres JSON NULL,
+    ADD COLUMN IF NOT EXISTS preferredPlatforms JSON NULL,
+    ADD COLUMN IF NOT EXISTS country VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS birthYear INT NULL,
+    ADD COLUMN IF NOT EXISTS discord VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS twitter VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS youtube VARCHAR(200) NULL,
+    ADD COLUMN IF NOT EXISTS twitch VARCHAR(100) NULL
+  `;
+
+  db.query(alterTable, (err) => {
+    if (err) {
+      console.error('Hiba a felhasználói tábla kiegészítésekor:', err);
+    } else {
+      console.log('Felhasználói tábla kiegészítve vagy már létezik');
+    }
+  });
+};
+
+// Játék tábla kiegészítése
+const updateGameTable = () => {
+  const alterTable = `
+    ALTER TABLE jatekok 
+    ADD COLUMN IF NOT EXISTS status ENUM('approved', 'pending', 'rejected') DEFAULT 'approved',
+    ADD COLUMN IF NOT EXISTS uploaded_by INT NULL,
+    ADD COLUMN IF NOT EXISTS ertekeles DECIMAL(3,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS idrendszerkovetelmeny INT NULL DEFAULT 1,
+    ADD FOREIGN KEY (uploaded_by) REFERENCES felhasznalo(idfelhasznalo),
+    ADD FOREIGN KEY (idrendszerkovetelmeny) REFERENCES rendszerkovetelmeny(idrendszerkovetelmeny)
+  `;
+
+  db.query(alterTable, (err) => {
+    if (err) {
+      console.error('Hiba a játék tábla kiegészítésekor:', err);
+    } else {
+      console.log('Játék tábla kiegészítve vagy már létezik');
+    }
+  });
+};
+
+// Hiányzó táblák létrehozása
+const createMissingTables = () => {
+  const createRendszerKovetelmeny = `
+    CREATE TABLE IF NOT EXISTS rendszerkovetelmeny (
+      idrendszerkovetelmeny int(11) NOT NULL AUTO_INCREMENT,
+      minimum varchar(255) DEFAULT NULL,
+      ajanlott varchar(255) DEFAULT NULL,
+      PRIMARY KEY (idrendszerkovetelmeny)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createKategoria = `
+    CREATE TABLE IF NOT EXISTS kategoria (
+      idkategoria int(11) NOT NULL AUTO_INCREMENT,
+      nev varchar(100) NOT NULL,
+      PRIMARY KEY (idkategoria)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createPlatform = `
+    CREATE TABLE IF NOT EXISTS platform (
+      idplatform int(11) NOT NULL AUTO_INCREMENT,
+      nev varchar(100) NOT NULL,
+      PRIMARY KEY (idplatform)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createJatekokKategoriak = `
+    CREATE TABLE IF NOT EXISTS jatekok_kategoriak (
+      idjatekok int(11) NOT NULL,
+      idkategoria int(11) NOT NULL,
+      PRIMARY KEY (idjatekok, idkategoria),
+      KEY idkategoria (idkategoria),
+      CONSTRAINT fk_jatek_kategoria FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE,
+      CONSTRAINT fk_kategoria_jatek FOREIGN KEY (idkategoria) REFERENCES kategoria (idkategoria) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createJatekokPlatformok = `
+    CREATE TABLE IF NOT EXISTS jatekok_platformok (
+      idjatekok int(11) NOT NULL,
+      idplatform int(11) NOT NULL,
+      PRIMARY KEY (idjatekok, idplatform),
+      KEY idplatform (idplatform),
+      CONSTRAINT fk_jatek_platform FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE,
+      CONSTRAINT fk_platform_jatek FOREIGN KEY (idplatform) REFERENCES platform (idplatform) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createKommentek = `
+    CREATE TABLE IF NOT EXISTS kommentek (
+      idkommentek int(11) NOT NULL AUTO_INCREMENT,
+      idjatekok int(11) NOT NULL,
+      idfelhasznalo int(11) NOT NULL,
+      tartalom text NOT NULL,
+      ertekeles decimal(3,2) DEFAULT NULL,
+      datum timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (idkommentek),
+      KEY idjatekok (idjatekok),
+      KEY idfelhasznalo (idfelhasznalo),
+      CONSTRAINT fk_komment_jatek FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE,
+      CONSTRAINT fk_komment_felhasznalo FOREIGN KEY (idfelhasznalo) REFERENCES felhasznalo (idfelhasznalo) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  // Először töröljük a kommentek táblát, ha rossz a szerkezete
+  const dropKommentek = "DROP TABLE IF EXISTS kommentek";
+
+  db.query(dropKommentek, (err) => {
+    if (err) {
+      console.error('Hiba a kommentek tábla törlésekor:', err);
+    } else {
+      console.log('Kommentek tábla törölve');
+    }
+    
+    // Majd létrehozzuk újra
+    db.query(createKommentek, (err) => {
+      if (err) {
+        console.error('Hiba a kommentek tábla létrehozásakor:', err);
+      } else {
+        console.log('kommentek tábla létrehozva');
+      }
+    });
+  });
+
+  const tables = [
+    { sql: createRendszerKovetelmeny, name: 'rendszerkovetelmeny' },
+    { sql: createKategoria, name: 'kategoria' },
+    { sql: createPlatform, name: 'platform' },
+    { sql: createJatekokKategoriak, name: 'jatekok_kategoriak' },
+    { sql: createJatekokPlatformok, name: 'jatekok_platformok' }
+  ];
+
+  tables.forEach(table => {
+    db.query(table.sql, (err) => {
+      if (err) {
+        console.error(`Hiba a ${table.name} tábla létrehozásakor:`, err);
+      } else {
+        console.log(`${table.name} tábla létrehozva vagy már létezik`);
+      }
+    });
+  });
+
+  // Alap adatok beszúrása
+  const insertKategoria = "INSERT IGNORE INTO kategoria (nev) VALUES ('Akció'), ('Kaland'), ('Stratégia'), ('RPG'), ('Sport')";
+  const insertPlatform = "INSERT IGNORE INTO platform (nev) VALUES ('PC'), ('PlayStation'), ('Xbox'), ('Nintendo')";
+  const insertRendszerKovetelmeny = "INSERT IGNORE INTO rendszerkovetelmeny (minimum, ajanlott) VALUES ('Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM')";
+
+  db.query(insertKategoria, (err) => {
+    if (err) console.error('Hiba a kategóriák beszúrásakor:', err);
+    else console.log('Alap kategóriák beszúrva');
+  });
+
+  db.query(insertPlatform, (err) => {
+    if (err) console.error('Hiba a platformok beszúrásakor:', err);
+    else console.log('Alap platformok beszúrva');
+  });
+
+  db.query(insertRendszerKovetelmeny, (err) => {
+    if (err) console.error('Hiba a rendszerkövetelmények beszúrásakor:', err);
+    else console.log('Alap rendszerkövetelmény beszúrva');
+  });
+};
+
+// Felhasználói tábla kiegészítése a szerver indításakor
+updateUserTable();
+updateGameTable();
+createMissingTables();
+
+// Wishlist végpontok
+app.get("/wishlist/:username", (req, res) => {
+  const { username } = req.params;
+  
+  const sql = `
+    SELECT 
+      w.id,
+      w.created_at,
+      j.idjatekok AS gameId,
+      j.nev AS title,
+      j.kepurl AS image,
+      j.ar AS price,
+      f.nev AS developer
+    FROM wishlist w
+    JOIN jatekok j ON w.idjatekok = j.idjatekok
+    JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    JOIN felhasznalo u ON w.idfelhasznalo = u.idfelhasznalo
+    WHERE u.felhasznalonev = ?
+    ORDER BY w.created_at DESC
+  `;
+
+  db.query(sql, [username], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    res.json({ success: true, wishlist: results });
+  });
+});
+
+app.post("/wishlist/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  
+  // Felhasználó ID lekérése
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
+    if (err || userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+
+    const userId = userResults[0].idfelhasznalo;
+
+    const sql = "INSERT INTO wishlist (idfelhasznalo, idjatekok) VALUES (?, ?)";
+    db.query(sql, [userId, gameId], (err, result) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ success: false, message: "Ez a játék már a kívánságlistán van" });
+        }
+        return res.status(500).json({ success: false, error: err });
+      }
+      res.json({ success: true, message: "Játék hozzáadva a kívánságlistához" });
+    });
+  });
+});
+
+app.delete("/wishlist/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  
+  const sql = `
+    DELETE w FROM wishlist w
+    JOIN felhasznalo u ON w.idfelhasznalo = u.idfelhasznalo
+    WHERE u.felhasznalonev = ? AND w.idjatekok = ?
+  `;
+
+  db.query(sql, [username, gameId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen játék a kívánságlistán" });
+    res.json({ success: true, message: "Játék törölve a kívánságlistáról" });
+  });
+});
+
+// Collection végpontok
+app.get("/collection/:username", (req, res) => {
+  const { username } = req.params;
+  
+  const sql = `
+    SELECT 
+      c.id,
+      c.status,
+      c.rating,
+      c.notes,
+      c.added_at,
+      c.updated_at,
+      j.idjatekok AS gameId,
+      j.nev AS title,
+      j.kepurl AS image,
+      j.ar AS price,
+      f.nev AS developer
+    FROM game_collection c
+    JOIN jatekok j ON c.idjatekok = j.idjatekok
+    JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    JOIN felhasznalo u ON c.idfelhasznalo = u.idfelhasznalo
+    WHERE u.felhasznalonev = ?
+    ORDER BY c.updated_at DESC
+  `;
+
+  db.query(sql, [username], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    res.json({ success: true, collection: results });
+  });
+});
+
+app.post("/collection/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  const { status = 'owned', rating, notes } = req.body;
+  
+  // Felhasználó ID lekérése
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
+    if (err || userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+
+    const userId = userResults[0].idfelhasznalo;
+
+    const sql = "INSERT INTO game_collection (idfelhasznalo, idjatekok, status, rating, notes) VALUES (?, ?, ?, ?, ?)";
+    db.query(sql, [userId, gameId, status, rating || null, notes || null], (err, result) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ success: false, message: "Ez a játék már a gyűjteményben van" });
+        }
+        return res.status(500).json({ success: false, error: err });
+      }
+      res.json({ success: true, message: "Játék hozzáadva a gyűjteményhez" });
+    });
+  });
+});
+
+app.put("/collection/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  const { status, rating, notes } = req.body;
+  
+  const sql = `
+    UPDATE game_collection c
+    JOIN felhasznalo u ON c.idfelhasznalo = u.idfelhasznalo
+    SET c.status = ?, c.rating = ?, c.notes = ?, c.updated_at = CURRENT_TIMESTAMP
+    WHERE u.felhasznalonev = ? AND c.idjatekok = ?
+  `;
+
+  db.query(sql, [status, rating || null, notes || null, username, gameId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen játék a gyűjteményben" });
+    res.json({ success: true, message: "Játék adatai frissítve" });
+  });
+});
+
+app.delete("/collection/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  
+  const sql = `
+    DELETE c FROM game_collection c
+    JOIN felhasznalo u ON c.idfelhasznalo = u.idfelhasznalo
+    WHERE u.felhasznalonev = ? AND c.idjatekok = ?
+  `;
+
+  db.query(sql, [username, gameId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Nincs ilyen játék a gyűjteményben" });
+    res.json({ success: true, message: "Játék törölve a gyűjteményből" });
   });
 });
 

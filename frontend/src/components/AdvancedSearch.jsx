@@ -1,249 +1,492 @@
 import React, { useState, useEffect } from 'react';
 
-const AdvancedSearch = ({ games, onFilterChange, onSortChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const AdvancedSearch = ({ onSearch, onFilter, games }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [ratingRange, setRatingRange] = useState({ min: 0, max: 10 });
-  const [sortBy, setSortBy] = useState('title-asc');
-  const [platforms, setPlatforms] = useState([]);
-  const [isFree, setIsFree] = useState(false);
+  const [filters, setFilters] = useState({
+    categories: [],
+    platforms: [],
+    priceRange: { min: 0, max: 50000 },
+    rating: { min: 0, max: 10 },
+    systemRequirements: {
+      os: '',
+      cpu: '',
+      gpu: '',
+      ram: '',
+      storage: ''
+    },
+    features: [],
+    languages: [],
+    multiplayer: null,
+    ageRating: '',
+    releaseYear: { min: 2000, max: new Date().getFullYear() }
+  });
 
-  // Extract unique categories and platforms from games
-  const allCategories = [...new Set(games.flatMap(g => g.categories || []))];
-  const allPlatforms = [...new Set(games.flatMap(g => g.platforms || []))];
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+
+  const categories = [
+    'Akció', 'Kaland', 'RPG', 'Stratégia', 'Sport', 'Verseny',
+    'Horrort', 'Puzzle', 'Platformer', 'Shooter', 'MMO', 'Szimulátor',
+    'Indie', 'Co-op', 'Battle Royale', 'MOBA', 'Taktikai', 'Barkochba'
+  ];
+
+  const platforms = [
+    'PC', 'PlayStation 5', 'PlayStation 4', 'Xbox Series X/S', 'Xbox One',
+    'Nintendo Switch', 'Mobil (iOS)', 'Mobil (Android)', 'VR'
+  ];
+
+  const operatingSystems = [
+    'Windows 10', 'Windows 11', 'macOS', 'Linux', 'SteamOS'
+  ];
+
+  const cpuOptions = [
+    'Intel Core i3', 'Intel Core i5', 'Intel Core i7', 'Intel Core i9',
+    'AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'AMD Ryzen 9',
+    'Apple M1', 'Apple M2', 'Apple M3'
+  ];
+
+  const gpuOptions = [
+    'NVIDIA GTX 1650', 'NVIDIA GTX 1660', 'NVIDIA RTX 2060', 'NVIDIA RTX 3060',
+    'NVIDIA RTX 3070', 'NVIDIA RTX 3080', 'NVIDIA RTX 4060', 'NVIDIA RTX 4070',
+    'AMD RX 580', 'AMD RX 5700', 'AMD RX 6600', 'AMD RX 6700',
+    'AMD RX 7600', 'AMD RX 7700', 'Intel Arc A750', 'Intel Arc A770'
+  ];
+
+  const ramOptions = [
+    '4 GB', '8 GB', '16 GB', '32 GB', '64 GB'
+  ];
+
+  const storageOptions = [
+    '10 GB', '20 GB', '50 GB', '100 GB', '200 GB', '500 GB', '1 TB'
+  ];
+
+  const features = [
+    'Egyjátékos', 'Többjátékos', 'Co-op', 'PvP', 'Online multiplayer',
+    'LAN multiplayer', 'Cross-platform', 'Achievements', 'Cloud saves',
+    'Controller support', 'VR support', 'Modding support', 'HDR', '4K support'
+  ];
+
+  const languages = [
+    'Magyar', 'Angol', 'Német', 'Francia', 'Spanyol', 'Olasz',
+    'Portugál', 'Orosz', 'Japán', 'Kínai', 'Koreai'
+  ];
+
+  const ageRatings = [
+    'PEGI 3', 'PEGI 7', 'PEGI 12', 'PEGI 16', 'PEGI 18',
+    'ESRB Everyone', 'ESRB Everyone 10+', 'ESRB Teen', 'ESRB Mature 17+'
+  ];
 
   useEffect(() => {
-    applyFilters();
-  }, [searchTerm, selectedCategories, priceRange, ratingRange, sortBy, platforms, isFree]);
-
-  const applyFilters = () => {
-    let filtered = [...games];
-
-    // Search term filter
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(game =>
-        game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        game.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (game.description && game.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+    if (searchTerm.length > 2) {
+      // Simulated search suggestions - in real app, this would be an API call
+      const mockSuggestions = [
+        `${searchTerm} - Akció játék`,
+        `${searchTerm} - RPG játék`,
+        `${searchTerm} - Stratégia játék`
+      ].slice(0, 5);
+      setSuggestions(mockSuggestions);
+    } else {
+      setSuggestions([]);
     }
+  }, [searchTerm]);
 
-    // Category filter
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(game =>
-        selectedCategories.some(cat => game.categories?.includes(cat))
-      );
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+    if (onSearch) {
+      onSearch(term);
     }
+  };
 
-    // Price range filter
-    if (priceRange.min !== '') {
-      filtered = filtered.filter(game => {
-        const price = game.price === 'Ingyenes' ? 0 : parseFloat(game.price) || 0;
-        return price >= parseFloat(priceRange.min);
-      });
-    }
-    if (priceRange.max !== '') {
-      filtered = filtered.filter(game => {
-        const price = game.price === 'Ingyenes' ? 0 : parseFloat(game.price) || 0;
-        return price <= parseFloat(priceRange.max);
-      });
-    }
-
-    // Free games filter
-    if (isFree) {
-      filtered = filtered.filter(game => game.price === 'Ingyenes');
-    }
-
-    // Rating range filter
-    filtered = filtered.filter(game => 
-      game.rating >= ratingRange.min && game.rating <= ratingRange.max
-    );
-
-    // Platform filter
-    if (platforms.length > 0) {
-      filtered = filtered.filter(game =>
-        platforms.some(platform => game.platforms?.includes(platform))
-      );
-    }
-
-    // Sorting
-    const [sortField, sortOrder] = sortBy.split('-');
-    filtered.sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-
-      if (sortField === 'price') {
-        aVal = a.price === 'Ingyenes' ? 0 : parseFloat(a.price) || 0;
-        bVal = b.price === 'Ingyenes' ? 0 : parseFloat(b.price) || 0;
+  const handleFilterChange = (filterName, value) => {
+    const newFilters = { ...filters };
+    
+    if (filterName.includes('.')) {
+      const keys = filterName.split('.');
+      let current = newFilters;
+      for (let i = 0; i < keys.length - 1; i++) {
+        current[keys[i]] = { ...current[keys[i]] };
+        current = current[keys[i]];
       }
-
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-      } else {
-        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-      }
-    });
-
-    onFilterChange(filtered);
+      current[keys[keys.length - 1]] = value;
+    } else {
+      newFilters[filterName] = value;
+    }
+    
+    setFilters(newFilters);
+    if (onFilter) {
+      onFilter(newFilters);
+    }
   };
 
   const handleCategoryToggle = (category) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+    const newCategories = filters.categories.includes(category)
+      ? filters.categories.filter(c => c !== category)
+      : [...filters.categories, category];
+    handleFilterChange('categories', newCategories);
   };
 
   const handlePlatformToggle = (platform) => {
-    setPlatforms(prev =>
-      prev.includes(platform)
-        ? prev.filter(p => p !== platform)
-        : [...prev, platform]
-    );
+    const newPlatforms = filters.platforms.includes(platform)
+      ? filters.platforms.filter(p => p !== platform)
+      : [...filters.platforms, platform];
+    handleFilterChange('platforms', newPlatforms);
   };
 
-  const resetFilters = () => {
+  const handleFeatureToggle = (feature) => {
+    const newFeatures = filters.features.includes(feature)
+      ? filters.features.filter(f => f !== feature)
+      : [...filters.features, feature];
+    handleFilterChange('features', newFeatures);
+  };
+
+  const handleLanguageToggle = (language) => {
+    const newLanguages = filters.languages.includes(language)
+      ? filters.languages.filter(l => l !== language)
+      : [...filters.languages, language];
+    handleFilterChange('languages', newLanguages);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      categories: [],
+      platforms: [],
+      priceRange: { min: 0, max: 50000 },
+      rating: { min: 0, max: 10 },
+      systemRequirements: {
+        os: '',
+        cpu: '',
+        gpu: '',
+        ram: '',
+        storage: ''
+      },
+      features: [],
+      languages: [],
+      multiplayer: null,
+      ageRating: '',
+      releaseYear: { min: 2000, max: new Date().getFullYear() }
+    });
     setSearchTerm('');
-    setSelectedCategories([]);
-    setPriceRange({ min: '', max: '' });
-    setRatingRange({ min: 0, max: 10 });
-    setSortBy('title-asc');
-    setPlatforms([]);
-    setIsFree(false);
+    if (onFilter) onFilter({});
+    if (onSearch) onSearch('');
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.categories.length > 0) count++;
+    if (filters.platforms.length > 0) count++;
+    if (filters.priceRange.min > 0 || filters.priceRange.max < 50000) count++;
+    if (filters.rating.min > 0 || filters.rating.max < 10) count++;
+    if (filters.systemRequirements.os) count++;
+    if (filters.systemRequirements.cpu) count++;
+    if (filters.systemRequirements.gpu) count++;
+    if (filters.systemRequirements.ram) count++;
+    if (filters.systemRequirements.storage) count++;
+    if (filters.features.length > 0) count++;
+    if (filters.languages.length > 0) count++;
+    if (filters.multiplayer !== null) count++;
+    if (filters.ageRating) count++;
+    if (filters.releaseYear.min > 2000 || filters.releaseYear.max < new Date().getFullYear()) count++;
+    return count;
   };
 
   return (
     <div className="advanced-search">
+      {/* Basic Search */}
       <div className="search-header">
-        <div className="search-input-group">
-          <input
-            type="text"
-            placeholder="Keresés játékokra..."
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button 
-            className="advanced-toggle-btn"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? '▲' : '▼'} Részletes keresés
-          </button>
+        <div className="search-bar">
+          <div className="search-input-container">
+            <input
+              type="text"
+              placeholder="Keress játékokra, fejlesztőkre, kategóriákra..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="search-input"
+            />
+            <button className="search-btn">
+              🔍
+            </button>
+          </div>
+          
+          {/* Search Suggestions */}
+          {suggestions.length > 0 && (
+            <div className="search-suggestions">
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="suggestion-item"
+                  onClick={() => handleSearch(suggestion.split(' - ')[0])}
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        
-        <div className="quick-sort">
-          <select 
-            className="sort-select"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+
+        <div className="search-controls">
+          <button
+            className={`advanced-toggle ${showAdvanced ? 'active' : ''}`}
+            onClick={() => setShowAdvanced(!showAdvanced)}
           >
-            <option value="title-asc">Név (A-Z)</option>
-            <option value="title-desc">Név (Z-A)</option>
-            <option value="price-asc">Ár (alacsony→magas)</option>
-            <option value="price-desc">Ár (magas→alacsony)</option>
-            <option value="rating-desc">Értékelés (magas→alacsony)</option>
-            <option value="rating-asc">Értékelés (alacsony→magas)</option>
-          </select>
+            🎛️ Részletes szűrés
+            {getActiveFiltersCount() > 0 && (
+              <span className="filter-count">{getActiveFiltersCount()}</span>
+            )}
+          </button>
+          
+          {getActiveFiltersCount() > 0 && (
+            <button className="clear-filters" onClick={clearFilters}>
+              🗑️ Szűrők törlése
+            </button>
+          )}
         </div>
       </div>
 
-      {isOpen && (
+      {/* Advanced Filters */}
+      {showAdvanced && (
         <div className="advanced-filters">
           <div className="filter-section">
-            <h3>Kategóriák</h3>
-            <div className="checkbox-group">
-              {allCategories.map(category => (
-                <label key={category} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(category)}
-                    onChange={() => handleCategoryToggle(category)}
-                  />
+            <h3>🏷️ Kategóriák</h3>
+            <div className="filter-options">
+              {categories.map(category => (
+                <button
+                  key={category}
+                  className={`filter-chip ${filters.categories.includes(category) ? 'active' : ''}`}
+                  onClick={() => handleCategoryToggle(category)}
+                >
                   {category}
-                </label>
+                </button>
               ))}
             </div>
           </div>
 
           <div className="filter-section">
-            <h3>Ár tartomány</h3>
-            <div className="price-range">
-              <input
-                type="number"
-                placeholder="Minimum"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                className="price-input"
-              />
-              <span>-</span>
-              <input
-                type="number"
-                placeholder="Maximum"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                className="price-input"
-              />
+            <h3>🎮 Platformok</h3>
+            <div className="filter-options">
+              {platforms.map(platform => (
+                <button
+                  key={platform}
+                  className={`filter-chip ${filters.platforms.includes(platform) ? 'active' : ''}`}
+                  onClick={() => handlePlatformToggle(platform)}
+                >
+                  {platform}
+                </button>
+              ))}
             </div>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={isFree}
-                onChange={(e) => setIsFree(e.target.checked)}
-              />
-              Csak ingyenes játékok
-            </label>
+          </div>
+
+          <div className="filter-row">
+            <div className="filter-section">
+              <h3>💰 Ár tartomány</h3>
+              <div className="range-filter">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={filters.priceRange.min}
+                  onChange={(e) => handleFilterChange('priceRange.min', parseInt(e.target.value) || 0)}
+                  className="range-input"
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={filters.priceRange.max}
+                  onChange={(e) => handleFilterChange('priceRange.max', parseInt(e.target.value) || 50000)}
+                  className="range-input"
+                />
+                <span>Ft</span>
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <h3>⭐ Értékelés</h3>
+              <div className="range-filter">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  min="0"
+                  max="10"
+                  value={filters.rating.min}
+                  onChange={(e) => handleFilterChange('rating.min', parseFloat(e.target.value) || 0)}
+                  className="range-input"
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  min="0"
+                  max="10"
+                  value={filters.rating.max}
+                  onChange={(e) => handleFilterChange('rating.max', parseFloat(e.target.value) || 10)}
+                  className="range-input"
+                />
+                <span>/10</span>
+              </div>
+            </div>
           </div>
 
           <div className="filter-section">
-            <h3>Értékelés</h3>
-            <div className="rating-range">
-              <input
-                type="range"
-                min="0"
-                max="10"
-                value={ratingRange.min}
-                onChange={(e) => setRatingRange(prev => ({ ...prev, min: parseInt(e.target.value) }))}
-                className="rating-slider"
-              />
-              <span>{ratingRange.min}</span>
-              <span>-</span>
-              <input
-                type="range"
-                min="0"
-                max="10"
-                value={ratingRange.max}
-                onChange={(e) => setRatingRange(prev => ({ ...prev, max: parseInt(e.target.value) }))}
-                className="rating-slider"
-              />
-              <span>{ratingRange.max}</span>
+            <h3>💻 Rendszerkövetelmények</h3>
+            <div className="requirements-filters">
+              <div className="req-filter-group">
+                <label>Operációs Rendszer</label>
+                <select
+                  value={filters.systemRequirements.os}
+                  onChange={(e) => handleFilterChange('systemRequirements.os', e.target.value)}
+                  className="req-select"
+                >
+                  <option value="">Bármelyik</option>
+                  {operatingSystems.map(os => (
+                    <option key={os} value={os}>{os}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="req-filter-group">
+                <label>Processzor</label>
+                <select
+                  value={filters.systemRequirements.cpu}
+                  onChange={(e) => handleFilterChange('systemRequirements.cpu', e.target.value)}
+                  className="req-select"
+                >
+                  <option value="">Bármelyik</option>
+                  {cpuOptions.map(cpu => (
+                    <option key={cpu} value={cpu}>{cpu}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="req-filter-group">
+                <label>Videokártya</label>
+                <select
+                  value={filters.systemRequirements.gpu}
+                  onChange={(e) => handleFilterChange('systemRequirements.gpu', e.target.value)}
+                  className="req-select"
+                >
+                  <option value="">Bármelyik</option>
+                  {gpuOptions.map(gpu => (
+                    <option key={gpu} value={gpu}>{gpu}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="req-filter-group">
+                <label>Memória (RAM)</label>
+                <select
+                  value={filters.systemRequirements.ram}
+                  onChange={(e) => handleFilterChange('systemRequirements.ram', e.target.value)}
+                  className="req-select"
+                >
+                  <option value="">Bármelyik</option>
+                  {ramOptions.map(ram => (
+                    <option key={ram} value={ram}>{ram}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="req-filter-group">
+                <label>Tárhely</label>
+                <select
+                  value={filters.systemRequirements.storage}
+                  onChange={(e) => handleFilterChange('systemRequirements.storage', e.target.value)}
+                  className="req-select"
+                >
+                  <option value="">Bármelyik</option>
+                  {storageOptions.map(storage => (
+                    <option key={storage} value={storage}>{storage}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {allPlatforms.length > 0 && (
+          <div className="filter-section">
+            <h3>⚡ Jellemzők</h3>
+            <div className="filter-options">
+              {features.map(feature => (
+                <button
+                  key={feature}
+                  className={`filter-chip ${filters.features.includes(feature) ? 'active' : ''}`}
+                  onClick={() => handleFeatureToggle(feature)}
+                >
+                  {feature}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-row">
             <div className="filter-section">
-              <h3>Platformok</h3>
-              <div className="checkbox-group">
-                {allPlatforms.map(platform => (
-                  <label key={platform} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={platforms.includes(platform)}
-                      onChange={() => handlePlatformToggle(platform)}
-                    />
-                    {platform}
-                  </label>
+              <h3>🌍 Nyelvek</h3>
+              <div className="filter-options">
+                {languages.map(language => (
+                  <button
+                    key={language}
+                    className={`filter-chip ${filters.languages.includes(language) ? 'active' : ''}`}
+                    onClick={() => handleLanguageToggle(language)}
+                  >
+                    {language}
+                  </button>
                 ))}
               </div>
             </div>
-          )}
 
-          <div className="filter-actions">
-            <button onClick={resetFilters} className="reset-btn">
-              Szűrők törlése
-            </button>
+            <div className="filter-section">
+              <h3>🎮 Többjátékos</h3>
+              <div className="multiplayer-options">
+                <button
+                  className={`filter-chip ${filters.multiplayer === true ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('multiplayer', true)}
+                >
+                  Igen
+                </button>
+                <button
+                  className={`filter-chip ${filters.multiplayer === false ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('multiplayer', false)}
+                >
+                  Nem
+                </button>
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <h3>🔞 Korhatár</h3>
+              <select
+                value={filters.ageRating}
+                onChange={(e) => handleFilterChange('ageRating', e.target.value)}
+                className="age-rating-select"
+              >
+                <option value="">Bármelyik</option>
+                {ageRatings.map(rating => (
+                  <option key={rating} value={rating}>{rating}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <h3>📅 Megjelenési Év</h3>
+            <div className="range-filter">
+              <input
+                type="number"
+                placeholder="Min"
+                min="2000"
+                max={new Date().getFullYear()}
+                value={filters.releaseYear.min}
+                onChange={(e) => handleFilterChange('releaseYear.min', parseInt(e.target.value) || 2000)}
+                className="range-input"
+              />
+              <span>-</span>
+              <input
+                type="number"
+                placeholder="Max"
+                min="2000"
+                max={new Date().getFullYear()}
+                value={filters.releaseYear.max}
+                onChange={(e) => handleFilterChange('releaseYear.max', parseInt(e.target.value) || new Date().getFullYear())}
+                className="range-input"
+              />
+            </div>
           </div>
         </div>
       )}

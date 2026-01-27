@@ -7,11 +7,11 @@ import Home from "./pages/Home.jsx";
 import GameDetail from "./pages/GameDetail.jsx";
 import LoginPage from "./pages/Login.jsx";
 import RegisterPage from "./pages/Register.jsx";
-import AddGamePage from "./pages/AddGamePage.jsx";
 import NevjegyPage from "./pages/Nevjegy.jsx";
 import LandingPage from "./pages/landingpage.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import GameDevUpload from "./pages/GameDevUpload.jsx";
+import GameDevPanel from "./components/GameDevPanel.jsx";
 import Statistics from "./pages/Statistics.jsx";
 import UserProfile from "./components/UserProfile.jsx";
 
@@ -27,21 +27,26 @@ function App() {
   // ----- Fetch users + games + comments -----
   useEffect(() => {
     // users
-    axios.get("http://localhost:3001/felhasznalok").then((res) => {
-      if (res.data.success) {
-        const mapped = (res.data.users || []).map((u) => ({
-          id: u.idfelhasznalo,
-          username: u.felhasznalonev,
-          email: u.email,
-          password: u.jelszo,
-          bio: u.bio || "",
-          avatar: u.avatar || "",
-          role: u.role || "user",
-          name: u.nev || "",
-        }));
-        setUsers(mapped);
-      }
-    });
+    axios.get("http://localhost:3001/felhasznalok")
+      .then((res) => {
+        console.log('Felhasználók válasz:', res.data);
+        if (res.data.success) {
+          const mapped = (res.data.users || []).map((u) => ({
+            id: u.idfelhasznalo,
+            username: u.felhasznalonev,
+            email: u.email,
+            password: u.jelszo,
+            bio: u.bio || "",
+            avatar: u.avatar || "",
+            role: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor,
+            name: u.nev || "",
+          }));
+          setUsers(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error('Felhasználók lekérési hiba:', err);
+      });
 
     // games
     axios.get("http://localhost:3001/jatekok").then((res) => {
@@ -76,19 +81,21 @@ function App() {
 
   // ------------ AUTH ------------------
   function handleLogin(uname, pass, navigate) {
+    console.log('Bejelentkezési kérés:', { uname, pass });
     axios
       .post("http://localhost:3001/login", {
         felhasznalonev: uname,
         jelszo: pass,
       })
       .then((res) => {
+        console.log('Bejelentkezési válasz:', res.data);
         if (res.data.success) {
           const u = res.data.user;
           setUser({
             id: u.idfelhasznalo,
             username: u.felhasznalonev,
             email: u.email,
-            role: u.role || "user",
+            role: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor,
             bio: u.bio || "",
             avatar: u.avatar || "",
             name: u.nev || "",
@@ -97,20 +104,26 @@ function App() {
         } else {
           alert("Hibás felhasználónév vagy jelszó!");
         }
+      })
+      .catch((err) => {
+        console.error('Bejelentkezési hiba:', err);
+        alert("Bejelentkezési hiba történt!");
       });
   }
 
-  function handleRegister(uname, email, pass, role = 'user', cb) {
+  function handleRegister(uname, email, pass, role = 'felhasznalo', cb) {
+    console.log('Regisztrációs kérés:', { uname, email, pass, role });
     if (users.some((u) => u.username === uname)) {
       alert("Ez a név már foglalt!");
       return;
     }
 
+    const frontendRole = role === 'felhasznalo' ? 'user' : role;
     const newUser = { 
       username: uname, 
       email, 
       password: pass, 
-      role,
+      role: frontendRole,
       bio: "", 
       avatar: "",
       name: ""
@@ -122,20 +135,32 @@ function App() {
       felhasznalonev: uname,
       email,
       jelszo: pass,
-      role,
+      szerepkor: role,
+    })
+    .then((res) => {
+      console.log('Regisztrációs válasz:', res.data);
+      if (res.data.success) {
+        cb && cb();
+      } else {
+        alert("Regisztrációs hiba történt!");
+      }
+    })
+    .catch((err) => {
+      console.error('Regisztrációs hiba:', err);
+      alert("Regisztrációs hiba történt!");
     });
-
-    cb && cb();
   }
 
   function handleLogout() {
     setUser(null);
+    // Töröljük a localStorage-ből is a felhasználói adatokat
+    localStorage.removeItem('user');
+    // Visszairányítjuk a főoldalra
+    window.location.href = '/';
   }
 
   // ------------ COMMENTS (DB) ------------------
   async function fetchComments(gameId) {
-    // Nálad a szerverben jelenleg nincs GET /jatekok/:id/kommentek endpoint,
-    // ezért itt a teljes /kommentek listát frissítjük és gameId szerint csoportosítjuk.
     const res = await axios.get("http://localhost:3001/kommentek");
     if (res.data.success) {
       const grouped = {};
@@ -164,19 +189,36 @@ function App() {
     }
   }
 
-  async function handleDeleteComment(gameId, commentId) {
-    if (!user || user.username !== "admin") return;
-
-    const res = await axios.delete(`http://localhost:3001/kommentek/${commentId}`);
-    if (res.data.success) {
-      setComments((prev) => ({
-        ...prev,
-        [gameId]: (prev[gameId] || []).filter((c) => c.id !== commentId),
-      }));
+  // ------------ WISHLIST AND COLLECTION ------------------
+  async function handleAddToWishlist(gameId) {
+    if (!user) return;
+    try {
+      const response = await axios.post(`http://localhost:3001/wishlist/${user.username}/${gameId}`);
+      if (response.data.success) {
+        alert('Játék hozzáadva a kívánságlistához!');
+      } else {
+        alert(response.data.message || 'Hiba történt');
+      }
+    } catch (error) {
+      console.error('Hiba a kívánságlistához adáskor:', error);
+      alert('Hiba történt a kívánságlistához adáskor');
     }
   }
 
-  // ------------ DELETE GAME (admin only) ------------------
+  async function handleAddToCollection(gameId, status = 'owned') {
+    if (!user) return;
+    try {
+      const response = await axios.post(`http://localhost:3001/collection/${user.username}/${gameId}`, { status });
+      if (response.data.success) {
+        alert('Játék hozzáadva a gyűjteményhez!');
+      } else {
+        alert(response.data.message || 'Hiba történt');
+      }
+    } catch (error) {
+      console.error('Hiba a gyűjteményhez adáskor:', error);
+      alert('Hiba történt a gyűjteményhez adáskor');
+    }
+  }
   async function onDeleteGame(gameId) {
     if (!window.confirm("Biztosan törlöd?")) return false;
 
@@ -254,7 +296,8 @@ function App() {
                 games={games}
                 comments={comments}
                 handleAddComment={handleAddComment}
-                handleDeleteComment={handleDeleteComment}
+                handleAddToWishlist={handleAddToWishlist}
+                handleAddToCollection={handleAddToCollection}
               />
             ) : (
               <LandingPage />
@@ -293,17 +336,6 @@ function App() {
           }
         />
 
-        <Route
-          path="/addgame"
-          element={
-            user?.username === "admin" ? (
-              <AddGamePage setGames={setGames} />
-            ) : (
-              <Home user={user} games={games} comments={comments} filterSortGames={filterSortGames} />
-            )
-          }
-        />
-
         <Route path="/nevjegy" element={<NevjegyPage />} />
 
         <Route
@@ -313,6 +345,7 @@ function App() {
               games={games}
               comments={comments}
               users={users}
+              user={user}
             />
           }
         />
@@ -331,8 +364,19 @@ function App() {
         <Route
           path="/gamedev-upload"
           element={
-            user?.role === 'gamedev' || user?.role === 'admin' ? (
+            user?.role === 'gamedev' ? (
               <GameDevUpload user={user} />
+            ) : (
+              <LoginPage handleLogin={handleLogin} />
+            )
+          }
+        />
+
+        <Route
+          path="/gamedev-panel"
+          element={
+            user?.role === 'gamedev' ? (
+              <GameDevPanel user={user} />
             ) : (
               <LoginPage handleLogin={handleLogin} />
             )

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 
 
-function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
+function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddToCollection }) {
   const ownRating = comments.find(c => c.user === (user && user.username));
   const globalRating = comments.length
     ? (comments.reduce((sum, v) => sum + v.rating, 0) / comments.length).toFixed(2)
@@ -47,9 +47,29 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
 
         <div className="game-footer">
           <span className="game-price">{game.price}</span>
-          <Link to={`/game/${game.id}`}>
-            <button className="megtekintes-btn">Megtekintés</button>
-          </Link>
+          <div className="game-actions">
+            {user && (
+              <>
+                <button 
+                  onClick={() => onAddToWishlist(game.id)}
+                  className="wishlist-btn"
+                  title="Hozzáadás a kívánságlistához"
+                >
+                  ❤️
+                </button>
+                <button 
+                  onClick={() => onAddToCollection(game.id)}
+                  className="collection-btn"
+                  title="Hozzáadás a gyűjteményhez"
+                >
+                  🎮
+                </button>
+              </>
+            )}
+            <Link to={`/game/${game.id}`}>
+              <button className="megtekintes-btn">Megtekintés</button>
+            </Link>
+          </div>
         </div>
 
         {user && (
@@ -112,27 +132,6 @@ function GameCard({ game, user, comments, onAddComment, onDeleteComment }) {
                 <div style={{ flex: "1 1 auto" }}>
                   <b>{cmt.user}</b>: {cmt.text} <span style={{ color: '#19ffe3' }}>({cmt.rating})</span>
                 </div>
-
-                {user?.username === 'admin' && (
-                  <button
-                    type="button"
-                    onClick={() => onDeleteComment(game.id, cmt.id)}
-                    style={{
-                      marginLeft: 7,
-                      fontSize: '0.9em',
-                      background: '#93000f',
-                      color: '#fff',
-                      borderRadius: 6,
-                      border: 'none',
-                      padding: '3px 8px',
-                      cursor: 'pointer'
-                    }}
-                    aria-label="Komment törlése"
-                    title="Komment törlése"
-                  >
-                    Törlés
-                  </button>
-                )}
               </div>
             ))
           )}

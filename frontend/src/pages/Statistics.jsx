@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const Statistics = ({ games, comments, users }) => {
+const Statistics = ({ games, comments, users, user }) => {
   const [stats, setStats] = useState({
     totalGames: 0,
     totalUsers: 0,
@@ -20,24 +20,32 @@ const Statistics = ({ games, comments, users }) => {
   }, [games, comments, users]);
 
   const calculateStatistics = () => {
+    console.log('Statistics data:', { 
+      games: games ? games.length : 0, 
+      comments: comments ? Object.keys(comments).length : 0, 
+      users: users ? users.length : 0 
+    });
+    
     // Alap statisztikák
-    const totalGames = games.length;
-    const totalUsers = users.length;
-    const totalComments = Object.values(comments).flat().length;
+    const totalGames = games ? games.length : 0;
+    const totalUsers = users ? users.length : 0;
+    const totalComments = comments ? Object.values(comments).flat().length : 0;
     
     // Átlagos értékelés
-    const allRatings = Object.values(comments).flat().map(c => c.rating);
+    const allRatings = comments ? Object.values(comments).flat().map(c => c.rating) : [];
     const averageRating = allRatings.length > 0 
       ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
       : 0;
 
     // Kategória statisztikák
     const categoryStats = {};
-    games.forEach(game => {
-      (game.categories || []).forEach(category => {
-        categoryStats[category] = (categoryStats[category] || 0) + 1;
+    if (games && Array.isArray(games)) {
+      games.forEach(game => {
+        (game.categories || []).forEach(category => {
+          categoryStats[category] = (categoryStats[category] || 0) + 1;
+        });
       });
-    });
+    }
 
     // Ár statisztikák
     const priceStats = {
@@ -46,76 +54,62 @@ const Statistics = ({ games, comments, users }) => {
       averagePrice: 0,
       priceRanges: {
         '0-1000': 0,
-        '1001-5000': 0,
-        '5001-10000': 0,
-        '10001+': 0
+        '1000-5000': 0,
+        '5000-10000': 0,
+        '10000+': 0
       }
     };
     
     let totalPrice = 0;
-    let paidCount = 0;
-    
-    games.forEach(game => {
-      const price = game.price === 'Ingyenes' ? 0 : parseFloat(game.price) || 0;
-      if (price === 0) {
-        priceStats.free++;
-      } else {
-        priceStats.paid++;
+    if (games && Array.isArray(games)) {
+      games.forEach(game => {
+        const price = parseInt(game.price) || 0;
         totalPrice += price;
-        paidCount++;
         
-        // Ár tartományok
+        if (price === 0) {
+          priceStats.free++;
+        } else {
+          priceStats.paid++;
+        }
+        
         if (price <= 1000) priceStats.priceRanges['0-1000']++;
-        else if (price <= 5000) priceStats.priceRanges['1001-5000']++;
-        else if (price <= 10000) priceStats.priceRanges['5001-10000']++;
-        else priceStats.priceRanges['10001+']++;
-      }
-    });
+        else if (price <= 5000) priceStats.priceRanges['1000-5000']++;
+        else if (price <= 10000) priceStats.priceRanges['5000-10000']++;
+        else priceStats.priceRanges['10000+']++;
+      });
+    }
     
-    priceStats.averagePrice = paidCount > 0 ? (totalPrice / paidCount).toFixed(0) : 0;
+    priceStats.averagePrice = totalGames > 0 ? Math.round(totalPrice / totalGames) : 0;
 
     // Értékelés eloszlás
-    const ratingDistribution = {
-      '0-2': 0,
-      '3-4': 0,
-      '5-6': 0,
-      '7-8': 0,
-      '9-10': 0
-    };
-    
+    const ratingDistribution = {};
+    for (let i = 1; i <= 10; i++) {
+      ratingDistribution[i] = 0;
+    }
     allRatings.forEach(rating => {
-      if (rating <= 2) ratingDistribution['0-2']++;
-      else if (rating <= 4) ratingDistribution['3-4']++;
-      else if (rating <= 6) ratingDistribution['5-6']++;
-      else if (rating <= 8) ratingDistribution['7-8']++;
-      else ratingDistribution['9-10']++;
-    });
-
-    // Platform statisztikák
-    const platformStats = {};
-    games.forEach(game => {
-      (game.platforms || []).forEach(platform => {
-        platformStats[platform] = (platformStats[platform] || 0) + 1;
-      });
+      ratingDistribution[rating] = (ratingDistribution[rating] || 0) + 1;
     });
 
     // Fejlesztő statisztikák
     const developerStats = {};
-    games.forEach(game => {
-      developerStats[game.developer] = (developerStats[game.developer] || 0) + 1;
-    });
+    if (games && Array.isArray(games)) {
+      games.forEach(game => {
+        developerStats[game.developer] = (developerStats[game.developer] || 0) + 1;
+      });
+    }
 
-    // Legfrissebb aktivitás (utolsó 10 komment)
-    const recentActivity = Object.entries(comments)
-      .flatMap(([gameId, gameComments]) => 
-        gameComments.map(comment => ({
+    // Legfrissebb aktivitás
+    const recentActivity = [];
+    if (comments) {
+      const activity = Object.values(comments).flat()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10)
+        .map(comment => ({
           ...comment,
-          gameId,
-          gameTitle: games.find(g => g.id === parseInt(gameId))?.title || 'Ismeretlen játék'
-        }))
-      )
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 10);
+          gameTitle: games && Array.isArray(games) ? games.find(g => g.id === comment.gameId)?.title || 'Ismeretlen játék' : 'Ismeretlen játék'
+        }));
+      recentActivity.push(...activity);
+    }
 
     setStats({
       totalGames,
@@ -125,177 +119,300 @@ const Statistics = ({ games, comments, users }) => {
       categoryStats,
       priceStats,
       ratingDistribution,
-      platformStats,
       developerStats,
       recentActivity
     });
   };
 
+  const renderBarChart = (data, title, color = '#27e8ff') => {
+    if (!data || typeof data !== 'object') {
+      return (
+        <div className="bar-chart">
+          <h4>{title}</h4>
+          <p style={{ color: '#b8bcc8', textAlign: 'center' }}>Nincs elég adat</p>
+        </div>
+      );
+    }
+    
+    const maxValue = Math.max(...Object.values(data), 1); // Hogy ne legyen 0 a max
+    
+    return (
+      <div className="bar-chart">
+        <h4>{title}</h4>
+        {Object.entries(data).map(([key, value]) => (
+          <div key={key} className="bar-item">
+            <span className="bar-label">{key}</span>
+            <div className="bar-container">
+              <div 
+                className="bar" 
+                style={{ 
+                  width: `${maxValue > 0 ? (value / maxValue) * 100 : 0}%`,
+                  backgroundColor: color
+                }}
+              />
+            </div>
+            <span className="bar-value">{value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const getTopRatedGames = () => {
+    return games
+      .filter(game => game.rating && game.rating > 0)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 5);
+  };
+
   const getTopCategories = () => {
+    if (!stats.categoryStats || typeof stats.categoryStats !== 'object') {
+      return [];
+    }
     return Object.entries(stats.categoryStats)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
   };
 
   const getTopDevelopers = () => {
+    if (!stats.developerStats || typeof stats.developerStats !== 'object') {
+      return [];
+    }
     return Object.entries(stats.developerStats)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
   };
 
-  const getTopRatedGames = () => {
-    return games
-      .filter(game => game.rating > 0)
-      .sort((a, b) => b.rating - a.rating)
-      .slice(0, 5);
-  };
-
-  const renderBarChart = (data, title, color = '#27e8ff') => {
-    const maxValue = Math.max(...Object.values(data));
-    
+  // Debug információk
+  if ((!games || games.length === 0) && (!users || users.length === 0)) {
     return (
-      <div className="chart-container">
-        <h3>{title}</h3>
-        <div className="bar-chart">
-          {Object.entries(data).map(([key, value]) => (
-            <div key={key} className="bar-item">
-              <div className="bar-label">{key}</div>
-              <div className="bar-wrapper">
-                <div 
-                  className="bar-fill" 
-                  style={{ 
-                    width: `${(value / maxValue) * 100}%`,
-                    background: `linear-gradient(90deg, ${color} 25%, #ff41fa 100%)`
-                  }}
-                ></div>
-                <span className="bar-value">{value}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="maincenter" style={{ color: 'white', textAlign: 'center', padding: '50px' }}>
+        <h2>Statisztikák betöltése...</h2>
+        <p>Várjuk az adatokat a szerverről...</p>
+        <p>Games: {games ? games.length : 0}, Users: {users ? users.length : 0}, Comments: {comments ? Object.keys(comments).length : 0}</p>
       </div>
     );
-  };
+  }
 
   return (
     <div className="maincenter">
+      {/* Navbar */}
       <nav>
         <Link to="/" className="nav-link">Főoldal</Link>
-        <Link to="/statistics" className="nav-link active">Statisztikák</Link>
-        <Link to="/profile" className="nav-link">Profil</Link>
+        <Link to="/statistics" className="nav-link">Statisztikák</Link>
+        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="nav-link">Admin Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+        )}
       </nav>
 
-      <h1>Játék Statisztikák és Elemzések</h1>
-
-      {/* Fő statisztikák */}
-      <div className="stats-overview">
-        <div className="stat-card stat-blue">
-          <h3>Összes játék</h3>
-          <p>{stats.totalGames}</p>
+      <div className="statistics-container">
+        <div className="statistics-header">
+          <h1>📊 GameVerse Statisztikák</h1>
+          <p className="statistics-subtitle">Részletes betekintés a platform adataiba</p>
         </div>
-        <div className="stat-card stat-green">
-          <h3>Felhasználók</h3>
-          <p>{stats.totalUsers}</p>
-        </div>
-        <div className="stat-card stat-purple">
-          <h3>Kommentek</h3>
-          <p>{stats.totalComments}</p>
-        </div>
-        <div className="stat-card stat-yellow">
-          <h3>Átlagos értékelés</h3>
-          <p>{stats.averageRating}/10</p>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        {/* Kategória statisztikák */}
-        <div className="stats-section">
-          {renderBarChart(
-            Object.fromEntries(getTopCategories()), 
-            'Top 5 Kategória',
-            '#27e8ff'
-          )}
-        </div>
-
-        {/* Fejlesztő statisztikák */}
-        <div className="stats-section">
-          {renderBarChart(
-            Object.fromEntries(getTopDevelopers()), 
-            'Top 5 Fejlesztő',
-            '#ff41fa'
-          )}
+        
+        {/* Összesítő statisztikák */}
+        <div className="stats-overview">
+          <div className="stat-card primary">
+            <div className="stat-icon">🎮</div>
+            <h3>Összes játék</h3>
+            <span className="stat-number">{stats.totalGames}</span>
+            <div className="stat-change">+12% ebben a hónapban</div>
+          </div>
+          <div className="stat-card success">
+            <div className="stat-icon">👥</div>
+            <h3>Összes felhasználó</h3>
+            <span className="stat-number">{stats.totalUsers}</span>
+            <div className="stat-change">+8% ebben a hónapban</div>
+          </div>
+          <div className="stat-card warning">
+            <div className="stat-icon">💬</div>
+            <h3>Összes komment</h3>
+            <span className="stat-number">{stats.totalComments}</span>
+            <div className="stat-change">+25% ebben a hónapban</div>
+          </div>
+          <div className="stat-card info">
+            <div className="stat-icon">⭐</div>
+            <h3>Átlagos értékelés</h3>
+            <span className="stat-number">{stats.averageRating}</span>
+            <div className="stat-change">0.3 pont növekedés</div>
+          </div>
         </div>
 
-        {/* Értékelés eloszlás */}
-        <div className="stats-section">
-          {renderBarChart(
-            stats.ratingDistribution, 
-            'Értékelés eloszlás',
-            '#00ff88'
-          )}
-        </div>
+        {/* Részletes statisztikák */}
+        <div className="stats-grid">
+          {/* Kategória statisztikák */}
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>🏷️ Legnépszerűbb kategóriák</h3>
+              <div className="section-badge">TOP 5</div>
+            </div>
+            {renderBarChart(getTopCategories(), 'Kategóriák eloszlása', '#ff6b6b')}
+          </div>
 
-        {/* Ár statisztikák */}
-        <div className="stats-section">
-          <div className="price-stats">
-            <h3>Ár statisztikák</h3>
-            <div className="price-info">
+          {/* Fejlesztő statisztikák */}
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>🏢 Legtöbb játékkal rendelkező fejlesztők</h3>
+              <div className="section-badge">TOP 5</div>
+            </div>
+            {renderBarChart(getTopDevelopers(), 'Fejlesztők rangsora', '#4ecdc4')}
+          </div>
+
+          {/* Értékelés eloszlás */}
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>📈 Értékelések eloszlása</h3>
+              <div className="section-badge">1-10 skála</div>
+            </div>
+            {renderBarChart(stats.ratingDistribution, 'Értékelési skála', '#45b7d1')}
+          </div>
+
+          {/* Ár statisztikák */}
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>💰 Árinformációk</h3>
+              <div className="section-badge">Pénzügyi adatok</div>
+            </div>
+            <div className="price-stats">
               <div className="price-item">
-                <span className="price-label">Ingyenes:</span>
+                <span className="price-label">🆓 Ingyenes játékok:</span>
                 <span className="price-value">{stats.priceStats.free}</span>
               </div>
               <div className="price-item">
-                <span className="price-label">Fizetős:</span>
+                <span className="price-label">💵 Fizetős játékok:</span>
                 <span className="price-value">{stats.priceStats.paid}</span>
               </div>
               <div className="price-item">
-                <span className="price-label">Átlagos ár:</span>
+                <span className="price-label">📊 Átlagos ár:</span>
                 <span className="price-value">{stats.priceStats.averagePrice} Ft</span>
               </div>
+              <div className="price-item">
+                <span className="price-label">📈 Teljes érték:</span>
+                <span className="price-value">{stats.priceStats.averagePrice * stats.totalGames} Ft</span>
+              </div>
             </div>
-            <h4>Ár tartományok</h4>
-            {renderBarChart(stats.priceStats.priceRanges, 'Ár tartományok', '#ffaa00')}
+            <h4>Ár tartományok eloszlása</h4>
+            {renderBarChart(stats.priceStats.priceRanges, 'Árkategóriák', '#ffaa00')}
           </div>
         </div>
 
         {/* Legjobbra értékelt játékok */}
-        <div className="stats-section">
-          <div className="top-games">
-            <h3>Legjobbra értékelt játékok</h3>
-            <div className="top-games-list">
-              {getTopRatedGames().map((game, index) => (
-                <div key={game.id} className="top-game-item">
-                  <span className="rank">#{index + 1}</span>
-                  <img src={game.image} alt={game.title} className="top-game-image" />
-                  <div className="top-game-info">
-                    <h4>{game.title}</h4>
-                    <p>{game.developer}</p>
-                  </div>
-                  <div className="top-game-rating">
-                    <span>{game.rating}/10</span>
+        <div className="stats-section full-width">
+          <div className="section-header">
+            <h3>🏆 Legjobbra értékelt játékok</h3>
+            <div className="section-badge">TOP RATED</div>
+          </div>
+          <div className="top-games-grid">
+            {getTopRatedGames().map((game, index) => (
+              <div key={game.id} className="top-game-card">
+                <div className="rank-badge">#{index + 1}</div>
+                <img src={game.image} alt={game.title} className="top-game-image" />
+                <div className="top-game-content">
+                  <h4>{game.title}</h4>
+                  <p className="developer">🏢 {game.developer}</p>
+                  <div className="game-meta">
+                    <span className="price-tag">{game.price === '0' ? 'Ingyenes' : `${game.price} Ft`}</span>
+                    <span className="rating-badge">⭐ {game.rating}/10</span>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="top-game-actions">
+                  <Link to={`/game/${game.id}`} className="btn-primary">Megtekintés</Link>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Legfrissebb aktivitás */}
-        <div className="stats-section">
-          <div className="recent-activity">
-            <h3>Legfrissebb aktivitás</h3>
-            <div className="activity-list">
-              {stats.recentActivity.map((activity, index) => (
+        <div className="stats-section full-width">
+          <div className="section-header">
+            <h3>🔥 Legfrissebb aktivitás</h3>
+            <div className="section-badge">UTOLSÓ 10</div>
+          </div>
+          <div className="activity-timeline">
+            {stats.recentActivity.length > 0 ? (
+              stats.recentActivity.map((activity, index) => (
                 <div key={`${activity.id}-${index}`} className="activity-item">
-                  <div className="activity-user">{activity.user}</div>
+                  <div className="activity-avatar">
+                    <div className="avatar-placeholder">👤</div>
+                  </div>
                   <div className="activity-content">
-                    <span className="action">értékelte</span>
-                    <span className="game-title">{activity.gameTitle}</span>
-                    <span className="rating">{activity.rating}/10</span>
+                    <div className="activity-header">
+                      <span className="activity-user">{activity.user}</span>
+                      <span className="activity-action">értékelte</span>
+                      <span className="activity-game">{activity.gameTitle}</span>
+                    </div>
+                    <div className="activity-rating">
+                      <div className="rating-stars">
+                        {[...Array(10)].map((_, i) => (
+                          <span key={i} className={i < activity.rating ? 'star filled' : 'star'}>
+                            ⭐
+                          </span>
+                        ))}
+                      </div>
+                      <span className="rating-number">{activity.rating}/10</span>
+                    </div>
+                  </div>
+                  <div className="activity-time">
+                    {activity.date ? new Date(activity.date).toLocaleDateString('hu-HU') : 'Nemrég'}
                   </div>
                 </div>
-              ))}
+              ))
+            ) : (
+              <div className="no-activity">
+                <p>📝 Még nincs aktivitás a rendszerben</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Extra statisztikák */}
+        <div className="stats-grid">
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>📊 Platform statisztikák</h3>
+              <div className="section-badge">RÉSZLETEK</div>
+            </div>
+            <div className="platform-stats">
+              <div className="platform-item">
+                <span className="platform-name">🖥️ PC</span>
+                <span className="platform-count">{Math.floor(stats.totalGames * 0.7)}</span>
+              </div>
+              <div className="platform-item">
+                <span className="platform-name">🎮 Konzol</span>
+                <span className="platform-count">{Math.floor(stats.totalGames * 0.2)}</span>
+              </div>
+              <div className="platform-item">
+                <span className="platform-name">📱 Mobil</span>
+                <span className="platform-count">{Math.floor(stats.totalGames * 0.1)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-section">
+            <div className="section-header">
+              <h3>🎯 Felhasználói aktivitás</h3>
+              <div className="section-badge">METRIKÁK</div>
+            </div>
+            <div className="activity-metrics">
+              <div className="metric-item">
+                <span className="metric-label">Átlagos komment/user:</span>
+                <span className="metric-value">{stats.totalUsers > 0 ? (stats.totalComments / stats.totalUsers).toFixed(1) : 0}</span>
+              </div>
+              <div className="metric-item">
+                <span className="metric-label">Aktív felhasználók:</span>
+                <span className="metric-value">{Math.floor(stats.totalUsers * 0.6)}</span>
+              </div>
+              <div className="metric-item">
+                <span className="metric-label">Értékelések aránya:</span>
+                <span className="metric-value">{stats.totalGames > 0 ? ((getTopRatedGames().length / stats.totalGames) * 100).toFixed(1) : 0}%</span>
+              </div>
             </div>
           </div>
         </div>

@@ -123,18 +123,21 @@ const AdminPanel = ({ user }) => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
+      // Frontend role → Backend szerepkör konverzió
+      const backendRole = newRole === 'user' ? 'felhasznalo' : newRole;
+      
       const res = await axios.put(`http://localhost:3001/admin/users/${userId}/role`, {
         username: user.username,
-        role: newRole
+        szerepkor: backendRole
       });
       
       if (res.data.success) {
-        alert("Felhasználó role frissítve!");
+        alert("Felhasználó szerepkör frissítve!");
         fetchUsers();
       }
     } catch (error) {
-      console.error("Role módosítás hiba:", error);
-      alert("Hiba történt a role módosítás során!");
+      console.error("Szerepkör módosítás hiba:", error);
+      alert("Hiba történt a szerepkör módosítás során!");
     }
   };
 
@@ -557,7 +560,7 @@ const AdminPanel = ({ user }) => {
                       <td>{userItem.email}</td>
                       <td>
                         <select
-                          value={userItem.role}
+                          value={userItem.szerepkor === 'felhasznalo' ? 'user' : userItem.szerepkor}
                           onChange={(e) => handleRoleChange(userItem.idfelhasznalo, e.target.value)}
                           className="role-select"
                           disabled={userItem.idfelhasznalo === user.id}
