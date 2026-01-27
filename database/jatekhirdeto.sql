@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3307
--- Létrehozás ideje: 2026. Jan 27. 12:03
+-- Létrehozás ideje: 2026. Jan 27. 13:08
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -79,6 +79,17 @@ CREATE TABLE `felhasznalo` (
   `youtube` varchar(200) DEFAULT NULL,
   `twitch` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `felhasznalo`
+--
+
+INSERT INTO `felhasznalo` (`idfelhasznalo`, `felhasznalonev`, `jelszo`, `nev`, `email`, `szerepkor`, `regisztracio_datum`, `bio`, `avatar`, `favoriteGenres`, `preferredPlatforms`, `country`, `birthYear`, `discord`, `twitter`, `youtube`, `twitch`) VALUES
+(1, 'testuser', '12345', NULL, 'test@test.com', 'felhasznalo', '2026-01-27 11:41:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 'admin', 'admin', NULL, 'asd@gmail.com', 'admin', '2026-01-27 11:43:36', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(4, 'testuser2', '12345', NULL, 'test2@test.com', 'felhasznalo', '2026-01-27 11:50:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(6, 'testuser3', '12345', NULL, 'test3@test.com', 'felhasznalo', '2026-01-27 11:50:47', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(8, 'testuser4', '12345', NULL, 'test4@test.com', 'felhasznalo', '2026-01-27 12:04:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -376,8 +387,101 @@ CREATE TABLE `jatekok` (
   `ar` int(11) DEFAULT 0,
   `idfejleszto` int(11) NOT NULL,
   `idkiado` int(11) DEFAULT NULL,
-  `megjelenesi_datum` date DEFAULT NULL
+  `megjelenesi_datum` date DEFAULT NULL,
+  `status` enum('approved','pending','rejected') DEFAULT 'approved',
+  `uploaded_by` int(11) DEFAULT NULL,
+  `ertekeles` decimal(3,2) DEFAULT 0.00,
+  `idrendszerkovetelmeny` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatekok_kategoriak`
+--
+
+CREATE TABLE `jatekok_kategoriak` (
+  `idjatekok` int(11) NOT NULL,
+  `idkategoria` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `jatekok_platformok`
+--
+
+CREATE TABLE `jatekok_platformok` (
+  `idjatekok` int(11) NOT NULL,
+  `idplatform` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `kategoria`
+--
+
+CREATE TABLE `kategoria` (
+  `idkategoria` int(11) NOT NULL,
+  `nev` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `kategoria`
+--
+
+INSERT INTO `kategoria` (`idkategoria`, `nev`) VALUES
+(1, 'Akció'),
+(2, 'Kaland'),
+(3, 'Stratégia'),
+(4, 'RPG'),
+(5, 'Sport'),
+(6, 'Akció'),
+(7, 'Kaland'),
+(8, 'Stratégia'),
+(9, 'RPG'),
+(10, 'Sport'),
+(11, 'Akció'),
+(12, 'Kaland'),
+(13, 'Stratégia'),
+(14, 'RPG'),
+(15, 'Sport'),
+(16, 'Akció'),
+(17, 'Kaland'),
+(18, 'Stratégia'),
+(19, 'RPG'),
+(20, 'Sport'),
+(21, 'Akció'),
+(22, 'Kaland'),
+(23, 'Stratégia'),
+(24, 'RPG'),
+(25, 'Sport'),
+(26, 'Akció'),
+(27, 'Kaland'),
+(28, 'Stratégia'),
+(29, 'RPG'),
+(30, 'Sport'),
+(31, 'Akció'),
+(32, 'Kaland'),
+(33, 'Stratégia'),
+(34, 'RPG'),
+(35, 'Sport'),
+(36, 'Akció'),
+(37, 'Kaland'),
+(38, 'Stratégia'),
+(39, 'RPG'),
+(40, 'Sport'),
+(41, 'Akció'),
+(42, 'Kaland'),
+(43, 'Stratégia'),
+(44, 'RPG'),
+(45, 'Sport'),
+(46, 'Akció'),
+(47, 'Kaland'),
+(48, 'Stratégia'),
+(49, 'RPG'),
+(50, 'Sport');
 
 -- --------------------------------------------------------
 
@@ -399,13 +503,103 @@ CREATE TABLE `kiado` (
 --
 
 CREATE TABLE `kommentek` (
-  `idkomment` int(11) NOT NULL,
+  `idkommentek` int(11) NOT NULL,
   `idjatekok` int(11) NOT NULL,
   `idfelhasznalo` int(11) NOT NULL,
-  `szoveg` text NOT NULL,
-  `ertekeles` int(11) DEFAULT 0,
+  `tartalom` text NOT NULL,
+  `ertekeles` decimal(3,2) DEFAULT NULL,
   `datum` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `platform`
+--
+
+CREATE TABLE `platform` (
+  `idplatform` int(11) NOT NULL,
+  `nev` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `platform`
+--
+
+INSERT INTO `platform` (`idplatform`, `nev`) VALUES
+(1, 'PC'),
+(2, 'PlayStation'),
+(3, 'Xbox'),
+(4, 'Nintendo'),
+(5, 'PC'),
+(6, 'PlayStation'),
+(7, 'Xbox'),
+(8, 'Nintendo'),
+(9, 'PC'),
+(10, 'PlayStation'),
+(11, 'Xbox'),
+(12, 'Nintendo'),
+(13, 'PC'),
+(14, 'PlayStation'),
+(15, 'Xbox'),
+(16, 'Nintendo'),
+(17, 'PC'),
+(18, 'PlayStation'),
+(19, 'Xbox'),
+(20, 'Nintendo'),
+(21, 'PC'),
+(22, 'PlayStation'),
+(23, 'Xbox'),
+(24, 'Nintendo'),
+(25, 'PC'),
+(26, 'PlayStation'),
+(27, 'Xbox'),
+(28, 'Nintendo'),
+(29, 'PC'),
+(30, 'PlayStation'),
+(31, 'Xbox'),
+(32, 'Nintendo'),
+(33, 'PC'),
+(34, 'PlayStation'),
+(35, 'Xbox'),
+(36, 'Nintendo'),
+(37, 'PC'),
+(38, 'PlayStation'),
+(39, 'Xbox'),
+(40, 'Nintendo'),
+(41, 'PC'),
+(42, 'PlayStation'),
+(43, 'Xbox'),
+(44, 'Nintendo');
+
+-- --------------------------------------------------------
+
+--
+-- Tábla szerkezet ehhez a táblához `rendszerkovetelmeny`
+--
+
+CREATE TABLE `rendszerkovetelmeny` (
+  `idrendszerkovetelmeny` int(11) NOT NULL,
+  `minimum` varchar(255) DEFAULT NULL,
+  `ajanlott` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- A tábla adatainak kiíratása `rendszerkovetelmeny`
+--
+
+INSERT INTO `rendszerkovetelmeny` (`idrendszerkovetelmeny`, `minimum`, `ajanlott`) VALUES
+(1, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(2, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(3, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(4, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(5, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(6, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(7, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(8, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(9, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(10, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+(11, 'Minimum: Windows 10, 4GB RAM, 2GB VRAM', 'Ajánlott: Windows 10, 8GB RAM, 4GB VRAM');
 
 -- --------------------------------------------------------
 
@@ -550,7 +744,29 @@ ALTER TABLE `game_tag_relations`
 ALTER TABLE `jatekok`
   ADD PRIMARY KEY (`idjatekok`),
   ADD KEY `idfejleszto` (`idfejleszto`),
-  ADD KEY `idkiado` (`idkiado`);
+  ADD KEY `idkiado` (`idkiado`),
+  ADD KEY `uploaded_by` (`uploaded_by`),
+  ADD KEY `idrendszerkovetelmeny` (`idrendszerkovetelmeny`);
+
+--
+-- A tábla indexei `jatekok_kategoriak`
+--
+ALTER TABLE `jatekok_kategoriak`
+  ADD PRIMARY KEY (`idjatekok`,`idkategoria`),
+  ADD KEY `idkategoria` (`idkategoria`);
+
+--
+-- A tábla indexei `jatekok_platformok`
+--
+ALTER TABLE `jatekok_platformok`
+  ADD PRIMARY KEY (`idjatekok`,`idplatform`),
+  ADD KEY `idplatform` (`idplatform`);
+
+--
+-- A tábla indexei `kategoria`
+--
+ALTER TABLE `kategoria`
+  ADD PRIMARY KEY (`idkategoria`);
 
 --
 -- A tábla indexei `kiado`
@@ -562,9 +778,21 @@ ALTER TABLE `kiado`
 -- A tábla indexei `kommentek`
 --
 ALTER TABLE `kommentek`
-  ADD PRIMARY KEY (`idkomment`),
+  ADD PRIMARY KEY (`idkommentek`),
   ADD KEY `idjatekok` (`idjatekok`),
   ADD KEY `idfelhasznalo` (`idfelhasznalo`);
+
+--
+-- A tábla indexei `platform`
+--
+ALTER TABLE `platform`
+  ADD PRIMARY KEY (`idplatform`);
+
+--
+-- A tábla indexei `rendszerkovetelmeny`
+--
+ALTER TABLE `rendszerkovetelmeny`
+  ADD PRIMARY KEY (`idrendszerkovetelmeny`);
 
 --
 -- A tábla indexei `wishlist`
@@ -589,7 +817,7 @@ ALTER TABLE `fejleszto`
 -- AUTO_INCREMENT a táblához `felhasznalo`
 --
 ALTER TABLE `felhasznalo`
-  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idfelhasznalo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT a táblához `games_extended`
@@ -652,6 +880,12 @@ ALTER TABLE `jatekok`
   MODIFY `idjatekok` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT a táblához `kategoria`
+--
+ALTER TABLE `kategoria`
+  MODIFY `idkategoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+
+--
 -- AUTO_INCREMENT a táblához `kiado`
 --
 ALTER TABLE `kiado`
@@ -661,7 +895,19 @@ ALTER TABLE `kiado`
 -- AUTO_INCREMENT a táblához `kommentek`
 --
 ALTER TABLE `kommentek`
-  MODIFY `idkomment` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idkommentek` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT a táblához `platform`
+--
+ALTER TABLE `platform`
+  MODIFY `idplatform` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+
+--
+-- AUTO_INCREMENT a táblához `rendszerkovetelmeny`
+--
+ALTER TABLE `rendszerkovetelmeny`
+  MODIFY `idrendszerkovetelmeny` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT a táblához `wishlist`
@@ -747,6 +993,68 @@ ALTER TABLE `game_stats`
 ALTER TABLE `game_tag_relations`
   ADD CONSTRAINT `game_tag_relations_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `games_extended` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `game_tag_relations_ibfk_2` FOREIGN KEY (`tagId`) REFERENCES `game_tags` (`id`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `jatekok`
+--
+ALTER TABLE `jatekok`
+  ADD CONSTRAINT `jatekok_ibfk_1` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_10` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_11` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_12` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_13` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_14` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_15` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_16` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_17` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_18` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_19` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_20` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_21` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_22` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_23` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_24` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_25` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_26` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_27` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_28` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_29` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_3` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_30` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_31` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_32` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`),
+  ADD CONSTRAINT `jatekok_ibfk_33` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_34` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`),
+  ADD CONSTRAINT `jatekok_ibfk_35` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_36` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`),
+  ADD CONSTRAINT `jatekok_ibfk_4` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_5` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_6` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_7` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_8` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`),
+  ADD CONSTRAINT `jatekok_ibfk_9` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`);
+
+--
+-- Megkötések a táblához `jatekok_kategoriak`
+--
+ALTER TABLE `jatekok_kategoriak`
+  ADD CONSTRAINT `fk_jatek_kategoria` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_kategoria_jatek` FOREIGN KEY (`idkategoria`) REFERENCES `kategoria` (`idkategoria`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `jatekok_platformok`
+--
+ALTER TABLE `jatekok_platformok`
+  ADD CONSTRAINT `fk_jatek_platform` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_platform_jatek` FOREIGN KEY (`idplatform`) REFERENCES `platform` (`idplatform`) ON DELETE CASCADE;
+
+--
+-- Megkötések a táblához `kommentek`
+--
+ALTER TABLE `kommentek`
+  ADD CONSTRAINT `fk_komment_felhasznalo` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_komment_jatek` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE;
 
 --
 -- Megkötések a táblához `wishlist`
