@@ -86,7 +86,12 @@ const GameDevUpload = ({ user }) => {
       }
     } catch (error) {
       console.error("Feltöltés hiba:", error);
-      alert("Hiba történt a feltöltés során!");
+      const msg =
+        error?.response?.data?.message ||
+        (typeof error?.response?.data?.error === 'string' ? error.response.data.error : null) ||
+        (error?.response?.status ? `HTTP ${error.response.status}` : null) ||
+        "Hiba történt a feltöltés során!";
+      alert(msg);
     } finally {
       setLoading(false);
     }

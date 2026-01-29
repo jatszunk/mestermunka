@@ -15,14 +15,14 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
     <div className="game-card">
       <div className="game-image">
         <img src={game.image} alt={game.title} />
-        <div className="game-rating-badge">
-          <span className="rating-star">⭐</span>
-          <span>{game.rating}</span>
-        </div>
       </div>
 
       <div className="game-info" style={{ color: "white" }}>
         <h3 className="game-title">{game.title}</h3>
+        <div className="game-rating-badge">
+          <span className="rating-star">⭐</span>
+          <span>{game.rating}</span>
+        </div>
         <div className="game-developer">{game.developer}</div>
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
   {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])

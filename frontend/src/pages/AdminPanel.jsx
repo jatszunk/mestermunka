@@ -22,6 +22,15 @@ const AdminPanel = ({ user }) => {
     fetchComments();
   }, []);
 
+  const getAxiosErrorMessage = (error, fallback) => {
+    return (
+      error?.response?.data?.message ||
+      (typeof error?.response?.data?.error === 'string' ? error.response.data.error : null) ||
+      (error?.response?.status ? `HTTP ${error.response.status}` : null) ||
+      fallback
+    );
+  };
+
   const fetchStatistics = async () => {
     try {
       const res = await axios.get("http://localhost:3001/admin/statistics", {
@@ -94,7 +103,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Jóváhagyás hiba:", error);
-      alert("Hiba történt a jóváhagyás során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt a jóváhagyás során!"));
     }
   };
 
@@ -104,6 +113,7 @@ const AdminPanel = ({ user }) => {
 
     try {
       const res = await axios.post(`http://localhost:3001/admin/reject-game/${gameId}`, {
+        username: user.username,
         rejectionReason: reason
       });
       
@@ -117,7 +127,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Elutasítás hiba:", error);
-      alert("Hiba történt az elutasítás során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt az elutasítás során!"));
     }
   };
 
@@ -137,7 +147,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Szerepkör módosítás hiba:", error);
-      alert("Hiba történt a szerepkör módosítás során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt a szerepkör módosítás során!"));
     }
   };
 
@@ -159,7 +169,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Játék törlés hiba:", error);
-      alert("Hiba történt a törlés során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
 
@@ -180,7 +190,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Felhasználó törlés hiba:", error);
-      alert("Hiba történt a törlés során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
 
@@ -224,8 +234,9 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Játék módosítás hiba:", error);
-      alert("Hiba történt a módosítás során!");
+      console.error("Játék frissítés hiba:", error);
+      const errorMessage = getAxiosErrorMessage(error, "Hiba történt a frissítés során!");
+      alert(`Hiba történt a frissítés során! ${errorMessage}`);
     }
   };
 
@@ -262,7 +273,7 @@ const AdminPanel = ({ user }) => {
       }
     } catch (error) {
       console.error("Komment törlés hiba:", error);
-      alert("Hiba történt a törlés során!");
+      alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
 

@@ -197,9 +197,7 @@ h1, h2 {
   display: block;
 }
 .game-rating-badge {
-  position: absolute;
-  bottom: 10px;
-  left: 14px;
+  position: static;
   background: linear-gradient(90deg,#27e8ff 65%,#ff41fa 100%);
   color: #23272f;
   font-weight: 700;

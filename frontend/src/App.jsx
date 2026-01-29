@@ -364,7 +364,7 @@ function App() {
         <Route
           path="/gamedev-upload"
           element={
-            user?.role === 'gamedev' ? (
+            (user?.role === 'gamedev' || user?.role === 'admin') ? (
               <GameDevUpload user={user} />
             ) : (
               <LoginPage handleLogin={handleLogin} />
@@ -375,7 +375,7 @@ function App() {
         <Route
           path="/gamedev-panel"
           element={
-            user?.role === 'gamedev' ? (
+            (user?.role === 'gamedev' || user?.role === 'admin') ? (
               <GameDevPanel user={user} />
             ) : (
               <LoginPage handleLogin={handleLogin} />

@@ -35,6 +35,33 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
   const [localComment, setLocalComment] = useState("");
   const [localRating, setLocalRating] = useState(5);
 
+  const handleDeleteComment = async (commentId) => {
+    if (!user) return;
+    if (!confirm("Biztosan törli ezt a kommentet?")) return;
+
+    try {
+      const res = await axios.delete(`http://localhost:3001/kommentek/${commentId}`, {
+        headers: { username: user.username }
+      });
+
+      if (res.data.success) {
+        if (typeof fetchComments === "function" && game?.id) {
+          await fetchComments(game.id);
+        }
+      } else {
+        alert(res.data.message || "Hiba történt a törlés során!");
+      }
+    } catch (error) {
+      console.error("Komment törlés hiba:", error);
+      const msg =
+        error?.response?.data?.message ||
+        (typeof error?.response?.data?.error === 'string' ? error.response.data.error : null) ||
+        (error?.response?.status ? `HTTP ${error.response.status}` : null) ||
+        "Hiba történt a törlés során!";
+      alert(msg);
+    }
+  };
+
   useEffect(() => {
     if (game?.id && typeof fetchComments === "function") {
       fetchComments(game.id);
@@ -226,6 +253,17 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
                       <div style={{ flex: "1 1 auto" }}>
                         <b>{cmt.user}</b> {cmt.text} <span style={{ color: "#19ffe3" }}>{cmt.rating}</span>
                       </div>
+
+                      {user?.role === 'admin' && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(cmt.id)}
+                          className="reject-btn"
+                          style={{ padding: "6px 10px", fontSize: "0.9em" }}
+                        >
+                          Törlés
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

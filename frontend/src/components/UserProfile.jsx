@@ -350,34 +350,60 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
             <div className="comments-section">
               <h3>Összes komment ({userStats.totalComments})</h3>
               <div className="user-comments">
-                {userStats.commentedGames.map(game => {
-                  const gameComments = Object.values(comments)
+                {(() => {
+                  const userComments = Object.values(comments)
                     .flat()
-                    .filter(c => c.user === currentUser.username && c.gameId === game.id);
-                  
-                  return (
-                    <div key={game.id} className="game-comments-card">
-                      <div className="game-info">
-                        <img src={game.image} alt={game.title} className="game-thumbnail" />
-                        <div>
-                          <h4>{game.title}</h4>
-                          <p>{game.developer}</p>
+                    .filter(c => c.user === currentUser.username);
+
+                  const groupedByGame = userComments.reduce((acc, c) => {
+                    const gid = c.gameId;
+                    if (!acc[gid]) acc[gid] = [];
+                    acc[gid].push(c);
+                    return acc;
+                  }, {});
+
+                  const gameIds = Object.keys(groupedByGame);
+                  if (gameIds.length === 0) {
+                    return (
+                      <div className="empty-state">
+                        <p>Még nincs komment.</p>
+                      </div>
+                    );
+                  }
+
+                  return gameIds.map((gid) => {
+                    const gameIdNum = Number(gid);
+                    const game = games.find(g => g.id === gameIdNum);
+                    const gameComments = groupedByGame[gid] || [];
+
+                    return (
+                      <div key={gid} className="game-comments-card">
+                        <div className="game-info">
+                          {game?.image ? (
+                            <img src={game.image} alt={game.title} className="game-thumbnail" />
+                          ) : (
+                            <div className="game-thumbnail" />
+                          )}
+                          <div>
+                            <h4>{game?.title || `Ismeretlen játék (ID: ${gid})`}</h4>
+                            <p>{game?.developer || ''}</p>
+                          </div>
+                        </div>
+                        <div className="comments-list">
+                          {gameComments.map(comment => (
+                            <div key={comment.id} className="comment-item">
+                              <div className="comment-header">
+                                <span className="rating-badge">{comment.rating}/10</span>
+                                <span className="comment-date">{formatDate(comment.date)}</span>
+                              </div>
+                              <p className="comment-text">{comment.text}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="comments-list">
-                        {gameComments.map(comment => (
-                          <div key={comment.id} className="comment-item">
-                            <div className="comment-header">
-                              <span className="rating-badge">{comment.rating}/10</span>
-                              <span className="comment-date">{formatDate(comment.date)}</span>
-                            </div>
-                            <p className="comment-text">{comment.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}

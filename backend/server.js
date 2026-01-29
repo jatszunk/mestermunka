@@ -99,23 +99,53 @@ const checkRole = (allowedRoles) => {
                   (req.method === 'POST' && req.body && req.body.username);
     
     if (!username) {
+      console.warn('[checkRole] Missing username', {
+        method: req.method,
+        path: req.originalUrl,
+        hasBody: Boolean(req.body),
+        queryKeys: Object.keys(req.query || {}),
+        headerKeys: Object.keys(req.headers || {})
+      });
       return res.status(401).json({ success: false, message: "Hiányzó felhasználónév" });
     }
     
-    const sql = "SELECT role FROM felhasznalo WHERE felhasznalonev = ?";
-    db.query(sql, [username], (err, results) => {
-      if (err || results.length === 0) {
+    const handleResults = (results) => {
+      if (!results || results.length === 0) {
+        console.warn('[checkRole] Unknown user', { username, path: req.originalUrl });
         return res.status(401).json({ success: false, message: "Érvénytelen felhasználó" });
       }
-      
-      const userRole = results[0].role;
+
+      const userRole = results[0].userRole;
+      if (!userRole) {
+        console.warn('[checkRole] Missing role for user', { username, row: results[0], path: req.originalUrl });
+      }
       if (!allowedRoles.includes(userRole)) {
         return res.status(403).json({ success: false, message: "Nincs jogosultsága" });
       }
-      
+
       req.userRole = userRole;
       req.username = username;
       next();
+    };
+
+    const sqlPrimary = "SELECT szerepkor AS userRole FROM felhasznalo WHERE felhasznalonev = ?";
+    db.query(sqlPrimary, [username], (err, results) => {
+      if (!err) return handleResults(results);
+
+      // Legacy fallback, if schema uses 'role' instead of 'szerepkor'
+      if (err.code === 'ER_BAD_FIELD_ERROR') {
+        const sqlFallback = "SELECT role AS userRole FROM felhasznalo WHERE felhasznalonev = ?";
+        return db.query(sqlFallback, [username], (err2, results2) => {
+          if (err2) {
+            console.error('[checkRole] DB error', { username, path: req.originalUrl, err: err2 });
+            return res.status(500).json({ success: false, message: "Adatbázis hiba", error: err2 });
+          }
+          return handleResults(results2);
+        });
+      }
+
+      console.error('[checkRole] DB error', { username, path: req.originalUrl, err });
+      return res.status(500).json({ success: false, message: "Adatbázis hiba", error: err });
     });
   };
 };
@@ -428,6 +458,17 @@ app.get("/kommentek", (req, res) => {
       return res.status(500).json({ success: false, error: err });
     }
     res.json({ success: true, comments: results });
+  });
+});
+
+// Komment törlése (admin)
+app.delete("/kommentek/:id", checkRole(['admin']), (req, res) => {
+  const commentId = req.params.id;
+
+  db.query("DELETE FROM kommentek WHERE idkommentek = ?", [commentId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Komment nem található" });
+    res.json({ success: true, message: "Komment törölve" });
   });
 });
 
@@ -783,20 +824,39 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
 
           // Kategóriák hozzáadása
           const insertCatSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
-          const categories = Array.isArray(category) ? category : [category];
+          const insertCategoryIfMissingSql =
+            "INSERT INTO kategoria (nev) VALUES (?) ON DUPLICATE KEY UPDATE idkategoria=LAST_INSERT_ID(idkategoria)";
 
-          let catPromises = categories.map((catName) => {
+          const categoryList = (Array.isArray(category) ? category : String(category || "").split(","))
+            .map((s) => String(s).trim())
+            .filter(Boolean);
+
+          let catPromises = categoryList.map((catName) => {
             return new Promise((resolve, reject) => {
-              db.query("SELECT idkategoria FROM kategoria WHERE nev = ?", [catName], (err, catResults) => {
-                if (err) return reject(err);
-                if (catResults.length > 0) {
-                  db.query(insertCatSql, [gameId, catResults[0].idkategoria], (err) => {
-                    if (err) return reject(err);
-                    resolve();
-                  });
-                } else {
-                  resolve();
+              // 1) biztosítsuk, hogy létezik a kategória
+              db.query(insertCategoryIfMissingSql, [catName], (errCat, catResult) => {
+                if (errCat) {
+                  // ha nincs unique index a nev oszlopon, akkor az ON DUPLICATE KEY nem fog futni;
+                  // ebben az esetben fallback: SELECT
+                  if (errCat.code !== 'ER_DUP_ENTRY') {
+                    return db.query("SELECT idkategoria FROM kategoria WHERE nev = ? LIMIT 1", [catName], (errSel, selRes) => {
+                      if (errSel) return reject(errSel);
+                      if (!selRes || selRes.length === 0) return resolve();
+                      return db.query(insertCatSql, [gameId, selRes[0].idkategoria], (errLink) => {
+                        if (errLink) return reject(errLink);
+                        return resolve();
+                      });
+                    });
+                  }
+                  return reject(errCat);
                 }
+
+                const catId = catResult.insertId;
+                // 2) linkeljük a játékhoz
+                db.query(insertCatSql, [gameId, catId], (errLink) => {
+                  if (errLink) return reject(errLink);
+                  return resolve();
+                });
               });
             });
           });
@@ -1469,23 +1529,37 @@ const updateUserTable = () => {
 
 // Játék tábla kiegészítése
 const updateGameTable = () => {
-  const alterTable = `
-    ALTER TABLE jatekok 
-    ADD COLUMN IF NOT EXISTS status ENUM('approved', 'pending', 'rejected') DEFAULT 'approved',
-    ADD COLUMN IF NOT EXISTS uploaded_by INT NULL,
-    ADD COLUMN IF NOT EXISTS ertekeles DECIMAL(3,2) DEFAULT 0.00,
-    ADD COLUMN IF NOT EXISTS idrendszerkovetelmeny INT NULL DEFAULT 1,
-    ADD FOREIGN KEY (uploaded_by) REFERENCES felhasznalo(idfelhasznalo),
-    ADD FOREIGN KEY (idrendszerkovetelmeny) REFERENCES rendszerkovetelmeny(idrendszerkovetelmeny)
-  `;
+  const statements = [
+    "ALTER TABLE jatekok ADD COLUMN status ENUM('approved', 'pending', 'rejected') DEFAULT 'approved'",
+    "ALTER TABLE jatekok ADD COLUMN uploaded_by INT NULL",
+    "ALTER TABLE jatekok ADD COLUMN approved_at DATETIME NULL",
+    "ALTER TABLE jatekok ADD COLUMN approved_by INT NULL",
+    "ALTER TABLE jatekok ADD COLUMN rejection_reason TEXT NULL",
+    "ALTER TABLE jatekok ADD COLUMN ertekeles DECIMAL(3,2) DEFAULT 0.00",
+    "ALTER TABLE jatekok ADD COLUMN idrendszerkovetelmeny INT NULL DEFAULT 1"
+  ];
 
-  db.query(alterTable, (err) => {
-    if (err) {
-      console.error('Hiba a játék tábla kiegészítésekor:', err);
-    } else {
+  let i = 0;
+  const runNext = () => {
+    if (i >= statements.length) {
       console.log('Játék tábla kiegészítve vagy már létezik');
+      return;
     }
-  });
+
+    const sql = statements[i];
+    i += 1;
+    db.query(sql, (err) => {
+      if (err) {
+        // ER_DUP_FIELDNAME: column already exists
+        if (err.code === 'ER_DUP_FIELDNAME') return runNext();
+        console.error('Hiba a játék tábla kiegészítésekor:', err);
+        return;
+      }
+      return runNext();
+    });
+  };
+
+  runNext();
 };
 
 // Hiányzó táblák létrehozása
@@ -1496,6 +1570,29 @@ const createMissingTables = () => {
       minimum varchar(255) DEFAULT NULL,
       ajanlott varchar(255) DEFAULT NULL,
       PRIMARY KEY (idrendszerkovetelmeny)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createJatekExtra = `
+    CREATE TABLE IF NOT EXISTS jatekextra (
+      idjatekok int(11) NOT NULL,
+      megjelenes varchar(100) NOT NULL,
+      steam_link varchar(500) NOT NULL,
+      jatek_elmeny varchar(255) DEFAULT NULL,
+      reszletes_leiras text NOT NULL,
+      PRIMARY KEY (idjatekok),
+      CONSTRAINT fk_jatekextra_jatek FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+
+  const createJatekVideok = `
+    CREATE TABLE IF NOT EXISTS jatek_videok (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      idjatekok int(11) NOT NULL,
+      url varchar(500) NOT NULL,
+      PRIMARY KEY (id),
+      KEY idjatekok (idjatekok),
+      CONSTRAINT fk_jatek_videok_jatek FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `;
 
@@ -1547,34 +1644,22 @@ const createMissingTables = () => {
       datum timestamp NOT NULL DEFAULT current_timestamp(),
       PRIMARY KEY (idkommentek),
       KEY idjatekok (idjatekok),
-      KEY idfelhasznalo (idfelhasznalo),
-      CONSTRAINT fk_komment_jatek FOREIGN KEY (idjatekok) REFERENCES jatekok (idjatekok) ON DELETE CASCADE,
-      CONSTRAINT fk_komment_felhasznalo FOREIGN KEY (idfelhasznalo) REFERENCES felhasznalo (idfelhasznalo) ON DELETE CASCADE
+      KEY idfelhasznalo (idfelhasznalo)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `;
 
-  // Először töröljük a kommentek táblát, ha rossz a szerkezete
-  const dropKommentek = "DROP TABLE IF EXISTS kommentek";
-
-  db.query(dropKommentek, (err) => {
+  db.query(createKommentek, (err) => {
     if (err) {
-      console.error('Hiba a kommentek tábla törlésekor:', err);
+      console.error('Hiba a kommentek tábla létrehozásakor:', err);
     } else {
-      console.log('Kommentek tábla törölve');
+      console.log('kommentek tábla létrehozva vagy már létezik');
     }
-    
-    // Majd létrehozzuk újra
-    db.query(createKommentek, (err) => {
-      if (err) {
-        console.error('Hiba a kommentek tábla létrehozásakor:', err);
-      } else {
-        console.log('kommentek tábla létrehozva');
-      }
-    });
   });
 
   const tables = [
     { sql: createRendszerKovetelmeny, name: 'rendszerkovetelmeny' },
+    { sql: createJatekExtra, name: 'jatekextra' },
+    { sql: createJatekVideok, name: 'jatek_videok' },
     { sql: createKategoria, name: 'kategoria' },
     { sql: createPlatform, name: 'platform' },
     { sql: createJatekokKategoriak, name: 'jatekok_kategoriak' },

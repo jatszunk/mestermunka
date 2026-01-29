@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import GameCard from '../components/GameCard.jsx';
 import AdvancedSearch from '../components/AdvancedSearch.jsx';
@@ -8,6 +8,10 @@ import GameComparison from '../components/GameComparison.jsx';
 function Home({ user, games, comments, handleAddComment, handleAddToWishlist, handleAddToCollection }) {
   const [filteredGames, setFilteredGames] = useState(games);
   const [showComparison, setShowComparison] = useState(false);
+
+  useEffect(() => {
+    setFilteredGames(games);
+  }, [games]);
 
   const handleFilterChange = (filtered) => {
     setFilteredGames(filtered);
