@@ -19,6 +19,7 @@ CREATE TABLE `felhasznalo` (
   `jelszo` varchar(255) NOT NULL,
   `szerepkor` enum('felhasznalo','admin','gamedev') NOT NULL DEFAULT 'felhasznalo',
   `regisztracio_datum` timestamp NOT NULL DEFAULT current_timestamp(),
+  `nev` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`idfelhasznalo`),
   UNIQUE KEY `uq_felhasznalo_felhasznalonev` (`felhasznalonev`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -169,10 +170,10 @@ CREATE TABLE `game_collection` (
   CONSTRAINT `fk_collection_game` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ===== SEED =====
-INSERT INTO `felhasznalo` (`felhasznalonev`,`email`,`jelszo`,`szerepkor`) VALUES
-('admin','admin@example.com','admin','admin')
-ON DUPLICATE KEY UPDATE `felhasznalonev` = VALUES(`felhasznalonev`);
+-- Seed basic data
+INSERT INTO felhasznalo (felhasznalonev,email,jelszo,szerepkor,nev) VALUES
+('admin','admin@example.com','admin','admin','Admin')
+ON DUPLICATE KEY UPDATE felhasznalonev = VALUES(felhasznalonev);
 
 INSERT IGNORE INTO `kategoria` (`nev`) VALUES
 ('Akció'),('Kaland'),('Stratégia'),('RPG'),('Sport');
