@@ -21,7 +21,11 @@ import Footer from "./components/Footer.jsx";
 function App() {
   const [games, setGames] = useState([]);
   const [users, setUsers] = useState([]);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Bejelentkezési állapot betöltése localStorage-ból
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [comments, setComments] = useState({}); // { [gameId]: [ {id,user,text,rating}, ... ] }
 
   // ----- Fetch users + games + comments -----
@@ -91,7 +95,7 @@ function App() {
         console.log('Bejelentkezési válasz:', res.data);
         if (res.data.success) {
           const u = res.data.user;
-          setUser({
+          const userData = {
             id: u.idfelhasznalo,
             username: u.felhasznalonev,
             email: u.email,
@@ -99,7 +103,10 @@ function App() {
             bio: u.bio || "",
             avatar: u.avatar || "",
             name: u.nev || "",
-          });
+          };
+          setUser(userData);
+          // Mentés localStorage-ba
+          localStorage.setItem('user', JSON.stringify(userData));
           navigate("/");
         } else {
           alert("Hibás felhasználónév vagy jelszó!");
@@ -130,6 +137,8 @@ function App() {
     };
     setUsers((prev) => [...prev, newUser]);
     setUser(newUser);
+    // Mentés localStorage-ba
+    localStorage.setItem('user', JSON.stringify(newUser));
 
     axios.post("http://localhost:3001/register", {
       felhasznalonev: uname,
@@ -242,8 +251,11 @@ function App() {
 
   // ---------- PROFILE EDIT ------------------
   function handleProfileEdit(data) {
-    setUser((prev) => ({ ...prev, ...data }));
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
     setUsers((prev) => prev.map((u) => (u.username === user.username ? { ...u, ...data } : u)));
+    // Frissítés localStorage-ban
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   }
 
   // ------------ SEARCH / FILTER ------------
