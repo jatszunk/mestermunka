@@ -198,6 +198,7 @@
   gap: 15px;
   min-height: 35px;
   width: 100%;
+  position: relative;
 }
 
 .bar-label {
@@ -233,6 +234,8 @@
   color: #27e8ff;
   font-size: 1.1em;
   flex-shrink: 0;
+  position: relative;
+  right: 0;
 }
 
 .price-stats {
