@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-function NevjegyPage() {
+function NevjegyPage({ user }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -55,7 +55,21 @@ function NevjegyPage() {
   };
 
   return (
-    <main className="maincenter" style={{ overflowX: 'hidden' }}>
+    <div className="maincenter">
+      {/* Navbar */}
+      <nav>
+        <Link to="/" className="nav-link">Főoldal</Link>
+        <Link to="/statistics" className="nav-link">Statisztikák</Link>
+        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
+        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="nav-link">Admin Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+        )}
+      </nav>
+
       <h2>Névjegy</h2>
 
       {/* Felső információs doboz */}
@@ -222,7 +236,7 @@ function NevjegyPage() {
           )}
         </form>
       </section>
-    </main>
+    </div>
   );
 }
 

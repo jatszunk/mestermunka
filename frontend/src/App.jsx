@@ -348,7 +348,7 @@ function App() {
           }
         />
 
-        <Route path="/nevjegy" element={<NevjegyPage />} />
+        <Route path="/nevjegy" element={<NevjegyPage user={user} />} />
 
         <Route
           path="/statistics"
