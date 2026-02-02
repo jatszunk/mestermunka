@@ -66,6 +66,9 @@ function NevjegyPage({ user }) {
           <Link to="/admin" className="nav-link">Admin Panel</Link>
         )}
         {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
           <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
         )}
       </nav>

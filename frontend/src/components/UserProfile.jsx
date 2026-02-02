@@ -220,6 +220,9 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
           <Link to="/admin" className="nav-link">Admin Panel</Link>
         )}
         {(currentUser?.role === 'gamedev' || currentUser?.role === 'admin') && (
+          <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
+        )}
+        {(currentUser?.role === 'gamedev' || currentUser?.role === 'admin') && (
           <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
         )}
       </nav>

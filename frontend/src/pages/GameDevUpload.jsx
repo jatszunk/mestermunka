@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "../styles/GameDevUpload.css";
 
 const GameDevUpload = ({ user }) => {
   const navigate = useNavigate();
@@ -98,49 +99,73 @@ const GameDevUpload = ({ user }) => {
   };
 
   return (
-    <div className="maincenter">
-      <div className="gamedev-upload-header">
-        <h1>Játék Feltöltése</h1>
-        <button
-          onClick={() => navigate("/")}
-          className="vissza-btn"
-        >
-          Vissza
-        </button>
-      </div>
+    <div className="game-upload-page">
+      {/* Navbar */}
+      <nav>
+        <Link to="/" className="nav-link">Főoldal</Link>
+        <Link to="/statistics" className="nav-link">Statisztikák</Link>
+        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
+        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className="nav-link">Admin Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
+        )}
+        {(user?.role === 'gamedev' || user?.role === 'admin') && (
+          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+        )}
+      </nav>
+      
+      <div className="cyber-upload-container">
+        {/* Futuristic Header */}
+        <div className="cyber-upload-header">
+          <Link to="/" className="cyber-back-btn">
+            ⬅ Vissza
+          </Link>
+          <h1>🚀 JÁTÉK FELTÖLTÉSE</h1>
+          <p className="cyber-upload-subtitle">Töltsd fel a játékodat a GameVerse platformra</p>
+        </div>
 
-      <div className="gamedev-upload-form">
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-grid">
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Játék neve *</label>
+        {/* Section 1: Basic Information */}
+        <div className="cyber-section">
+          <div className="cyber-section-header">
+            <span className="cyber-section-icon">🎮</span>
+            <h2 className="cyber-section-title">Alapinformációk</h2>
+          </div>
+          
+          <div className="cyber-form-grid">
+            <div className="cyber-form-row">
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Játék neve *</label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="login-input"
+                  className="cyber-input"
+                  placeholder="Add meg a játék címét..."
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Fejlesztő *</label>
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Fejlesztő *</label>
                 <input
                   type="text"
                   name="developer"
                   value={formData.developer}
                   onChange={handleChange}
                   required
-                  className="login-input"
+                  className="cyber-input"
+                  placeholder="Fejlesztő neve..."
                 />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Ár *</label>
+            <div className="cyber-form-row">
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Ár *</label>
                 <input
                   type="text"
                   name="price"
@@ -148,12 +173,12 @@ const GameDevUpload = ({ user }) => {
                   onChange={handleChange}
                   placeholder="pl: 4999 vagy Ingyenes"
                   required
-                  className="login-input"
+                  className="cyber-input"
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Kategória *</label>
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Kategória *</label>
                 <input
                   type="text"
                   name="category"
@@ -161,26 +186,14 @@ const GameDevUpload = ({ user }) => {
                   onChange={handleChange}
                   placeholder="pl: FPS, RPG, Stratégia"
                   required
-                  className="login-input"
+                  className="cyber-input"
                 />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Kép URL *</label>
-                <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  required
-                  className="login-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Megjelenés dátuma *</label>
+            <div className="cyber-form-row">
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Megjelenés dátuma *</label>
                 <input
                   type="text"
                   name="megjelenes"
@@ -188,26 +201,27 @@ const GameDevUpload = ({ user }) => {
                   onChange={handleChange}
                   placeholder="pl: 2024. január 15."
                   required
-                  className="login-input"
+                  className="cyber-input"
                 />
               </div>
-            </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Steam Link *</label>
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Steam Link *</label>
                 <input
                   type="url"
                   name="steamLink"
                   value={formData.steamLink}
                   onChange={handleChange}
                   required
-                  className="login-input"
+                  className="cyber-input"
+                  placeholder="https://store.steampowered.com/..."
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label className="form-label">Értékelés (0-10)</label>
+            <div className="cyber-form-row">
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Értékelés (0-10)</label>
                 <input
                   type="number"
                   name="rating"
@@ -215,130 +229,183 @@ const GameDevUpload = ({ user }) => {
                   onChange={handleChange}
                   min="0"
                   max="10"
-                  className="login-input"
+                  className="cyber-input"
+                  placeholder="0-10"
+                />
+              </div>
+
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Játékélmény</label>
+                <input
+                  type="text"
+                  name="jatekElmeny"
+                  value={formData.jatekElmeny}
+                  onChange={handleChange}
+                  placeholder="pl: Nagyon pozitív, Vegyes"
+                  className="cyber-input"
                 />
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="form-group">
-            <label className="form-label">Rövid leírás</label>
+        {/* Section 2: Media Upload */}
+        <div className="cyber-section">
+          <div className="cyber-section-header">
+            <span className="cyber-section-icon">🖼️</span>
+            <h2 className="cyber-section-title">Média Feltöltés</h2>
+          </div>
+          
+          <div className="cyber-input-group">
+            <label className="cyber-input-label">Kép URL *</label>
+            <div className="cyber-media-zone">
+              <div className="cyber-media-icon">📸</div>
+              <div className="cyber-media-text">Húzd ide a képet vagy add meg az URL-t</div>
+              <div className="cyber-media-hint">Támogatott formátumok: JPG, PNG, GIF</div>
+              <input
+                type="url"
+                name="image"
+                value={formData.image}
+                onChange={handleChange}
+                required
+                className="cyber-input"
+                placeholder="https://example.com/game-image.jpg"
+                style={{ marginTop: '20px', background: 'rgba(255, 255, 255, 0.1)' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Description */}
+        <div className="cyber-section">
+          <div className="cyber-section-header">
+            <span className="cyber-section-icon">📝</span>
+            <h2 className="cyber-section-title">Leírások</h2>
+          </div>
+          
+          <div className="cyber-input-group">
+            <label className="cyber-input-label">Rövid leírás</label>
             <textarea
               name="desc"
               value={formData.desc}
               onChange={handleChange}
               rows="3"
-              className="neon-textarea"
+              className="cyber-input cyber-textarea"
+              placeholder="Add meg a játék rövid leírását..."
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Részletes leírás *</label>
+          <div className="cyber-input-group">
+            <label className="cyber-input-label">Részletes leírás *</label>
             <textarea
               name="reszletesLeiras"
               value={formData.reszletesLeiras}
               onChange={handleChange}
               rows="6"
               required
-              className="neon-textarea"
+              className="cyber-input cyber-textarea"
+              placeholder="Részletesen írd le a játékot..."
             />
           </div>
+        </div>
 
-          <div className="form-group">
-            <label className="form-label">Játékélmény</label>
-            <input
-              type="text"
-              name="jatekElmeny"
-              value={formData.jatekElmeny}
-              onChange={handleChange}
-              placeholder="pl: Nagyon pozitív, Vegyes"
-              className="login-input"
-            />
+        {/* Section 4: System Requirements */}
+        <div className="cyber-section">
+          <div className="cyber-section-header">
+            <span className="cyber-section-icon">⚙️</span>
+            <h2 className="cyber-section-title">Rendszerkövetelmények</h2>
           </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Minimum rendszerkövetelmények</label>
+          
+          <div className="cyber-requirements-grid">
+            <div className="cyber-req-card">
+              <h3 className="cyber-req-title">Minimum Követelmények</h3>
               <textarea
                 name="minReq"
                 value={formData.minReq}
                 onChange={handleChange}
-                rows="4"
-                placeholder="OS: Windows 10&#10;Processor: Intel Core i5&#10;Memory: 8 GB RAM&#10;Graphics: GTX 1060"
-                className="neon-textarea"
+                rows="6"
+                className="cyber-input cyber-textarea"
+                placeholder="OS: Windows 10&#10;Processor: Intel Core i5&#10;Memory: 8 GB RAM&#10;Graphics: GTX 1060&#10;DirectX: Version 12&#10;Storage: 50 GB available space"
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Ajánlott rendszerkövetelmények</label>
+            <div className="cyber-req-card">
+              <h3 className="cyber-req-title">Ajánlott Követelmények</h3>
               <textarea
                 name="recReq"
                 value={formData.recReq}
                 onChange={handleChange}
-                rows="4"
-                placeholder="OS: Windows 11&#10;Processor: Intel Core i7&#10;Memory: 16 GB RAM&#10;Graphics: RTX 3070"
-                className="neon-textarea"
+                rows="6"
+                className="cyber-input cyber-textarea"
+                placeholder="OS: Windows 11&#10;Processor: Intel Core i7&#10;Memory: 16 GB RAM&#10;Graphics: RTX 3070&#10;DirectX: Version 12&#10;Storage: 100 GB available space"
               />
             </div>
           </div>
+        </div>
 
-          <div className="form-group">
-            <label className="form-label">Videók (YouTube linkek)</label>
-            <div className="videos-section">
-              {formData.videos.map((video, index) => (
-                <div key={index} className="video-input-row">
-                  <input
-                    type="url"
-                    value={video}
-                    onChange={(e) => handleVideoChange(index, e.target.value)}
-                    placeholder="https://youtu.be/..."
-                    className="login-input"
-                  />
-                  {formData.videos.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeVideoField(index)}
-                      className="remove-video-btn"
-                    >
-                      Törlés
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addVideoField}
-                className="add-video-btn"
-              >
-                Videó hozzáadása
-              </button>
-            </div>
+        {/* Section 5: Videos */}
+        <div className="cyber-section">
+          <div className="cyber-section-header">
+            <span className="cyber-section-icon">🎬</span>
+            <h2 className="cyber-section-title">Videók</h2>
           </div>
-
-          <div className="notice-box">
-            <p>
-              <strong>Fontos:</strong> A feltöltött játék először jóváhagyásra kerül az admin által, 
-              csak ezután jelenik meg a felhasználók számára.
-            </p>
-          </div>
-
-          <div className="form-actions">
+          
+          <div className="cyber-video-section">
+            {formData.videos.map((video, index) => (
+              <div key={index} className="cyber-video-item">
+                <input
+                  type="url"
+                  value={video}
+                  onChange={(e) => handleVideoChange(index, e.target.value)}
+                  placeholder="https://youtu.be/..."
+                  className="cyber-input cyber-video-input"
+                />
+                {formData.videos.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeVideoField(index)}
+                    className="cyber-remove-video-btn"
+                  >
+                    Törlés
+                  </button>
+                )}
+              </div>
+            ))}
             <button
               type="button"
-              onClick={() => navigate("/")}
-              className="vissza-btn"
+              onClick={addVideoField}
+              className="cyber-add-video-btn"
             >
-              Mégse
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="login-btn"
-            >
-              {loading ? "Feltöltés..." : "Játék feltöltése"}
+              ➕ Videó hozzáadása
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Alert Box */}
+        <div className="cyber-alert-box">
+          <div className="cyber-alert-content">
+            <strong>⚠️ Fontos információ:</strong> A feltöltött játék először jóváhagyásra kerül az admin által, 
+            csak ezután jelenik meg a felhasználók számára a platformon.
+          </div>
+        </div>
+        {/* Action Buttons */}
+        <div className="cyber-actions">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="cyber-btn cyber-btn-cancel"
+          >
+            ❌ Mégse
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className={`cyber-btn cyber-btn-submit ${loading ? 'cyber-loading' : ''}`}
+            onClick={handleSubmit}
+          >
+            {loading ? "⏳ Feltöltés..." : "🚀 Játék feltöltése"}
+          </button>
+        </div>
       </div>
     </div>
   );
