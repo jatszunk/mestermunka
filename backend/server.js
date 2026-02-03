@@ -182,6 +182,43 @@ app.get("/jatekok", (req, res) => {
     WHERE (j.status = 'approved' OR j.status IS NULL)
     GROUP BY j.idjatekok
   `;
+app.get("/jatekok/:id/extra", (req, res) => {
+  const gameId = req.params.id;
+
+  const sql = `
+    SELECT
+      megjelenes,
+      steam_link AS steamLink,
+      jatek_elmeny AS jatekElmeny,
+      reszletes_leiras AS reszletesLeiras
+    FROM jatekextra
+    WHERE idjatekok = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [gameId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    if (!results.length) return res.json({ success: true, extra: null });
+    return res.json({ success: true, extra: results[0] });
+  });
+});
+
+app.get("/jatekok/:id/videok", (req, res) => {
+  const gameId = req.params.id;
+
+  const sql = `
+    SELECT id, url
+    FROM jatek_videok
+    WHERE idjatekok = ?
+    ORDER BY id ASC
+  `;
+
+  db.query(sql, [gameId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    return res.json({ success: true, videos: results || [] });
+  });
+});
+
 
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ success: false, error: err });
