@@ -85,6 +85,10 @@ CREATE TABLE `jatekok` (
   `approved_at` datetime DEFAULT NULL,
   `approved_by` int(11) DEFAULT NULL,
   `rejection_reason` text DEFAULT NULL,
+  `megjelenes` varchar(50) DEFAULT NULL,
+  `steam_link` varchar(500) DEFAULT NULL,
+  `jatek_elmeny` text DEFAULT NULL,
+  `reszletes_leiras` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`idjatekok`),
@@ -290,23 +294,6 @@ BEGIN
         UPDATE felhasznalo 
         SET utolso_belepes = CURRENT_TIMESTAMP 
         WHERE idfelhasznalo = NEW.idfelhasznalo;
-    END IF;
-END //
-DELIMITER ;
-
--- Játék státusz változásakor logolja az eseményt
-DELIMITER //
-CREATE TRIGGER log_game_status_change
-AFTER UPDATE ON jatekok
-FOR EACH ROW
-BEGIN
-    IF NEW.status != OLD.status THEN
-        INSERT INTO jatekok (nev, idfejleszto, ar, status, leiras)
-        VALUES (
-            CONCAT('LOG: ', OLD.nev, ' status changed from ', OLD.status, ' to ', NEW.status),
-            1, 0.00, 'approved', 
-            CONCAT('Status changed at: ', CURRENT_TIMESTAMP)
-        );
     END IF;
 END //
 DELIMITER ;

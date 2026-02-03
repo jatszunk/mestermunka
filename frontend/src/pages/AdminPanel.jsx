@@ -332,7 +332,7 @@ const AdminPanel = ({ user }) => {
     setUploadLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:3001/jatekok", {
+      const res = await axios.post("http://localhost:3001/gamedev/upload-game", {
         ...uploadFormData,
         username: user.username
       });
