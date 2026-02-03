@@ -217,13 +217,13 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         <Link to="/profile" className="nav-link active">Profil</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
         {currentUser?.role === 'admin' && (
-          <Link to="/admin" className="nav-link">Admin Panel</Link>
+          <Link to="/admin-panel" className="nav-link">Admin Panel</Link>
         )}
-        {(currentUser?.role === 'gamedev' || currentUser?.role === 'admin') && (
-          <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
-        )}
-        {(currentUser?.role === 'gamedev' || currentUser?.role === 'admin') && (
-          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+        {currentUser?.role === 'gamedev' && (
+          <>
+            <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
+            <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
+          </>
         )}
       </nav>
 
@@ -243,6 +243,21 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
             <p className="username">@{currentUser.username}</p>
             <p className="email">{currentUser.email}</p>
             {currentUser.bio && <p className="bio">{currentUser.bio}</p>}
+            
+            {/* Személyes adatok */}
+            <div className="personal-info">
+              {currentUser.country && (
+                <p className="country">
+                  🌍 {currentUser.country}
+                </p>
+              )}
+              {currentUser.birthYear && (
+                <p className="birth-year">
+                  🎂 {currentUser.birthYear}
+                </p>
+              )}
+            </div>
+            
             <div className="user-role">
               <span className={`role-badge ${currentUser.role}`}>
                 {currentUser.role === 'admin' ? 'Admin' : currentUser.role === 'gamedev' ? 'GameDev' : 'Felhasználó'}

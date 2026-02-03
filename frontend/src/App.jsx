@@ -44,6 +44,14 @@ function App() {
             avatar: u.avatar || "",
             role: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor,
             name: u.nev || "",
+            favoriteGenres: u.favoriteGenres ? JSON.parse(u.favoriteGenres) : [],
+            preferredPlatforms: u.preferredPlatforms ? JSON.parse(u.preferredPlatforms) : [],
+            country: u.country || "",
+            birthYear: u.birthYear || "",
+            discord: u.discord || "",
+            twitter: u.twitter || "",
+            youtube: u.youtube || "",
+            twitch: u.twitch || ""
           }));
           setUsers(mapped);
         }
@@ -83,6 +91,28 @@ function App() {
     });
   }, [user?.role]);
 
+  // Felhasználói adatok frissítése bejelentkezés után
+  useEffect(() => {
+    if (user && user.username) {
+      // Frissítjük a felhasználói adatokat a szerverről
+      axios.get(`http://localhost:3001/users/${user.username}`)
+        .then((res) => {
+          if (res.data.success && res.data.user) {
+            const updatedUserData = {
+              ...user,
+              ...res.data.user,
+              role: res.data.user.szerepkor === 'felhasznalo' ? 'user' : res.data.user.szerepkor
+            };
+            setUser(updatedUserData);
+            localStorage.setItem('user', JSON.stringify(updatedUserData));
+          }
+        })
+        .catch((err) => {
+          console.error('Felhasználói adatok frissítési hiba:', err);
+        });
+    }
+  }, [user?.username]);
+
   // ------------ AUTH ------------------
   function handleLogin(uname, pass, navigate) {
     console.log('Bejelentkezési kérés:', { uname, pass });
@@ -102,7 +132,15 @@ function App() {
             role: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor,
             bio: u.bio || "",
             avatar: u.avatar || "",
-            name: u.nev || "",
+            name: u.name || u.nev || u.felhasznalonev,
+            favoriteGenres: u.favoriteGenres ? JSON.parse(u.favoriteGenres) : [],
+            preferredPlatforms: u.preferredPlatforms ? JSON.parse(u.preferredPlatforms) : [],
+            country: u.country || "",
+            birthYear: u.birthYear || "",
+            discord: u.discord || "",
+            twitter: u.twitter || "",
+            youtube: u.youtube || "",
+            twitch: u.twitch || ""
           };
           setUser(userData);
           // Mentés localStorage-ba
@@ -251,11 +289,33 @@ function App() {
 
   // ---------- PROFILE EDIT ------------------
   function handleProfileEdit(data) {
+    if (!user || !user.username) {
+      console.error('Nincs bejelentkezett felhasználó');
+      return;
+    }
+    
     const updatedUser = { ...user, ...data };
     setUser(updatedUser);
     setUsers((prev) => prev.map((u) => (u.username === user.username ? { ...u, ...data } : u)));
     // Frissítés localStorage-ban
     localStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    // Szerver oldalon is mentjük a változásokat
+    // A felhasználónév változtatását most nem támogatjuk, csak a teljes nevet
+    return axios.put(`http://localhost:3001/users/${user.username}`, data)
+      .then((res) => {
+        if (res.data.success) {
+          console.log('Profil sikeresen frissítve a szerveren is');
+          return { success: true };
+        } else {
+          console.error('Profil frissítési hiba szerveren:', res.data.message);
+          return { success: false, message: res.data.message };
+        }
+      })
+      .catch((err) => {
+        console.error('Profil frissítési hiba:', err);
+        return { success: false, message: 'Hiba történt a szerverrel való kommunikáció során' };
+      });
   }
 
   // ------------ SEARCH / FILTER ------------
@@ -316,7 +376,6 @@ function App() {
             )
           }
         />
-
         <Route
           path="/game/:id"
           element={
@@ -363,7 +422,7 @@ function App() {
         />
 
         <Route
-          path="/admin"
+          path="/admin-panel"
           element={
             user?.role === 'admin' ? (
               <AdminPanel user={user} />
@@ -376,7 +435,7 @@ function App() {
         <Route
           path="/gamedev-upload"
           element={
-            (user?.role === 'gamedev' || user?.role === 'admin') ? (
+            user?.role === 'gamedev' ? (
               <GameDevUpload user={user} />
             ) : (
               <LoginPage handleLogin={handleLogin} />
@@ -387,7 +446,7 @@ function App() {
         <Route
           path="/gamedev-panel"
           element={
-            (user?.role === 'gamedev' || user?.role === 'admin') ? (
+            user?.role === 'gamedev' ? (
               <GameDevPanel user={user} />
             ) : (
               <LoginPage handleLogin={handleLogin} />

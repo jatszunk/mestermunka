@@ -20,8 +20,22 @@ CREATE TABLE `felhasznalo` (
   `szerepkor` enum('felhasznalo','admin','gamedev') NOT NULL DEFAULT 'felhasznalo',
   `regisztracio_datum` timestamp NOT NULL DEFAULT current_timestamp(),
   `nev` varchar(100) DEFAULT NULL,
+  `aktiv` tinyint(1) NOT NULL DEFAULT 1,
+  `utolso_belepes` timestamp NULL DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `avatar` varchar(500) DEFAULT NULL,
+  `favoriteGenres` json DEFAULT NULL,
+  `preferredPlatforms` json DEFAULT NULL,
+  `country` varchar(100) DEFAULT NULL,
+  `birthYear` int(11) DEFAULT NULL,
+  `discord` varchar(100) DEFAULT NULL,
+  `twitter` varchar(100) DEFAULT NULL,
+  `youtube` varchar(200) DEFAULT NULL,
+  `twitch` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`idfelhasznalo`),
-  UNIQUE KEY `uq_felhasznalo_felhasznalonev` (`felhasznalonev`)
+  UNIQUE KEY `uq_felhasznalo_felhasznalonev` (`felhasznalonev`),
+  KEY `idx_felhasznalo_szerepkor` (`szerepkor`),
+  KEY `idx_felhasznalo_aktiv` (`aktiv`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ===== DEVELOPERS =====
@@ -61,24 +75,26 @@ CREATE TABLE `jatekok` (
   `idjatekok` int(11) NOT NULL AUTO_INCREMENT,
   `nev` varchar(255) NOT NULL,
   `idfejleszto` int(11) NOT NULL,
-  `ar` varchar(50) NOT NULL,
+  `ar` decimal(10,2) NOT NULL DEFAULT 0.00,
   `idrendszerkovetelmeny` int(11) DEFAULT NULL,
   `leiras` text DEFAULT NULL,
   `ertekeles` decimal(3,2) NOT NULL DEFAULT 0.00,
   `kepurl` varchar(500) DEFAULT NULL,
-
   `status` enum('approved','pending','rejected') NOT NULL DEFAULT 'approved',
   `uploaded_by` int(11) DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
   `approved_by` int(11) DEFAULT NULL,
   `rejection_reason` text DEFAULT NULL,
-
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`idjatekok`),
   KEY `idx_jatekok_status` (`status`),
   KEY `idx_jatekok_idfejleszto` (`idfejleszto`),
   KEY `idx_jatekok_uploaded_by` (`uploaded_by`),
   KEY `idx_jatekok_approved_by` (`approved_by`),
   KEY `idx_jatekok_idrendszerkovetelmeny` (`idrendszerkovetelmeny`),
+  KEY `idx_jatekok_ertekeles` (`ertekeles`),
+  KEY `idx_jatekok_created_at` (`created_at`),
   CONSTRAINT `fk_jatekok_fejleszto` FOREIGN KEY (`idfejleszto`) REFERENCES `fejleszto` (`idfejleszto`) ON DELETE RESTRICT,
   CONSTRAINT `fk_jatekok_rendszerkovetelmeny` FOREIGN KEY (`idrendszerkovetelmeny`) REFERENCES `rendszerkovetelmeny` (`idrendszerkovetelmeny`) ON DELETE SET NULL,
   CONSTRAINT `fk_jatekok_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE SET NULL,
@@ -131,9 +147,13 @@ CREATE TABLE `kommentek` (
   `tartalom` text NOT NULL,
   `ertekeles` decimal(3,2) DEFAULT NULL,
   `datum` timestamp NOT NULL DEFAULT current_timestamp(),
+  `modositva` timestamp NULL DEFAULT NULL,
+  `status` enum('active','hidden','deleted') NOT NULL DEFAULT 'active',
   PRIMARY KEY (`idkommentek`),
   KEY `idx_kommentek_idjatekok` (`idjatekok`),
   KEY `idx_kommentek_idfelhasznalo` (`idfelhasznalo`),
+  KEY `idx_kommentek_status` (`status`),
+  KEY `idx_kommentek_datum` (`datum`),
   CONSTRAINT `fk_kommentek_jatek` FOREIGN KEY (`idjatekok`) REFERENCES `jatekok` (`idjatekok`) ON DELETE CASCADE,
   CONSTRAINT `fk_kommentek_user` FOREIGN KEY (`idfelhasznalo`) REFERENCES `felhasznalo` (`idfelhasznalo`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -182,6 +202,113 @@ INSERT IGNORE INTO `platform` (`nev`) VALUES
 ('PC'),('PlayStation'),('Xbox'),('Nintendo');
 
 INSERT IGNORE INTO `rendszerkovetelmeny` (`minimum`,`ajanlott`) VALUES
-('Minimum: Windows 10, 4GB RAM, 2GB VRAM','Ajánlott: Windows 10, 8GB RAM, 4GB VRAM');
+('Minimum: Windows 10, 4GB RAM, 2GB VRAM','Ajánlott: Windows 10, 8GB RAM, 4GB VRAM'),
+('Minimum: Windows 7, 2GB RAM, 1GB VRAM','Ajánlott: Windows 10, 4GB RAM, 2GB VRAM'),
+('Minimum: macOS 10.12, 4GB RAM','Ajánlott: macOS 11.0, 8GB RAM');
+
+-- ===== STORED PROCEDURES =====
+
+-- Játék átlagos értékelésének frissítése
+DELIMITER //
+CREATE PROCEDURE UpdateGameRating(IN game_id INT)
+BEGIN
+    DECLARE avg_rating DECIMAL(3,2) DEFAULT 0.00;
+    
+    SELECT COALESCE(AVG(ertekeles), 0.00) INTO avg_rating
+    FROM kommentek 
+    WHERE idjatekok = game_id AND status = 'active' AND ertekeles IS NOT NULL;
+    
+    UPDATE jatekok 
+    SET ertekeles = avg_rating, updated_at = CURRENT_TIMESTAMP
+    WHERE idjatekok = game_id;
+END //
+DELIMITER ;
+
+-- Felhasználói statisztikák lekérdezése
+DELIMITER //
+CREATE PROCEDURE GetUserStatistics(IN user_id INT)
+BEGIN
+    SELECT 
+        f.felhasznalonev,
+        f.szerepkor,
+        f.regisztracio_datum,
+        f.utolso_belepes,
+        COUNT(DISTINCT k.idkommentek) as kommentek_szama,
+        COALESCE(AVG(k.ertekeles), 0) as atlagos_ertekeles,
+        COUNT(DISTINCT CASE WHEN gc.status = 'completed' THEN gc.idjatekok END) as befejezett_jatekok,
+        COUNT(DISTINCT w.idjatekok) as wishlist_jatekok
+    FROM felhasznalo f
+    LEFT JOIN kommentek k ON f.idfelhasznalo = k.idfelhasznalo AND k.status = 'active'
+    LEFT JOIN game_collection gc ON f.idfelhasznalo = gc.idfelhasznalo
+    LEFT JOIN wishlist w ON f.idfelhasznalo = w.idfelhasznalo
+    WHERE f.idfelhasznalo = user_id
+    GROUP BY f.idfelhasznalo;
+END //
+DELIMITER ;
+
+-- ===== TRIGGERS =====
+
+-- Komment hozzáadásakor frissíti a játék értékelését
+DELIMITER //
+CREATE TRIGGER after_comment_insert
+AFTER INSERT ON kommentek
+FOR EACH ROW
+BEGIN
+    CALL UpdateGameRating(NEW.idjatekok);
+END //
+DELIMITER ;
+
+-- Komment módosításakor frissíti a játék értékelését
+DELIMITER //
+CREATE TRIGGER after_comment_update
+AFTER UPDATE ON kommentek
+FOR EACH ROW
+BEGIN
+    IF NEW.ertekeles != OLD.ertekeles OR NEW.status != OLD.status THEN
+        CALL UpdateGameRating(NEW.idjatekok);
+    END IF;
+END //
+DELIMITER ;
+
+-- Komment törlésekor frissíti a játék értékelését
+DELIMITER //
+CREATE TRIGGER after_comment_delete
+AFTER DELETE ON kommentek
+FOR EACH ROW
+BEGIN
+    CALL UpdateGameRating(OLD.idjatekok);
+END //
+DELIMITER ;
+
+-- Felhasználó bejelentkezésének időpontját frissíti
+DELIMITER //
+CREATE TRIGGER update_user_login
+AFTER UPDATE ON felhasznalo
+FOR EACH ROW
+BEGIN
+    IF NEW.utolso_belepes != OLD.utolso_belepes THEN
+        UPDATE felhasznalo 
+        SET utolso_belepes = CURRENT_TIMESTAMP 
+        WHERE idfelhasznalo = NEW.idfelhasznalo;
+    END IF;
+END //
+DELIMITER ;
+
+-- Játék státusz változásakor logolja az eseményt
+DELIMITER //
+CREATE TRIGGER log_game_status_change
+AFTER UPDATE ON jatekok
+FOR EACH ROW
+BEGIN
+    IF NEW.status != OLD.status THEN
+        INSERT INTO jatekok (nev, idfejleszto, ar, status, leiras)
+        VALUES (
+            CONCAT('LOG: ', OLD.nev, ' status changed from ', OLD.status, ' to ', NEW.status),
+            1, 0.00, 'approved', 
+            CONCAT('Status changed at: ', CURRENT_TIMESTAMP)
+        );
+    END IF;
+END //
+DELIMITER ;
 
 COMMIT;

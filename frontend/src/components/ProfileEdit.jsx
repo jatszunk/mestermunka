@@ -94,23 +94,31 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
     setMessage('');
 
     try {
-      const response = await axios.put(`http://localhost:3001/users/${user.username}`, formData);
+      // Ellenőrizzük, hogy a formData és user létezik-e
+      if (!formData || !user || !user.username) {
+        setMessage('Hiányzó adatok vagy felhasználó!');
+        setMessageType('error');
+        setLoading(false);
+        return;
+      }
       
-      if (response.data.success) {
+      // A szerver kommunikációt az App.jsx handleProfileEdit függvénye végzi
+      const result = await onProfileUpdate(formData);
+      
+      if (result && result.success) {
         setMessage('Profil sikeresen frissítve!');
         setMessageType('success');
-        onProfileUpdate(response.data.user);
         
         setTimeout(() => {
           onCancel();
         }, 2000);
       } else {
-        setMessage(response.data.message || 'Hiba történt a frissítés során');
+        setMessage(result?.message || 'Hiba történt a frissítés során');
         setMessageType('error');
       }
     } catch (error) {
       console.error('Profil frissítési hiba:', error);
-      setMessage('Hiba történt a szerverrel való kommunikáció során');
+      setMessage('Hiba történt a frissítés során');
       setMessageType('error');
     } finally {
       setLoading(false);

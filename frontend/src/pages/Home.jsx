@@ -25,7 +25,7 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
         <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
         <Link to="/nevjegy" className="nav-link">Névjegy</Link>
         {user?.role === 'admin' && (
-          <Link to="/admin" className="nav-link">Admin Panel</Link>
+          <Link to="/admin-panel" className="nav-link">Admin Panel</Link>
         )}
         {user?.role === 'gamedev' && (
           <>

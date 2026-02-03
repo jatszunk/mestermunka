@@ -13,6 +13,23 @@ const AdminPanel = ({ user }) => {
   const [editingGame, setEditingGame] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [comments, setComments] = useState([]);
+  const [uploadFormData, setUploadFormData] = useState({
+    title: "",
+    developer: "",
+    price: "",
+    category: "",
+    image: "",
+    minReq: "",
+    recReq: "",
+    desc: "",
+    rating: 0,
+    videos: [""],
+    megjelenes: "",
+    steamLink: "",
+    jatekElmeny: "",
+    reszletesLeiras: "",
+  });
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   useEffect(() => {
     fetchStatistics();
@@ -277,6 +294,78 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Játék feltöltéshez szükséges függvények
+  const handleUploadChange = (e) => {
+    const { name, value } = e.target;
+    setUploadFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleVideoChange = (index, value) => {
+    const newVideos = [...uploadFormData.videos];
+    newVideos[index] = value;
+    setUploadFormData(prev => ({
+      ...prev,
+      videos: newVideos
+    }));
+  };
+
+  const addVideoField = () => {
+    setUploadFormData(prev => ({
+      ...prev,
+      videos: [...prev.videos, ""]
+    }));
+  };
+
+  const removeVideoField = (index) => {
+    const newVideos = uploadFormData.videos.filter((_, i) => i !== index);
+    setUploadFormData(prev => ({
+      ...prev,
+      videos: newVideos
+    }));
+  };
+
+  const handleGameUpload = async (e) => {
+    e.preventDefault();
+    setUploadLoading(true);
+
+    try {
+      const res = await axios.post("http://localhost:3001/jatekok", {
+        ...uploadFormData,
+        username: user.username
+      });
+
+      if (res.data.success) {
+        alert("Játék sikeresen hozzáadva!");
+        setUploadFormData({
+          title: "",
+          developer: "",
+          price: "",
+          category: "",
+          image: "",
+          minReq: "",
+          recReq: "",
+          desc: "",
+          rating: 0,
+          videos: [""],
+          megjelenes: "",
+          steamLink: "",
+          jatekElmeny: "",
+          reszletesLeiras: "",
+        });
+        await fetchPendingGames();
+        await fetchStatistics();
+      }
+    } catch (error) {
+      console.error("Játék feltöltési hiba:", error);
+      alert(getAxiosErrorMessage(error, "Hiba történt a játék feltöltése során!"));
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const StatCard = ({ title, value, color = "blue" }) => (
     <div className={`bg-white p-6 rounded-lg shadow-md border-l-4 border-${color}-500`}>
       <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
@@ -294,6 +383,26 @@ const AdminPanel = ({ user }) => {
 
   return (
     <div className="maincenter">
+      {/* Navbar */}
+      <nav>
+        <a href="/" className="nav-link">Főoldal</a>
+        <a href="/statistics" className="nav-link">Statisztikák</a>
+        <a href="/profile" className="nav-link">Profil</a>
+        <a href="/nevjegy" className="nav-link">Névjegy</a>
+        <a href="/admin-panel" className="nav-link active">Admin Panel</a>
+        <button 
+          onClick={() => setActiveTab("game-upload")}
+          className="nav-link"
+          style={{ 
+            background: activeTab === "game-upload" ? "#00d2d3" : "transparent",
+            color: activeTab === "game-upload" ? "white" : "#00d2d3",
+            border: "1px solid #00d2d3"
+          }}
+        >
+          Játék Feltöltés
+        </button>
+      </nav>
+
       <div className="admin-header">
         <h1>Admin Panel</h1>
         <button
@@ -544,6 +653,220 @@ const AdminPanel = ({ user }) => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "game-upload" && (
+          <div>
+            <h2>Játék Feltöltés</h2>
+            <form onSubmit={handleGameUpload} className="upload-form">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Játék neve *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={uploadFormData.title}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Fejlesztő *</label>
+                  <input
+                    type="text"
+                    name="developer"
+                    value={uploadFormData.developer}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Ár *</label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={uploadFormData.price}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Kategóriák *</label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={uploadFormData.category}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    placeholder="pl: FPS, RPG, Stratégia"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Kép URL *</label>
+                  <input
+                    type="url"
+                    name="image"
+                    value={uploadFormData.image}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Értékelés (0-10)</label>
+                  <input
+                    type="number"
+                    name="rating"
+                    value={uploadFormData.rating}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    min="0"
+                    max="10"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Megjelenés dátuma *</label>
+                  <input
+                    type="date"
+                    name="megjelenes"
+                    value={uploadFormData.megjelenes}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Steam Link *</label>
+                  <input
+                    type="url"
+                    name="steamLink"
+                    value={uploadFormData.steamLink}
+                    onChange={handleUploadChange}
+                    className="login-input"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Minimum rendszerkövetelmények</label>
+                  <textarea
+                    name="minReq"
+                    value={uploadFormData.minReq}
+                    onChange={handleUploadChange}
+                    className="neon-textarea"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Ajánlott rendszerkövetelmények</label>
+                  <textarea
+                    name="recReq"
+                    value={uploadFormData.recReq}
+                    onChange={handleUploadChange}
+                    className="neon-textarea"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Játék élmény</label>
+                  <textarea
+                    name="jatekElmeny"
+                    value={uploadFormData.jatekElmeny}
+                    onChange={handleUploadChange}
+                    className="neon-textarea"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="form-group full-width">
+                  <label className="form-label">Leírás *</label>
+                  <textarea
+                    name="desc"
+                    value={uploadFormData.desc}
+                    onChange={handleUploadChange}
+                    className="neon-textarea"
+                    rows="4"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group full-width">
+                  <label className="form-label">Részletes leírás *</label>
+                  <textarea
+                    name="reszletesLeiras"
+                    value={uploadFormData.reszletesLeiras}
+                    onChange={handleUploadChange}
+                    className="neon-textarea"
+                    rows="6"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="videos-section">
+                <h3>Videók</h3>
+                {uploadFormData.videos.map((video, index) => (
+                  <div key={index} className="video-input-group">
+                    <input
+                      type="url"
+                      value={video}
+                      onChange={(e) => handleVideoChange(index, e.target.value)}
+                      className="login-input"
+                      placeholder="Video URL"
+                    />
+                    {uploadFormData.videos.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVideoField(index)}
+                        className="remove-video-btn"
+                      >
+                        Törlés
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addVideoField}
+                  className="add-video-btn"
+                >
+                  + Video hozzáadása
+                </button>
+              </div>
+              
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  disabled={uploadLoading}
+                  className="approve-btn"
+                >
+                  {uploadLoading ? "Feltöltés..." : "Játék feltöltése"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("dashboard")}
+                  className="reject-btn"
+                >
+                  Mégse
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
