@@ -464,14 +464,50 @@ app.get("/admin/users", checkRole(['admin']), (req, res) => {
   });
 });
 
-app.delete("/admin/users/:id", checkRole(['admin']), (req, res) => {
-  const userId = req.params.id;
-  const sql = "UPDATE felhasznalo SET aktiv = 0 WHERE idfelhasznalo = ?";
-  db.query(sql, [userId], (err, result) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Felhasználó nem található" });
-    res.json({ success: true, message: "Felhasználó deaktiválva" });
-  });
+app.delete("/admin/users/:userId", checkRole(['admin']), (req, res) => {
+  const userId = req.params.userId;
+  
+  console.log('Felhasználó törlés kérés:', { userId, username: req.username });
+
+  // Ellenőrizzük, hogy nem saját magát próbálja-e törölni
+  if (req.username) {
+    db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [req.username], (err, adminResults) => {
+      if (err) {
+        console.error('Admin keresési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      if (adminResults.length === 0) {
+        return res.status(404).json({ success: false, message: "Admin nem található" });
+      }
+      
+      const adminId = adminResults[0].idfelhasznalo;
+      
+      if (parseInt(userId) === adminId) {
+        return res.status(400).json({ success: false, message: "Nem törölheti saját magát" });
+      }
+      
+      // Felhasználó deaktiválása (soft delete)
+      const sql = "UPDATE felhasznalo SET aktiv = 0 WHERE idfelhasznalo = ?";
+      
+      db.query(sql, [userId], (err, result) => {
+        if (err) {
+          console.error('Felhasználó törlési hiba:', err);
+          return res.status(500).json({ success: false, error: err });
+        }
+        
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+        }
+        
+        console.log('Felhasználó sikeresen deaktiválva:', userId);
+        res.json({ success: true, message: "Felhasználó sikeresen törölve" });
+      });
+    });
+  } else {
+    console.log('Felhasználó törlés - nincs username a requestben');
+    res.status(401).json({ success: false, message: "Nincs jogosultsága" });
+  }
 });
 
 // Admin statisztikák
@@ -765,6 +801,40 @@ app.delete("/collection/:username/:gameId", (req, res) => {
   });
 });
 
+// Collection frissítése
+app.put("/collection/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  const { status, rating, notes } = req.body;
+  
+  // Felhasználó ID lekérése
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
+    if (err) {
+      console.error('Felhasználó keresési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    if (userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+
+    const userId = userResults[0].idfelhasznalo;
+
+    const sql = "UPDATE game_collection SET status = ?, rating = ?, notes = ?, updated_at = NOW() WHERE idfelhasznalo = ? AND idjatekok = ?";
+    db.query(sql, [status, rating || null, notes || null, userId, gameId], (err, result) => {
+      if (err) {
+        console.error('Collection frissítési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: "A játék nem található a gyűjteményben" });
+      }
+      
+      res.json({ success: true, message: "Gyűjtemény frissítve" });
+    });
+  });
+});
+
 // GameDev játékainak lekérdezése
 app.get("/gamedev/:username/games", checkRole(['gamedev', 'admin']), (req, res) => {
   const { username } = req.params;
@@ -840,88 +910,65 @@ app.post("/api/send-email", (req, res) => {
   
   console.log('Email küldési kérés:', { from, name, subject });
 
-  // Egyszerűsített email küldés (dummy implementáció)
-  try {
-    // Itt kellene a valós nodemailer beállítás
-    // Most csak logoljuk és sikeres választ adunk
-    console.log('Email adatok:', {
-      from: from,
-      to: 'admin@example.com',
-      subject: subject,
-      message: message
-    });
+  // Email transporter beállítása
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'gameverseprojekt@gmail.com', // Itt add meg a valós email címed
+      pass: 'basznalak01!' // Itt add meg az app jelszavad
+    }
+  });
+
+  const mailOptions = {
+    from: from,
+    to: 'jatekhirdeto.app@gmail.com', // Címzett email
+    subject: `JátékHirdető Kapcsolat: ${subject}`,
+    text: `
+      Új üzenet érkezett a JátékHirdető oldalról:
+      
+      Feladó: ${name} (${from})
+      Tárgy: ${subject}
+      
+      Üzenet:
+      ${message}
+    `,
+    html: `
+      <h2>Új üzenet érkezett a JátékHirdető oldalról</h2>
+      <p><strong>Feladó:</strong> ${name} (${from})</p>
+      <p><strong>Tárgy:</strong> ${subject}</p>
+      <hr>
+      <h3>Üzenet:</h3>
+      <p>${message.replace(/\n/g, '<br>')}</p>
+    `
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Email küldési hiba:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Hiba történt az email küldése során!' 
+      });
+    }
     
-    // TODO: Valós email küldés beállítása
+    console.log('Email sikeresen elküldve:', info.messageId);
     res.json({ 
       success: true, 
-      message: 'Email sikeresen elküldve! (Teszt módban)' 
+      message: 'Email sikeresen elküldve!' 
     });
-  } catch (error) {
-    console.error('Email küldési hiba:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Hiba történt az email küldése során!' 
-    });
-  }
-});
-
-// Felhasználó törlése (admin)
-app.delete("/admin/users/:userId", checkRole(['admin']), (req, res) => {
-  const userId = req.params.userId;
-  
-  console.log('Felhasználó törlés kérés:', { userId, username: req.username });
-
-  // Ellenőrizzük, hogy nem saját magát próbálja-e törölni
-  if (req.username) {
-    db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [req.username], (err, adminResults) => {
-      if (err) {
-        console.error('Admin keresési hiba:', err);
-        return res.status(500).json({ success: false, error: err });
-      }
-      
-      if (adminResults.length === 0) {
-        return res.status(404).json({ success: false, message: "Admin nem található" });
-      }
-      
-      const adminId = adminResults[0].idfelhasznalo;
-      
-      if (parseInt(userId) === adminId) {
-        return res.status(400).json({ success: false, message: "Nem törölheti saját magát" });
-      }
-      
-      // Felhasználó törlése
-      const sql = "DELETE FROM felhasznalo WHERE idfelhasznalo = ?";
-      
-      db.query(sql, [userId], (err, result) => {
-        if (err) {
-          console.error('Felhasználó törlési hiba:', err);
-          return res.status(500).json({ success: false, error: err });
-        }
-        
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ success: false, message: "Felhasználó nem található" });
-        }
-        
-        console.log('Felhasználó sikeresen törölve:', userId);
-        res.json({ success: true, message: "Felhasználó sikeresen törölve" });
-      });
-    });
-  } else {
-    console.log('Felhasználó törlés - nincs username a requestben');
-    res.status(401).json({ success: false, message: "Nincs jogosultsága" });
-  }
+  });
 });
 
 // Felhasználó szerepkör módosítása (admin)
 app.put("/admin/users/:userId/role", checkRole(['admin']), (req, res) => {
   const userId = req.params.userId;
-  const { role } = req.body;
+  const { szerepkor } = req.body;
   
-  console.log('Szerepkör módosítás kérés:', { userId, role });
+  console.log('Szerepkör módosítás kérés:', { userId, szerepkor });
 
   const sql = "UPDATE felhasznalo SET szerepkor = ? WHERE idfelhasznalo = ?";
   
-  db.query(sql, [role, userId], (err, result) => {
+  db.query(sql, [szerepkor, userId], (err, result) => {
     if (err) {
       console.error('Szerepkör módosítási hiba:', err);
       return res.status(500).json({ success: false, error: err });
