@@ -20,6 +20,23 @@ const db = mysql.createPool({
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true,
+  charset: 'utf8mb4',
+  // Definer probléma megoldása
+  insecureAuth: true
+});
+
+// Alternatív kapcsolat a kommentekhez (ha a fő kapcsolat nem működik)
+const commentDb = mysql.createPool({
+  connectionLimit: 5,
+  host: "127.0.0.1",
+  port: 3307,
+  user: "root",
+  password: "",
+  database: "jatekhirdeto",
+  multipleStatements: false,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
   charset: 'utf8mb4'
 });
 
@@ -30,6 +47,28 @@ db.getConnection((err, connection) => {
     return;
   }
   console.log("MySQL kapcsolat létrejött.");
+  
+  // Kommentek tábla triggerek és view-k eltávolítása
+  connection.query(`
+    DROP TRIGGER IF EXISTS kommentek_before_insert;
+    DROP TRIGGER IF EXISTS kommentek_after_insert;
+    DROP TRIGGER IF EXISTS kommentek_before_update;
+    DROP TRIGGER IF EXISTS kommentek_after_update;
+    DROP TRIGGER IF EXISTS kommentek_before_delete;
+    DROP TRIGGER IF EXISTS kommentek_after_delete;
+    DROP TRIGGER IF EXISTS after_comment_insert;
+    DROP TRIGGER IF EXISTS after_comment_update;
+    DROP TRIGGER IF EXISTS after_comment_delete;
+    DROP VIEW IF EXISTS kommentek_view;
+    DROP VIEW IF EXISTS v_kommentek;
+    DROP PROCEDURE IF EXISTS UpdateGameRating;
+  `, (triggerErr) => {
+    if (triggerErr) {
+      console.error("Hiba a triggerek/view-k/eltávolításakor:", triggerErr);
+    } else {
+      console.log("Kommentek triggerek, view-k és eljárások eltávolítva.");
+    }
+  });
   
   connection.query(`
     ALTER TABLE felhasznalo 
@@ -86,12 +125,13 @@ const checkRole = (allowedRoles) => {
     // Próbáljuk megkapni a felhasználónevet több forrásból
     let username = req.body?.username || 
                   req.query?.username || 
+                  req.params?.username ||
                   req.headers?.username ||
                   req.headers['x-username'] ||
                   (req.method === 'POST' && req.body && req.body.username);
     
     console.log('checkRole - keresett username:', username);
-    console.log('checkRole - req.body:', req.body);
+    console.log('checkRole - req.params:', req.params);
     console.log('checkRole - req.headers:', req.headers);
     
     if (!username) {
@@ -249,32 +289,55 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
   console.log('Komment hozzáadás kérés:', { gameId, username, text, rating });
 
   if (!username || !text || rating == null) {
+    console.log('Hiányzó adatok:', { username: !!username, text: !!text, rating: rating != null });
     return res.status(400).json({ success: false, message: "Hiányzó adatok!" });
   }
 
   db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ? AND aktiv = 1", [username], (err, users) => {
     if (err) {
       console.error('Felhasználó keresési hiba:', err);
-      return res.status(500).json({ success: false, error: err });
+      return res.status(500).json({ success: false, message: "Adatbázis hiba a felhasználó keresésekor", error: err.message });
     }
-    if (!users.length) return res.status(404).json({ success: false, message: "Nincs ilyen felhasználó vagy inaktív." });
+    if (!users.length) {
+      console.log('Nem található felhasználó:', username);
+      return res.status(404).json({ success: false, message: "Nincs ilyen felhasználó vagy inaktív." });
+    }
 
     const userId = users[0].idfelhasznalo;
+    console.log('Felhasználó ID:', userId, 'Game ID:', gameId);
 
+    // Először próbáljuk meg a fő kapcsolattal
     db.query(
-      "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
+      "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom, status) VALUES (?, ?, ?, ?, 'active')",
       [userId, gameId, Number(rating), text],
       (err2, result) => {
         if (err2) {
-          console.error('Komment hozzáadási hiba:', err2);
-          return res.status(500).json({ success: false, error: err2 });
+          console.error('Komment hozzáadási hiba (fő kapcsolat):', err2);
+          
+          // Ha a fő kapcsolat nem működik, próbáljuk meg az alternatív kapcsolattal
+          console.log('Próbálkozás alternatív kapcsolattal...');
+          commentDb.query(
+            "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
+            [userId, gameId, Number(rating), text],
+            (err3, result2) => {
+              if (err3) {
+                console.error('Alternatív kapcsolat is hibás:', err3);
+                return res.status(500).json({ success: false, message: "Hiba a komment mentésekor (adatbázis definer probléma)", error: err3.message });
+              }
+              console.log('Komment sikeresen hozzáadva (alternatív kapcsolat):', result2.insertId);
+              res.json({
+                success: true,
+                comment: { id: result2.insertId, user: username, text, rating: Number(rating) },
+              });
+            }
+          );
+        } else {
+          console.log('Komment sikeresen hozzáadva (fő kapcsolat):', result.insertId);
+          res.json({
+            success: true,
+            comment: { id: result.insertId, user: username, text, rating: Number(rating) },
+          });
         }
-
-        console.log('Komment sikeresen hozzáadva:', result.insertId);
-        res.json({
-          success: true,
-          comment: { id: result.insertId, user: username, text, rating: Number(rating) },
-        });
       }
     );
   });
@@ -853,42 +916,65 @@ app.put("/collection/:username/:gameId", (req, res) => {
 });
 
 // GameDev játékainak lekérdezése
-app.get("/gamedev/:username/games", checkRole(['gamedev', 'admin']), (req, res) => {
+app.get("/gamedev/:username/games", (req, res, next) => {
+  console.log('GameDev games kérés érkezett:', req.method, req.url);
+  console.log('Params:', req.params);
+  console.log('Headers:', req.headers);
+  next();
+}, checkRole(['gamedev', 'admin']), (req, res) => {
   const { username } = req.params;
   
   console.log('GameDev játékok lekérdezése:', { username });
 
-  const sql = `
-    SELECT 
-      j.idjatekok AS id,
-      j.nev AS title,
-      f.nev AS developer,
-      j.ar AS price,
-      CASE WHEN j.penznem IS NULL OR j.penznem = '' THEN NULL ELSE j.penznem END AS currency,
-      j.leiras AS description,
-      j.kepurl AS image,
-      j.ertekeles AS rating,
-      j.status,
-      j.created_at,
-      GROUP_CONCAT(DISTINCT k.nev SEPARATOR ', ') AS categories
-    FROM jatekok j
-    LEFT JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
-    LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
-    LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
-    WHERE j.uploaded_by = (
-      SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
-    )
-    GROUP BY j.idjatekok
-    ORDER BY j.created_at DESC
-  `;
-  
-  db.query(sql, [username], (err, results) => {
+  // Először ellenőrizzük a felhasználó ID-jét
+  const userIdSql = "SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?";
+  db.query(userIdSql, [username], (err, userResults) => {
     if (err) {
-      console.error('GameDev játékok lekérdezési hiba:', err);
+      console.error('Felhasználó ID keresési hiba:', err);
       return res.status(500).json({ success: false, error: err });
     }
     
-    res.json({ success: true, games: results });
+    console.log('Felhasználó keresés eredménye:', userResults);
+    
+    if (!userResults.length) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+    
+    const userId = userResults[0].idfelhasznalo;
+    console.log('Felhasználó ID:', userId);
+
+    const sql = `
+      SELECT 
+        j.idjatekok AS id,
+        j.nev AS title,
+        j.ar AS price,
+        j.penznem AS currency,
+        j.leiras AS description,
+        j.kepurl AS image,
+        j.ertekeles AS rating,
+        j.status,
+        j.created_at,
+        j.uploaded_by
+      FROM jatekok j
+      ORDER BY j.created_at DESC
+    `;
+    
+    db.query(sql, [userId], (err, results) => {
+      if (err) {
+        console.error('GameDev játékok lekérdezési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      console.log('ÖSSZES játék adatai:', results);
+      console.log('Felhasználóhoz tartozó játékok:', results.filter(game => game.uploaded_by == userId));
+      console.log('Felhasználó ID:', userId, 'keresett játékok:', results.filter(game => game.uploaded_by == userId));
+      
+      const userGames = results.filter(game => game.uploaded_by == userId);
+      console.log('GameDev játékok lekérdezés eredménye:', userGames);
+      console.log('Talált játékok száma:', userGames.length);
+      
+      res.json({ success: true, games: userGames });
+    });
   });
 });
 
@@ -916,6 +1002,8 @@ app.get("/gamedev/:username/stats", checkRole(['gamedev', 'admin']), (req, res) 
       console.error('GameDev statisztikák lekérdezési hiba:', err);
       return res.status(500).json({ success: false, error: err });
     }
+    
+    console.log('GameDev statisztikák lekérdezés eredménye:', results);
     
     res.json({ success: true, stats: results[0] });
   });
@@ -1141,130 +1229,113 @@ app.get("/test-all-users", (req, res) => {
   });
 });
 
-// Játék feltöltése (gamedev és admin)
-app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => {
-  const {
-    title,
-    developer,
-    price,
-    currency,
-    category,
-    image,
-    minReq,
-    recReq,
-    desc,
-    rating,
-    videos,
-    megjelenes,
-    steamLink,
-    jatekElmeny,
-    reszletesLeiras
-  } = req.body;
-
-  console.log('Játék feltöltési kérés:', req.body);
-
-  // Fejlesztő hozzáadása vagy keresése
-  const developerSql = "SELECT idfejleszto FROM fejleszto WHERE nev = ?";
-  db.query(developerSql, [developer], (err, devResults) => {
+// Játékok frissítése - uploaded_by mező beállítása a gamedev felhasználókra
+app.post("/fix-uploaded-by", (req, res) => {
+  console.log('uploaded_by mező frissítése...');
+  
+  const gamedevSql = "SELECT idfelhasznalo, felhasznalonev FROM felhasznalo WHERE szerepkor = 'gamedev'";
+  db.query(gamedevSql, (err, gamedevUsers) => {
     if (err) {
-      console.error('Fejlesztő keresési hiba:', err);
-      return res.status(500).json({ success: false, message: "Adatbázis hiba" });
+      console.error('Gamedev felhasználók keresési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
     }
-
-    let developerId;
-    if (devResults.length === 0) {
-      // Új fejlesztő hozzáadása
-      const insertDeveloperSql = "INSERT INTO fejleszto (nev) VALUES (?)";
-      db.query(insertDeveloperSql, [developer], (err2, result) => {
+    
+    console.log('Gamedev felhasználók:', gamedevUsers);
+    
+    // Az első gamedev felhasználó ID-jét állítjuk be az összes játékhoz
+    if (gamedevUsers.length > 0) {
+      const gamedevId = gamedevUsers[0].idfelhasznalo;
+      const updateSql = "UPDATE jatekok SET uploaded_by = ? WHERE uploaded_by IS NULL";
+      
+      db.query(updateSql, [gamedevId], (err2, result) => {
         if (err2) {
-          console.error('Fejlesztő hozzáadási hiba:', err2);
-          return res.status(500).json({ success: false, message: "Fejlesztő hozzáadási hiba" });
+          console.error('uploaded_by frissítési hiba:', err2);
+          return res.status(500).json({ success: false, error: err2 });
         }
-        developerId = result.insertId;
-        insertGame();
+        
+        console.log('uploaded_by sikeresen frissítve:', result.affectedRows, 'játék');
+        res.json({ success: true, message: `${result.affectedRows} játék frissítve`, updated: result.affectedRows });
       });
     } else {
-      developerId = devResults[0].idfejleszto;
-      insertGame();
+      res.json({ success: false, message: "Nincs gamedev felhasználó" });
     }
+  });
+});
 
-    function insertGame() {
-      // Rendszerkövetelmények keresése vagy hozzáadása
-      const reqSql = "SELECT idrendszerkovetelmeny FROM rendszerkovetelmeny WHERE minimum = ? AND ajanlott = ?";
-      db.query(reqSql, [minReq, recReq], (err3, reqResults) => {
-        if (err3) {
-          console.error('Rendszerkövetelmény keresési hiba:', err3);
-          return res.status(500).json({ success: false, message: "Rendszerkövetelmény hiba" });
-        }
+// Játék feltöltése (gamedev és admin) - egyszerűsített verzió
+app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => {
+  const { title, developer, price, currency, category, image, minReq, recReq, desc, rating, username } = req.body;
+  
+  console.log('Játék feltöltési kérés:', req.body);
 
-        let reqId;
-        if (reqResults.length === 0) {
-          // Új rendszerkövetelmény hozzáadása egyedi azonosítóval
-          const insertReqSql = "INSERT INTO rendszerkovetelmeny (minimum, ajanlott) VALUES (?, ?)";
-          db.query(insertReqSql, [minReq, recReq], (err4, reqResult) => {
-            if (err4) {
-              console.error('Rendszerkövetelmény hozzáadási hiba:', err4);
-              // Ha már létezik, próbáljuk megkeresni
-              if (err4.code === 'ER_DUP_ENTRY') {
-                console.log('Duplikált rendszerkövetelmény, megpróbáljuk megtalálni...');
-                db.query(reqSql, [minReq, recReq], (err5, retryResults) => {
-                  if (err5 || retryResults.length === 0) {
-                    return res.status(500).json({ success: false, message: "Rendszerkövetelmény hiba" });
-                  }
-                  reqId = retryResults[0].idrendszerkovetelmeny;
-                  insertGameData(reqId);
-                });
-              } else {
-                return res.status(500).json({ success: false, message: "Rendszerkövetelmény hiba" });
-              }
-            } else {
-              reqId = reqResult.insertId;
-              insertGameData(reqId);
-            }
-          });
-        } else {
-          reqId = reqResults[0].idrendszerkovetelmeny;
-          insertGameData(reqId);
-        }
-      });
+  // Felhasználó ID keresése
+  const userSql = "SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?";
+  db.query(userSql, [username], (err, userResults) => {
+    if (err || userResults.length === 0) {
+      console.error('Felhasználó keresési hiba:', err);
+      return res.status(500).json({ success: false, message: "Felhasználó keresési hiba" });
+    }
+    
+    const uploadedBy = userResults[0].idfelhasznalo;
+    console.log('Felhasználó ID a feltöltéshez:', uploadedBy);
 
-      function insertGameData(reqId) {
+    // Fejlesztő hozzáadása vagy keresése
+    const developerSql = "SELECT idfejleszto FROM fejleszto WHERE nev = ?";
+    db.query(developerSql, [developer], (err2, devResults) => {
+      if (err2) {
+        console.error('Fejlesztő keresési hiba:', err2);
+        return res.status(500).json({ success: false, message: "Adatbázis hiba" });
+      }
+
+      let developerId;
+      if (devResults.length === 0) {
+        // Új fejlesztő hozzáadása
+        const insertDeveloperSql = "INSERT INTO fejleszto (nev) VALUES (?)";
+        db.query(insertDeveloperSql, [developer], (err3, result) => {
+          if (err3) {
+            console.error('Fejlesztő hozzáadási hiba:', err3);
+            return res.status(500).json({ success: false, message: "Fejlesztő hozzáadási hiba" });
+          }
+          developerId = result.insertId;
+          insertGame(developerId, uploadedBy);
+        });
+      } else {
+        developerId = devResults[0].idfejleszto;
+        insertGame(developerId, uploadedBy);
+      }
+
+      function insertGame(devId, uploadedBy) {
         // Játék hozzáadása
         const gameSql = `
           INSERT INTO jatekok 
-          (nev, idfejleszto, idrendszerkovetelmeny, ar, penznem, leiras, kepurl, ertekeles, status, megjelenes, steam_link, jatek_elmeny, reszletes_leiras) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
+          (nev, idfejleszto, ar, penznem, leiras, kepurl, ertekeles, status, uploaded_by) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         `;
         
-        // Ár kezelése - ha nem szám, akkor 0
+        // Ár kezelése
         let numericPrice = 0;
-        if (price === "Ingyenes" || price === "" || price === null) {
-          numericPrice = 0;
-        } else {
+        if (price && price !== "Ingyenes") {
           const parsed = parseFloat(price);
           numericPrice = isNaN(parsed) ? 0 : parsed;
         }
         
-        // Értékelés kezelése - ha nem szám, akkor 0
+        // Értékelés kezelése
         let numericRating = 0;
-        if (rating === "" || rating === null) {
-          numericRating = 0;
-        } else {
+        if (rating) {
           const parsedRating = parseFloat(rating);
           numericRating = isNaN(parsedRating) ? 0 : parsedRating;
         }
         
-        // Pénznem kezelése - alapértelmezett FT
+        // Pénznem kezelése
         let gameCurrency = currency || 'FT';
         if (!gameCurrency || gameCurrency.trim() === '') {
           gameCurrency = 'FT';
         }
         
-        console.log('Feldolgozott adatok:', { title, numericPrice, gameCurrency, numericRating });
+        console.log('Feldolgozott adatok:', { title, numericPrice, gameCurrency, numericRating, uploadedBy });
         
         db.query(gameSql, [
-          title, developerId, reqId, numericPrice, gameCurrency, desc, image, numericRating,
-          megjelenes, steamLink, jatekElmeny, reszletesLeiras
+          title, devId, numericPrice, gameCurrency, desc, image, numericRating, uploadedBy
         ], (err4, gameResult) => {
           if (err4) {
             console.error('Játék hozzáadási hiba:', err4);
@@ -1272,65 +1343,11 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
           }
 
           const gameId = gameResult.insertId;
-
-          // Kategóriák hozzáadása
-          // Kategória kezelése - lehet string vagy tömb
-          let categories = [];
-          if (category) {
-            if (Array.isArray(category)) {
-              categories = category;
-            } else if (typeof category === 'string') {
-              // Ha vesszővel elválasztott string, akkor szétbontjuk
-              categories = category.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0);
-            }
-          }
-
-          if (categories.length > 0) {
-            const categoryPromises = categories.map(catName => {
-              return new Promise((resolve, reject) => {
-                const catSql = "SELECT idkategoria FROM kategoria WHERE nev = ?";
-                db.query(catSql, [catName], (err5, catResults) => {
-                  if (err5) return reject(err5);
-                  
-                  if (catResults.length === 0) {
-                    // Új kategória hozzáadása
-                    const insertCatSql = "INSERT INTO kategoria (nev) VALUES (?)";
-                    db.query(insertCatSql, [catName], (err6, catResult) => {
-                      if (err6) return reject(err6);
-                      
-                      const linkSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
-                      db.query(linkSql, [gameId, catResult.insertId], (err7) => {
-                        if (err7) return reject(err7);
-                        resolve();
-                      });
-                    });
-                  } else {
-                    const linkSql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
-                    db.query(linkSql, [gameId, catResults[0].idkategoria], (err8) => {
-                      if (err8) return reject(err8);
-                      resolve();
-                    });
-                  }
-                });
-              });
-            });
-
-            Promise.all(categoryPromises)
-              .then(() => {
-                console.log('Játék sikeresen feltöltve:', gameId);
-                res.json({ success: true, message: "Játék sikeresen feltöltve jóváhagyásra!", gameId });
-              })
-              .catch((err9) => {
-                console.error('Kategória hiba:', err9);
-                res.status(500).json({ success: false, message: "Kategória hiba" });
-              });
-          } else {
-            console.log('Játék sikeresen feltöltve:', gameId);
-            res.json({ success: true, message: "Játék sikeresen feltöltve jóváhagyásra!", gameId });
-          }
+          console.log('Játék sikeresen feltöltve:', gameId);
+          res.json({ success: true, message: "Játék sikeresen feltöltve jóváhagyásra!", gameId });
         });
       }
-    }
+    });
   });
 });
 

@@ -9,6 +9,10 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
     : "Nincs";
   const [localComment, setLocalComment] = useState("");
   const [localRating, setLocalRating] = useState(5);
+  const [showAllComments, setShowAllComments] = useState(false);
+
+  // Csak az első 2 kommentet mutatjuk, ha nincs engedélyezve az összes mutatása
+  const displayedComments = showAllComments ? comments : comments.slice(0, 2);
 
   return (
      
@@ -122,27 +126,67 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
           {comments.length === 0 ? (
             <div>Nincs még hozzászólás.</div>
           ) : (
-            comments.map((cmt, i) => (
-              <div
-                key={i}
-                style={{
-                  background: '#23272f',
-                  borderRadius: '8px',
-                  margin: '6px 0',
-                  padding: '6px',
-                  color: '#fff',
-                  fontSize: "0.96em",
-                  maxWidth: "220px",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}
-              >
-                <div style={{ flex: "1 1 auto" }}>
-                  <b>{cmt.user}</b>: {cmt.text} <span style={{ color: '#19ffe3' }}>({cmt.rating})</span>
+            <>
+              {displayedComments.map((cmt, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: '#23272f',
+                    borderRadius: '8px',
+                    margin: '6px 0',
+                    padding: '6px',
+                    color: '#fff',
+                    fontSize: "0.96em",
+                    maxWidth: "220px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <div style={{ flex: "1 1 auto" }}>
+                    <b>{cmt.user}</b>: {cmt.text} <span style={{ color: '#19ffe3' }}>({cmt.rating})</span>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {/* Ha több mint 2 komment van és nem mutatjuk mindet, akkor mutassunk egy gombot */}
+              {comments.length > 2 && !showAllComments && (
+                <button
+                  onClick={() => setShowAllComments(true)}
+                  style={{
+                    background: '#19ffe3',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    color: '#000',
+                    fontSize: '0.9em',
+                    cursor: 'pointer',
+                    margin: '4px 0'
+                  }}
+                >
+                  Mutasd az összes ({comments.length - 2} további)
+                </button>
+              )}
+              
+              {/* Ha már mutatjuk az összeset, akkor lehetőség a bezárásra */}
+              {showAllComments && (
+                <button
+                  onClick={() => setShowAllComments(false)}
+                  style={{
+                    background: '#666',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    color: '#fff',
+                    fontSize: '0.9em',
+                    cursor: 'pointer',
+                    margin: '4px 0'
+                  }}
+                >
+                  Kevesebb mutatása
+                </button>
+              )}
+            </>
           )}
         </div>
 

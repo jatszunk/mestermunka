@@ -248,7 +248,10 @@ function App() {
       }
     } catch (error) {
       console.error('Komment hozzáadási hiba:', error);
-      alert('Hiba történt a komment hozzáadásakor');
+      const msg = error?.response?.data?.message || 
+                  error?.response?.data?.error || 
+                  'Hiba történt a komment hozzáadásakor';
+      alert(msg);
     }
   }
 
@@ -338,7 +341,7 @@ function App() {
   function handleProfileEdit(data) {
     if (!user || !user.username) {
       console.error('Nincs bejelentkezett felhasználó');
-      return;
+      return { success: false, message: 'Nincs bejelentkezett felhasználó' };
     }
     
     const updatedUser = { ...user, ...data };
@@ -348,20 +351,22 @@ function App() {
     localStorage.setItem('user', JSON.stringify(updatedUser));
     
     // Szerver oldalon is mentjük a változásokat
-    // A felhasználónév változtatását most nem támogatjuk, csak a teljes nevet
     return axios.put(`http://localhost:3001/users/${user.username}`, data)
-      .then((res) => {
+      .then(res => {
+        console.log('Backend válasz:', res.data);
         if (res.data.success) {
           console.log('Profil sikeresen frissítve a szerveren is');
-          return { success: true };
+          // A backend már ad üzenetet, használjuk azt
+          return { success: true, message: res.data.message || 'Sikeres mentés!' };
         } else {
           console.error('Profil frissítési hiba szerveren:', res.data.message);
-          return { success: false, message: res.data.message };
+          return { success: false, message: res.data.message || 'Szerver hiba' };
         }
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('Profil frissítési hiba:', err);
-        return { success: false, message: 'Hiba történt a szerverrel való kommunikáció során' };
+        console.error('Hiba részletei:', err.response?.data);
+        return { success: false, message: err.response?.data?.message || 'Hiba történt a szerverrel való kommunikáció során' };
       });
   }
 

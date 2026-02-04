@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const GameDevPanel = ({ user }) => {
+  console.log('GameDevPanel render, user:', user);
+  
+  if (!user) {
+    console.log('GameDevPanel: nincs user objektum');
+    return (
+      <div className="maincenter">
+        <div className="loading">Felhasználói adatok betöltése...</div>
+      </div>
+    );
+  }
+
   const [games, setGames] = useState([]);
   const [stats, setStats] = useState({
     totalGames: 0,
@@ -21,13 +32,34 @@ const GameDevPanel = ({ user }) => {
   }, [user]);
 
   const fetchDeveloperGames = async () => {
+    console.log('fetchDeveloperGames hívva, user:', user);
+    console.log('Felhasználónév:', user?.username);
+    
+    if (!user?.username) {
+      console.error('Nincs felhasználónév!');
+      return;
+    }
+    
     try {
-      const response = await axios.get(`http://localhost:3001/gamedev/${user.username}/games`);
+      const url = `http://localhost:3001/gamedev/${user.username}/games`;
+      console.log('API hívás URL:', url);
+      
+      const response = await axios.get(url, {
+        headers: {
+          'x-username': user.username
+        }
+      });
+      console.log('GameDev API válasz:', response.data);
       if (response.data.success) {
         setGames(response.data.games);
+        console.log('Beállított játékok:', response.data.games);
+      } else {
+        console.error('API válasz sikertelen:', response.data);
       }
     } catch (error) {
       console.error('Hiba a játékok betöltésekor:', error);
+      console.error('Hiba részletei:', error.response?.data);
+      console.error('Hiba status:', error.response?.status);
     } finally {
       setLoading(false);
     }
@@ -35,13 +67,23 @@ const GameDevPanel = ({ user }) => {
 
   const fetchDeveloperStats = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/gamedev/${user.username}/stats`);
+      const response = await axios.get(`http://localhost:3001/gamedev/${user.username}/stats`, {
+        headers: {
+          'x-username': user.username
+        }
+      });
       if (response.data.success) {
         setStats(response.data.stats);
       }
     } catch (error) {
       console.error('Hiba a statisztikák betöltésekor:', error);
     }
+  };
+
+  const refreshData = () => {
+    setLoading(true);
+    fetchDeveloperGames();
+    fetchDeveloperStats();
   };
 
   const getStatusColor = (status) => {
