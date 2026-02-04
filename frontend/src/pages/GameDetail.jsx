@@ -157,6 +157,9 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
 
             <div className="game-info" style={{ color: "white" }}>
               <div className="game-developer">{game.developer}</div>
+              <div className="game-price" style={{ fontSize: "1.2em", fontWeight: "bold", color: "#19ffe3", margin: "8px 0" }}>
+                {game.price === 0 || game.price === "0" ? "Ingyenes" : `${game.price} ${game.currency || 'FT'}`}
+              </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
   {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])
     .filter(Boolean)
@@ -273,34 +276,6 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
                 <button className="vissza-btn" style={{ marginTop: 0 }} onClick={() => navigate(-1)}>
                   Vissza
                 </button>
-
-                {user?.username === "admin" && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const ok = await onDeleteGame(game.id);
-                      if (ok) {
-                        alert("Játék sikeresen törölve!");
-                        navigate("/");
-                      } else {
-                        alert("A játék törlése sikertelen!");
-                      }
-                    }}
-                    style={{
-                      fontSize: "0.9em",
-                      background: "#93000f",
-                      color: "#fff",
-                      borderRadius: 6,
-                      border: "none",
-                      padding: "6px 12px",
-                      cursor: "pointer",
-                    }}
-                    aria-label="Játék törlése"
-                    title="Játék törlése"
-                  >
-                    Játék törlése
-                  </button>
-                )}
               </div>
             </div>
           </div>

@@ -281,7 +281,38 @@ function App() {
       console.error('Hiba a gyűjteményhez adáskor:', error);
       alert('Hiba történt a gyűjteményhez adáskor');
     }
+}
+
+  async function handleRemoveFromWishlist(gameId) {
+    if (!user) return;
+    try {
+      const response = await axios.delete(`http://localhost:3001/wishlist/${user.username}/${gameId}`);
+      if (response.data.success) {
+        alert('Játék törölve a kívánságlistáról!');
+      } else {
+        alert(response.data.message || 'Hiba történt');
+      }
+    } catch (error) {
+      console.error('Hiba a kívánságlistából törléskor:', error);
+      alert('Hiba történt a kívánságlistából törléskor');
+    }
   }
+
+  async function handleRemoveFromCollection(gameId) {
+    if (!user) return;
+    try {
+      const response = await axios.delete(`http://localhost:3001/collection/${user.username}/${gameId}`);
+      if (response.data.success) {
+        alert('Játék törölve a gyűjteményből!');
+      } else {
+        alert(response.data.message || 'Hiba történt');
+      }
+    } catch (error) {
+      console.error('Hiba a gyűjteményből törléskor:', error);
+      alert('Hiba történt a gyűjteményből törléskor');
+    }
+  }
+
   async function onDeleteGame(gameId) {
     if (!window.confirm("Biztosan törlöd?")) return false;
 

@@ -9,6 +9,7 @@ const GameDevUpload = ({ user }) => {
     title: "",
     developer: "",
     price: "",
+    currency: "FT",
     category: "",
     image: "",
     minReq: "",
@@ -72,6 +73,7 @@ const GameDevUpload = ({ user }) => {
           title: "",
           developer: "",
           price: "",
+          currency: "FT",
           category: "",
           image: "",
           minReq: "",
@@ -177,6 +179,23 @@ const GameDevUpload = ({ user }) => {
                 />
               </div>
 
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Pénznem *</label>
+                <select
+                  name="currency"
+                  value={formData.currency}
+                  onChange={handleChange}
+                  className="cyber-input"
+                >
+                  <option value="FT">HUF (Ft)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="cyber-form-row">
               <div className="cyber-input-group">
                 <label className="cyber-input-label">Kategória *</label>
                 <input

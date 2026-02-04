@@ -165,6 +165,7 @@ app.get("/jatekok", (req, res) => {
       j.nev AS title,
       f.nev AS developer,
       j.ar AS price,
+      j.penznem AS currency,
       COALESCE(r.minimum, '-') AS minimum,
       COALESCE(r.ajanlott, '-') AS recommended,
       j.leiras AS description,
@@ -463,6 +464,39 @@ app.get("/admin/statistics", checkRole(['admin']), (req, res) => {
   });
 });
 
+// Elutasított játékok listázása (admin)
+app.get("/admin/rejected-games", checkRole(['admin']), (req, res) => {
+  const sql = `
+    SELECT
+      j.idjatekok AS id,
+      j.nev AS title,
+      f.nev AS developer,
+      j.ar AS price,
+      j.penznem AS currency,
+      j.leiras AS description,
+      j.kepurl AS image,
+      j.ertekeles AS rating,
+      j.rejection_reason,
+      j.created_at,
+      GROUP_CONCAT(DISTINCT k.nev SEPARATOR ', ') AS categories
+    FROM jatekok j
+    LEFT JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
+    LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
+    WHERE j.status = 'rejected'
+    GROUP BY j.idjatekok
+    ORDER BY j.created_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Elutasított játékok lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    res.json({ success: true, games: results });
+  });
+});
+
 // Várakozó játékok listázása (admin)
 app.get("/admin/pending-games", checkRole(['admin']), (req, res) => {
   const sql = `
@@ -568,6 +602,7 @@ app.get("/collection/:username", (req, res) => {
       j.nev AS title,
       j.kepurl AS image,
       j.ar AS price,
+      j.penznem AS currency,
       f.nev AS developer
     FROM game_collection c
     JOIN jatekok j ON c.idjatekok = j.idjatekok
@@ -629,6 +664,278 @@ app.post("/wishlist/:username/:gameId", (req, res) => {
       }
       res.json({ success: true, message: "Játék hozzáadva a kívánságlistához" });
     });
+  });
+});
+
+// Wishlist törlése
+app.delete("/wishlist/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  
+  // Felhasználó ID lekérése
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
+    if (err) {
+      console.error('Felhasználó keresési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    if (userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+
+    const userId = userResults[0].idfelhasznalo;
+
+    const sql = "DELETE FROM wishlist WHERE idfelhasznalo = ? AND idjatekok = ?";
+    db.query(sql, [userId, gameId], (err, result) => {
+      if (err) {
+        console.error('Wishlist törlési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: "A játék nem található a kívánságlistán" });
+      }
+      
+      res.json({ success: true, message: "Játék törölve a kívánságlistáról" });
+    });
+  });
+});
+
+// Collection törlése
+app.delete("/collection/:username/:gameId", (req, res) => {
+  const { username, gameId } = req.params;
+  
+  // Felhasználó ID lekérése
+  db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
+    if (err) {
+      console.error('Felhasználó keresési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    if (userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+
+    const userId = userResults[0].idfelhasznalo;
+
+    const sql = "DELETE FROM game_collection WHERE idfelhasznalo = ? AND idjatekok = ?";
+    db.query(sql, [userId, gameId], (err, result) => {
+      if (err) {
+        console.error('Collection törlési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: "A játék nem található a gyűjteményben" });
+      }
+      
+      res.json({ success: true, message: "Játék törölve a gyűjteményből" });
+    });
+  });
+});
+
+// GameDev játékainak lekérdezése
+app.get("/gamedev/:username/games", checkRole(['gamedev', 'admin']), (req, res) => {
+  const { username } = req.params;
+  
+  console.log('GameDev játékok lekérdezése:', { username });
+
+  const sql = `
+    SELECT 
+      j.idjatekok AS id,
+      j.nev AS title,
+      f.nev AS developer,
+      j.ar AS price,
+      j.penznem AS currency,
+      j.leiras AS description,
+      j.kepurl AS image,
+      j.ertekeles AS rating,
+      j.status,
+      j.created_at,
+      GROUP_CONCAT(DISTINCT k.nev SEPARATOR ', ') AS categories
+    FROM jatekok j
+    LEFT JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
+    LEFT JOIN jatekok_kategoriak jk ON j.idjatekok = jk.idjatekok
+    LEFT JOIN kategoria k ON jk.idkategoria = k.idkategoria
+    WHERE j.uploaded_by = (
+      SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
+    )
+    GROUP BY j.idjatekok
+    ORDER BY j.created_at DESC
+  `;
+  
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      console.error('GameDev játékok lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, games: results });
+  });
+});
+
+// GameDev statisztikák lekérdezése
+app.get("/gamedev/:username/stats", checkRole(['gamedev', 'admin']), (req, res) => {
+  const { username } = req.params;
+  
+  console.log('GameDev statisztikák lekérdezése:', { username });
+
+  const sql = `
+    SELECT 
+      COUNT(*) as totalGames,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingGames,
+      SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approvedGames,
+      SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejectedGames,
+      COALESCE(AVG(ertekeles), 0) as averageRating
+    FROM jatekok 
+    WHERE uploaded_by = (
+      SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
+    )
+  `;
+  
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      console.error('GameDev statisztikák lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, stats: results[0] });
+  });
+});
+
+// Email küldési végpont
+app.post("/api/send-email", (req, res) => {
+  const { from, name, message, subject } = req.body;
+  
+  console.log('Email küldési kérés:', { from, name, subject });
+
+  // Nodemailer transporter beállítása
+  const transporter = nodemailer.createTransporter({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'your-email@gmail.com', // Cseréld ki a valós email címedre
+      pass: 'your-app-password' // Cseréld ki az alkalmazás jelszavadra
+    }
+  });
+
+  const mailOptions = {
+    from: from,
+    to: 'your-email@gmail.com', // Cseréld ki a célpont email címére
+    subject: subject,
+    text: `Név: ${name}\nEmail: ${from}\n\nÜzenet:\n${message}`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Email küldési hiba:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Hiba történt az email küldése során. Backend nem elérhető!' 
+      });
+    }
+    
+    console.log('Email elküldve:', info.messageId);
+    res.json({ 
+      success: true, 
+      message: 'Email sikeresen elküldve!' 
+    });
+  });
+});
+
+// Felhasználó törlése (admin)
+app.delete("/admin/users/:userId", checkRole(['admin']), (req, res) => {
+  const userId = req.params.userId;
+  
+  console.log('Felhasználó törlés kérés:', { userId });
+
+  // Ellenőrizzük, hogy nem saját magát próbálja-e törölni
+  if (req.username) {
+    db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [req.username], (err, adminResults) => {
+      if (err) {
+        console.error('Admin keresési hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      
+      if (adminResults.length === 0) {
+        return res.status(404).json({ success: false, message: "Admin nem található" });
+      }
+      
+      const adminId = adminResults[0].idfelhasznalo;
+      
+      if (parseInt(userId) === adminId) {
+        return res.status(400).json({ success: false, message: "Nem törölheti saját magát" });
+      }
+      
+      // Felhasználó törlése
+      const sql = "DELETE FROM felhasznalo WHERE idfelhasznalo = ?";
+      
+      db.query(sql, [userId], (err, result) => {
+        if (err) {
+          console.error('Felhasználó törlési hiba:', err);
+          return res.status(500).json({ success: false, error: err });
+        }
+        
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+        }
+        
+        res.json({ success: true, message: "Felhasználó sikeresen törölve" });
+      });
+    });
+  } else {
+    res.status(401).json({ success: false, message: "Nincs jogosultsága" });
+  }
+});
+
+// Felhasználó szerepkör módosítása (admin)
+app.put("/admin/users/:userId/role", checkRole(['admin']), (req, res) => {
+  const userId = req.params.userId;
+  const { role } = req.body;
+  
+  console.log('Szerepkör módosítás kérés:', { userId, role });
+
+  const sql = "UPDATE felhasznalo SET szerepkor = ? WHERE idfelhasznalo = ?";
+  
+  db.query(sql, [role, userId], (err, result) => {
+    if (err) {
+      console.error('Szerepkör módosítási hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+    }
+    
+    res.json({ success: true, message: "Felhasználó szerepkör sikeresen frissítve" });
+  });
+});
+
+// Játék frissítése (admin)
+app.put("/admin/games/:id", checkRole(['admin']), (req, res) => {
+  const gameId = req.params.id;
+  const { title, developer, price, description, image, rating, categories } = req.body;
+  
+  console.log('Játék frissítés kérés:', { gameId, body: req.body });
+
+  // Játék frissítése
+  const sql = `
+    UPDATE jatekok 
+    SET nev = ?, ar = ?, leiras = ?, kepurl = ?, ertekeles = ?
+    WHERE idjatekok = ?
+  `;
+  
+  db.query(sql, [title, price, description, image, rating, gameId], (err, result) => {
+    if (err) {
+      console.error('Játék frissítési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Játék nem található" });
+    }
+    
+    res.json({ success: true, message: "Játék sikeresen frissítve" });
   });
 });
 
@@ -738,6 +1045,7 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
     title,
     developer,
     price,
+    currency,
     category,
     image,
     minReq,
@@ -822,8 +1130,8 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
         // Játék hozzáadása
         const gameSql = `
           INSERT INTO jatekok 
-          (nev, idfejleszto, idrendszerkovetelmeny, ar, leiras, kepurl, ertekeles, status, megjelenes, steam_link, jatek_elmeny, reszletes_leiras) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
+          (nev, idfejleszto, idrendszerkovetelmeny, ar, penznem, leiras, kepurl, ertekeles, status, megjelenes, steam_link, jatek_elmeny, reszletes_leiras) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
         `;
         
         // Ár kezelése - ha nem szám, akkor 0
@@ -844,10 +1152,16 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
           numericRating = isNaN(parsedRating) ? 0 : parsedRating;
         }
         
-        console.log('Feldolgozott adatok:', { title, numericPrice, numericRating });
+        // Pénznem kezelése - alapértelmezett FT
+        let gameCurrency = currency || 'FT';
+        if (!gameCurrency || gameCurrency.trim() === '') {
+          gameCurrency = 'FT';
+        }
+        
+        console.log('Feldolgozott adatok:', { title, numericPrice, gameCurrency, numericRating });
         
         db.query(gameSql, [
-          title, developerId, reqId, numericPrice, desc, image, numericRating,
+          title, developerId, reqId, numericPrice, gameCurrency, desc, image, numericRating,
           megjelenes, steamLink, jatekElmeny, reszletesLeiras
         ], (err4, gameResult) => {
           if (err4) {
