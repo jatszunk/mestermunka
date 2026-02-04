@@ -158,7 +158,14 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
             <div className="game-info" style={{ color: "white" }}>
               <div className="game-developer">{game.developer}</div>
               <div className="game-price" style={{ fontSize: "1.2em", fontWeight: "bold", color: "#19ffe3", margin: "8px 0" }}>
-                {game.price === 0 || game.price === "0" ? "Ingyenes" : `${game.price} ${game.currency || 'FT'}`}
+                {(() => {
+                  const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
+                  if (isFree) {
+                    return "Ingyenes";
+                  }
+                  const currency = game.currency && game.currency.trim() !== '' && game.currency.trim() !== 'FT' ? game.currency : 'FT';
+                  return `${game.price} ${currency}`;
+                })()}
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
   {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])

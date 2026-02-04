@@ -47,7 +47,14 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
 
         <div className="game-footer">
           <span className="game-price">
-            {game.price === 0 || game.price === "0" ? "Ingyenes" : `${game.price} ${game.currency || 'FT'}`}
+            {(() => {
+              const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
+              if (isFree) {
+                return "Ingyenes";
+              }
+              const currency = game.currency && game.currency.trim() !== '' ? game.currency : 'FT';
+              return `${game.price} ${currency}`;
+            })()}
           </span>
           <div className="game-actions">
             {user && (

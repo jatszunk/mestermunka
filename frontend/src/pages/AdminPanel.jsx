@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import GameDevUpload from "./GameDevUpload.jsx";
+import AdminGameUpload from "../components/AdminGameUpload.jsx";
 
 const AdminPanel = ({ user }) => {
   const navigate = useNavigate();
@@ -598,7 +598,14 @@ const AdminPanel = ({ user }) => {
                     <div className="pending-game-info">
                       <h3>{game.title}</h3>
                       <p>Fejlesztő: {game.developer}</p>
-                      <p>Ár: {game.price === '0' || game.price === 0 ? 'Ingyenes' : `${game.price} ${game.currency || 'FT'}`}</p>
+                      <p>Ár: {(() => {
+                  const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
+                  if (isFree) {
+                    return 'Ingyenes';
+                  }
+                  const currency = game.currency && game.currency.trim() !== '' ? game.currency : 'FT';
+                  return `${game.price} ${currency}`;
+                })()}</p>
                       <p>Kategóriák: {game.categories}</p>
                       <p>Feltöltötte: {game.uploaded_by_name}</p>
                       {game.rejection_reason && (
@@ -638,7 +645,7 @@ const AdminPanel = ({ user }) => {
         )}
 
         {activeTab === "game-upload" && (
-          <GameDevUpload user={user} />
+          <AdminGameUpload user={user} />
         )}
 
         {activeTab === "users" && (

@@ -320,7 +320,14 @@ const Statistics = ({ games, comments, users, user }) => {
                   <h4>{game.title}</h4>
                   <p className="developer">🏢 {game.developer}</p>
                   <div className="game-meta">
-                    <span className="price-tag">{game.price === '0' ? 'Ingyenes' : `${game.price} Ft`}</span>
+                    <span className="price-tag">{(() => {
+                  const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
+                  if (isFree) {
+                    return 'Ingyenes';
+                  }
+                  const currency = game.currency && game.currency.trim() !== '' ? game.currency : 'FT';
+                  return `${game.price} ${currency}`;
+                })()}</span>
                     <span className="rating-badge">⭐ {game.rating}/10</span>
                   </div>
                 </div>

@@ -445,7 +445,14 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                       <div className="game-info">
                         <h4>{item.title}</h4>
                         <p>{item.developer}</p>
-                        <p className="price">{item.price === '0' || item.price === 0 ? 'Ingyenes' : `${item.price} ${item.currency || 'FT'}`}</p>
+                        <p className="price">{(() => {
+                  const isFree = item.price == 0 || item.price == "0" || item.price === 0 || item.price === "0";
+                  if (isFree) {
+                    return 'Ingyenes';
+                  }
+                  const currency = item.currency && item.currency.trim() !== '' ? item.currency : 'FT';
+                  return `${item.price} ${currency}`;
+                })()}</p>
                       </div>
                       <div className="wishlist-actions">
                         <button 
@@ -489,7 +496,14 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                       <div className="game-info">
                         <h4>{item.title}</h4>
                         <p>{item.developer}</p>
-                        <p className="price">{item.price === '0' || item.price === 0 ? 'Ingyenes' : `${item.price} ${item.currency || 'FT'}`}</p>
+                        <p className="price">{(() => {
+                  const isFree = item.price == 0 || item.price == "0" || item.price === 0 || item.price === "0";
+                  if (isFree) {
+                    return 'Ingyenes';
+                  }
+                  const currency = item.currency && item.currency.trim() !== '' ? item.currency : 'FT';
+                  return `${item.price} ${currency}`;
+                })()}</p>
                         <div className="game-status">
                           <span className={`status-badge ${item.status}`}>
                             {item.status === 'owned' ? 'Birtokolom' : 

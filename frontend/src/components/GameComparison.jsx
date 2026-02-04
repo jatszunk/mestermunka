@@ -22,8 +22,13 @@ const GameComparison = ({ games, onClose }) => {
     }
   };
 
-  const formatPrice = (price) => {
-    return price === 'Ingyenes' ? 'Ingyenes' : `${price} Ft`;
+  const formatPrice = (price, currency) => {
+    const isFree = price == 0 || price == "0" || price === 0 || price === "0" || price === 'Ingyenes';
+    if (isFree) {
+      return 'Ingyenes';
+    }
+    const validCurrency = currency && currency.trim() !== '' ? currency : 'FT';
+    return `${price} ${validCurrency}`;
   };
 
   const getRequirements = (requirements) => {
@@ -65,7 +70,7 @@ const GameComparison = ({ games, onClose }) => {
               <div className="comparison-cell label">Ár</div>
               {selectedGames.map(game => (
                 <div key={game.id} className="comparison-cell price">
-                  {formatPrice(game.price)}
+                  {formatPrice(game.price, game.currency)}
                 </div>
               ))}
             </div>
@@ -183,7 +188,7 @@ const GameComparison = ({ games, onClose }) => {
                   <div className="game-select-info">
                     <h4>{game.title}</h4>
                     <p>{game.developer}</p>
-                    <p className="price">{formatPrice(game.price)}</p>
+                    <p className="price">{formatPrice(game.price, game.currency)}</p>
                     <div className="rating-small">
                       <span>{game.rating}/10</span>
                     </div>
