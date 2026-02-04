@@ -806,6 +806,8 @@ app.put("/collection/:username/:gameId", (req, res) => {
   const { username, gameId } = req.params;
   const { status, rating, notes } = req.body;
   
+  console.log('Collection frissítés kérés:', { username, gameId, status, rating, notes });
+  
   // Felhasználó ID lekérése
   db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?", [username], (err, userResults) => {
     if (err) {
@@ -814,23 +816,38 @@ app.put("/collection/:username/:gameId", (req, res) => {
     }
     
     if (userResults.length === 0) {
+      console.log('Felhasználó nem található:', username);
       return res.status(404).json({ success: false, message: "Felhasználó nem található" });
     }
 
     const userId = userResults[0].idfelhasznalo;
+    console.log('Felhasználó ID:', userId);
 
-    const sql = "UPDATE game_collection SET status = ?, rating = ?, notes = ?, updated_at = NOW() WHERE idfelhasznalo = ? AND idjatekok = ?";
-    db.query(sql, [status, rating || null, notes || null, userId, gameId], (err, result) => {
+    // Először próbáljuk frissíteni
+    const updateSql = "UPDATE game_collection SET status = ?, rating = ?, notes = ?, updated_at = NOW() WHERE idfelhasznalo = ? AND idjatekok = ?";
+    db.query(updateSql, [status, rating || null, notes || null, userId, gameId], (err, result) => {
       if (err) {
         console.error('Collection frissítési hiba:', err);
         return res.status(500).json({ success: false, error: err });
       }
       
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: "A játék nem található a gyűjteményben" });
+      if (result.affectedRows > 0) {
+        console.log('Collection sikeresen frissítve:', result);
+        res.json({ success: true, message: "Gyűjtemény frissítve" });
+      } else {
+        // Ha nem sikerült frissíteni, akkor hozzáadjuk a gyűjteményhez
+        console.log('A játék nincs a gyűjteményben, hozzáadás...');
+        const insertSql = "INSERT INTO game_collection (idfelhasznalo, idjatekok, status, rating, notes) VALUES (?, ?, ?, ?, ?)";
+        db.query(insertSql, [userId, gameId, status, rating || null, notes || null], (err2, result2) => {
+          if (err2) {
+            console.error('Collection hozzáadási hiba:', err2);
+            return res.status(500).json({ success: false, error: err2 });
+          }
+          
+          console.log('Collection sikeresen hozzáadva:', result2);
+          res.json({ success: true, message: "Játék hozzáadva a gyűjteményhez" });
+        });
       }
-      
-      res.json({ success: true, message: "Gyűjtemény frissítve" });
     });
   });
 });
@@ -915,13 +932,13 @@ app.post("/api/send-email", (req, res) => {
     service: 'gmail',
     auth: {
       user: 'gameverseprojekt@gmail.com', // Itt add meg a valós email címed
-      pass: 'basznalak01!' // Itt add meg az app jelszavad
+      pass: 'nzwj fwda ugvx gsqp' // Itt add meg az app jelszavad
     }
   });
 
   const mailOptions = {
     from: from,
-    to: 'jatekhirdeto.app@gmail.com', // Címzett email
+    to: 'gameverseprojekt@gmail.com', // Címzett email
     subject: `JátékHirdető Kapcsolat: ${subject}`,
     text: `
       Új üzenet érkezett a JátékHirdető oldalról:
@@ -1107,6 +1124,20 @@ app.post("/test-user", (req, res) => {
     
     console.log('Teszt eredmény:', results);
     res.json({ success: true, user: results });
+  });
+});
+
+// Teszt végpont - összes felhasználó listázásához
+app.get("/test-all-users", (req, res) => {
+  const sql = "SELECT idfelhasznalo, felhasznalonev, szerepkor, aktiv FROM felhasznalo ORDER BY felhasznalonev";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Összes felhasználó lekérési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    console.log('Összes felhasználó:', results);
+    res.json({ success: true, users: results });
   });
 });
 

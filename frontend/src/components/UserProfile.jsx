@@ -156,6 +156,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
 
   const handleUpdateCollection = async (gameId, updates) => {
     if (!user) return;
+    console.log('Collection update:', { username: user.username, gameId, updates });
     try {
       const response = await axios.put(`http://localhost:3001/collection/${user.username}/${gameId}`, updates);
       if (response.data.success) {
