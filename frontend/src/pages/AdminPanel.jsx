@@ -319,14 +319,6 @@ const AdminPanel = ({ user }) => {
     }));
   };
 
-  const removeVideoField = (index) => {
-    const newVideos = uploadFormData.videos.filter((_, i) => i !== index);
-    setUploadFormData(prev => ({
-      ...prev,
-      videos: newVideos
-    }));
-  };
-
   const handleGameUpload = async (e) => {
     e.preventDefault();
     setUploadLoading(true);
@@ -338,7 +330,7 @@ const AdminPanel = ({ user }) => {
       });
 
       if (res.data.success) {
-        alert("Játék sikeresen hozzáadva!");
+        alert("Játék sikeresen feltöltve, jóváhagyásra vár!");
         setUploadFormData({
           title: "",
           developer: "",
@@ -348,12 +340,12 @@ const AdminPanel = ({ user }) => {
           minReq: "",
           recReq: "",
           desc: "",
-          rating: 0,
+          rating: "",
           videos: [""],
           megjelenes: "",
           steamLink: "",
           jatekElmeny: "",
-          reszletesLeiras: "",
+          reszletesLeiras: ""
         });
         await fetchPendingGames();
         await fetchStatistics();

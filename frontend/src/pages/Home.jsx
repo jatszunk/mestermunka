@@ -13,8 +13,55 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
     setFilteredGames(games);
   }, [games]);
 
-  const handleFilterChange = (filtered) => {
+  const handleFilterChange = (filters) => {
+    let filtered = [...games];
+    
+    // Kategória szűrés
+    if (filters.categories && filters.categories.length > 0) {
+      filtered = filtered.filter(game => 
+        filters.categories.includes(game.category)
+      );
+    }
+    
+    // Platform szűrés
+    if (filters.platforms && filters.platforms.length > 0) {
+      filtered = filtered.filter(game => 
+        filters.platforms.some(platform => 
+          game.platform && game.platform.includes(platform)
+        )
+      );
+    }
+    
+    // Ár szűrés
+    if (filters.priceRange) {
+      filtered = filtered.filter(game => 
+        game.price >= filters.priceRange.min && 
+        game.price <= filters.priceRange.max
+      );
+    }
+    
+    // Értékelés szűrés
+    if (filters.rating) {
+      filtered = filtered.filter(game => 
+        game.rating >= filters.rating.min && 
+        game.rating <= filters.rating.max
+      );
+    }
+    
+    // Keresési szűrés
+    if (filters.searchTerm) {
+      filtered = filtered.filter(game =>
+        game.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        game.developer.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        (game.description && game.description.toLowerCase().includes(filters.searchTerm.toLowerCase()))
+      );
+    }
+    
     setFilteredGames(filtered);
+  };
+
+  const handleSearch = (searchTerm) => {
+    handleFilterChange({ searchTerm });
   };
 
   return (
@@ -40,7 +87,8 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
       <div className="action-bar">
         <AdvancedSearch 
           games={games} 
-          onFilterChange={handleFilterChange}
+          onFilter={handleFilterChange}
+          onSearch={handleSearch}
         />
         <button 
           className="comparison-toggle-btn"

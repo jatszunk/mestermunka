@@ -102,8 +102,12 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
         return;
       }
       
+      console.log('Profil mentés adatok:', formData);
+      
       // A szerver kommunikációt az App.jsx handleProfileEdit függvénye végzi
       const result = await onProfileUpdate(formData);
+      
+      console.log('Profil mentés eredmény:', result);
       
       if (result && result.success) {
         setMessage('Profil sikeresen frissítve!');
@@ -113,6 +117,7 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
           onCancel();
         }, 2000);
       } else {
+        console.error('Profil mentés hiba:', result);
         setMessage(result?.message || 'Hiba történt a frissítés során');
         setMessageType('error');
       }

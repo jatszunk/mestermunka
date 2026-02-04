@@ -216,23 +216,39 @@ function App() {
         grouped[c.gameId].push(c);
       }
       setComments(grouped);
+      
+      // Visszatérünk a konkrét játék kommentjeivel, ha gameId meg van adva
+      return gameId ? (grouped[gameId] || []) : grouped;
     }
+    return gameId ? [] : {};
   }
 
   async function handleAddComment(gameId, text, rating) {
     if (!user) return;
 
-    const res = await axios.post(`http://localhost:3001/jatekok/${gameId}/kommentek`, {
-      username: user.username,
-      text,
-      rating: Number(rating),
-    });
+    try {
+      const res = await axios.post(`http://localhost:3001/jatekok/${gameId}/kommentek`, {
+        username: user.username,
+        text,
+        rating: Number(rating),
+      });
 
-    if (res.data.success) {
-      setComments((prev) => ({
-        ...prev,
-        [gameId]: [res.data.comment, ...(prev[gameId] || [])],
-      }));
+      if (res.data.success) {
+        // Frissítjük a kommenteket a válasszal
+        setComments((prev) => ({
+          ...prev,
+          [gameId]: [res.data.comment, ...(prev[gameId] || [])],
+        }));
+        
+        // Vagy újra lekérjük az összes kommentet
+        await fetchComments();
+      } else {
+        console.error('Komment hozzáadási hiba:', res.data);
+        alert(res.data.message || 'Hiba történt a komment hozzáadásakor');
+      }
+    } catch (error) {
+      console.error('Komment hozzáadási hiba:', error);
+      alert('Hiba történt a komment hozzáadásakor');
     }
   }
 
