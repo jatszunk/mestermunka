@@ -15,6 +15,10 @@ const AdminPanel = ({ user }) => {
   const [editingGame, setEditingGame] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [comments, setComments] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [commentSearchQuery, setCommentSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({ users: [], comments: [] });
+  const [isSearching, setIsSearching] = useState({ users: false, comments: false });
 
   useEffect(() => {
     fetchStatistics();
@@ -292,6 +296,71 @@ const AdminPanel = ({ user }) => {
     } catch (error) {
       console.error("Komment törlés hiba:", error);
       alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
+    }
+  };
+
+  // Keresési funkciók
+  const handleUserSearch = async (query) => {
+    setUserSearchQuery(query);
+    
+    if (query.length < 2) {
+      setSearchResults(prev => ({ ...prev, users: [] }));
+      return;
+    }
+    
+    setIsSearching(prev => ({ ...prev, users: true }));
+    
+    try {
+      const res = await axios.get(`http://localhost:3001/admin/search-users`, {
+        params: { query },
+        headers: { username: user.username }
+      });
+      
+      if (res.data.success) {
+        setSearchResults(prev => ({ ...prev, users: res.data.users }));
+      }
+    } catch (error) {
+      console.error("Felhasználó keresés hiba:", error);
+      alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
+    } finally {
+      setIsSearching(prev => ({ ...prev, users: false }));
+    }
+  };
+
+  const handleCommentSearch = async (query) => {
+    setCommentSearchQuery(query);
+    
+    if (query.length < 2) {
+      setSearchResults(prev => ({ ...prev, comments: [] }));
+      return;
+    }
+    
+    setIsSearching(prev => ({ ...prev, comments: true }));
+    
+    try {
+      const res = await axios.get(`http://localhost:3001/admin/search-comments`, {
+        params: { query },
+        headers: { username: user.username }
+      });
+      
+      if (res.data.success) {
+        setSearchResults(prev => ({ ...prev, comments: res.data.comments }));
+      }
+    } catch (error) {
+      console.error("Komment keresés hiba:", error);
+      alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
+    } finally {
+      setIsSearching(prev => ({ ...prev, comments: false }));
+    }
+  };
+
+  const clearSearch = (type) => {
+    if (type === 'users') {
+      setUserSearchQuery('');
+      setSearchResults(prev => ({ ...prev, users: [] }));
+    } else if (type === 'comments') {
+      setCommentSearchQuery('');
+      setSearchResults(prev => ({ ...prev, comments: [] }));
     }
   };
 
@@ -651,6 +720,50 @@ const AdminPanel = ({ user }) => {
         {activeTab === "users" && (
           <div>
             <h2>Felhasználók ({users.length})</h2>
+            
+            {/* Kereső mező */}
+            <div className="search-container" style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="Keresés felhasználónév, email vagy név szerint..."
+                  value={userSearchQuery}
+                  onChange={(e) => handleUserSearch(e.target.value)}
+                  style={{
+                    flex: '1',
+                    minWidth: '200px',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+                {userSearchQuery && (
+                  <button
+                    onClick={() => clearSearch('users')}
+                    style={{
+                      padding: '10px 15px',
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Törlés
+                  </button>
+                )}
+                {isSearching.users && (
+                  <span style={{ color: '#666' }}>Keresés...</span>
+                )}
+              </div>
+              {searchResults.users.length > 0 && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                  {searchResults.users.length} találat a keresésre
+                </div>
+              )}
+            </div>
+
             <div className="users-table-wrapper">
               <table className="users-table">
                 <thead>
@@ -660,11 +773,12 @@ const AdminPanel = ({ user }) => {
                     <th>Név</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Utolsó bejelentkezés</th>
                     <th>Műveletek</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((userItem) => (
+                  {(userSearchQuery ? searchResults.users : users).map((userItem) => (
                     <tr key={userItem.idfelhasznalo}>
                       <td>{userItem.idfelhasznalo}</td>
                       <td className="username-cell">{userItem.felhasznalonev}</td>
@@ -681,6 +795,12 @@ const AdminPanel = ({ user }) => {
                           <option value="gamedev">GameDev</option>
                           <option value="admin">Admin</option>
                         </select>
+                      </td>
+                      <td>
+                        {userItem.utolso_belepes ? 
+                          new Date(userItem.utolso_belepes).toLocaleString('hu-HU') : 
+                          'Még nem jelentkezett be'
+                        }
                       </td>
                       <td>
                         {userItem.idfelhasznalo === user.id && (
@@ -700,6 +820,12 @@ const AdminPanel = ({ user }) => {
                   ))}
                 </tbody>
               </table>
+              
+              {userSearchQuery && searchResults.users.length === 0 && !isSearching.users && (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  Nincs találat a keresési feltételeknek megfelelően
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -707,16 +833,62 @@ const AdminPanel = ({ user }) => {
         {activeTab === "comments" && (
           <div>
             <h2>Kommentek ({comments.length})</h2>
-            {comments.length === 0 ? (
-              <p className="no-data">Nincsenek kommentek.</p>
+            
+            {/* Kereső mező */}
+            <div className="search-container" style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="Keresés komment szöveg, felhasználónév vagy játék név szerint..."
+                  value={commentSearchQuery}
+                  onChange={(e) => handleCommentSearch(e.target.value)}
+                  style={{
+                    flex: '1',
+                    minWidth: '200px',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+                {commentSearchQuery && (
+                  <button
+                    onClick={() => clearSearch('comments')}
+                    style={{
+                      padding: '10px 15px',
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Törlés
+                  </button>
+                )}
+                {isSearching.comments && (
+                  <span style={{ color: '#666' }}>Keresés...</span>
+                )}
+              </div>
+              {searchResults.comments.length > 0 && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                  {searchResults.comments.length} találat a keresésre
+                </div>
+              )}
+            </div>
+
+            {(commentSearchQuery ? searchResults.comments : comments).length === 0 ? (
+              <p className="no-data">
+                {commentSearchQuery ? 'Nincs találat a keresési feltételeknek megfelelően.' : 'Nincsenek kommentek.'}
+              </p>
             ) : (
               <div className="comments-list">
-                {comments.map((comment) => (
+                {(commentSearchQuery ? searchResults.comments : comments).map((comment) => (
                   <div key={comment.id} className="comment-card">
                     <div className="comment-info">
                       <h3>Komment ID: {comment.id}</h3>
                       <p>Felhasználó: {comment.user}</p>
-                      <p>Játék ID: {comment.gameId}</p>
+                      <p>Játék: {comment.gameName || `ID: ${comment.gameId}`}</p>
                       <p>Értékelés: {comment.rating}/10</p>
                       <p className="comment-text">{comment.text}</p>
                     </div>

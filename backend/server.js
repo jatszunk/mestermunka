@@ -374,9 +374,11 @@ app.get("/kommentek", (req, res) => {
       k.idjatekok AS gameId,
       f.felhasznalonev AS user,
       k.tartalom AS text,
-      k.ertekeles AS rating
+      k.ertekeles AS rating,
+      j.nev AS gameName
     FROM kommentek k
     LEFT JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
+    LEFT JOIN jatekok j ON j.idjatekok = k.idjatekok
     WHERE k.status = 'active'
     ORDER BY k.idkommentek DESC
   `;
@@ -428,6 +430,62 @@ app.get("/felhasznalok", (req, res) => {
   db.query("SELECT idfelhasznalo, felhasznalonev, email, szerepkor, nev, aktiv, utolso_belepes FROM felhasznalo ORDER BY szerepkor, felhasznalonev", (err, results) => {
     if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
     res.json({ success: true, users: results });
+  });
+});
+
+// Felhasználók keresése
+app.get("/admin/search-users", checkRole(['admin']), (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || query.length < 2) {
+    return res.status(400).json({ success: false, message: "A keresési kulcsszónak legalább 2 karakter hosszúnak kell lennie!" });
+  }
+  
+  const searchQuery = `%${query}%`;
+  const sql = `
+    SELECT idfelhasznalo, felhasznalonev, email, szerepkor, nev, aktiv, utolso_belepes, regisztracio_datum
+    FROM felhasznalo 
+    WHERE (felhasznalonev LIKE ? OR email LIKE ? OR nev LIKE ?)
+    ORDER BY felhasznalonev
+    LIMIT 50
+  `;
+  
+  db.query(sql, [searchQuery, searchQuery, searchQuery], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+    res.json({ success: true, users: results });
+  });
+});
+
+// Kommentek keresése
+app.get("/admin/search-comments", checkRole(['admin']), (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || query.length < 2) {
+    return res.status(400).json({ success: false, message: "A keresési kulcsszónak legalább 2 karakter hosszúnak kell lennie!" });
+  }
+  
+  const searchQuery = `%${query}%`;
+  const sql = `
+    SELECT 
+      k.idkommentek AS id,
+      k.idjatekok AS gameId,
+      f.felhasznalonev AS user,
+      k.tartalom AS text,
+      k.ertekeles AS rating,
+      k.idfelhasznalo AS userId,
+      j.nev AS gameName
+    FROM kommentek k
+    LEFT JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
+    LEFT JOIN jatekok j ON j.idjatekok = k.idjatekok
+    WHERE (k.tartalom LIKE ? OR f.felhasznalonev LIKE ? OR j.nev LIKE ?)
+      AND k.status = 'active'
+    ORDER BY k.idkommentek DESC
+    LIMIT 50
+  `;
+  
+  db.query(sql, [searchQuery, searchQuery, searchQuery], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+    res.json({ success: true, comments: results });
   });
 });
 

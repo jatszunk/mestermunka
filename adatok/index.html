@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adatbázis Kezelő</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Adatbázis Kezelő</h1>
+        
+        <div class="form-section">
+            <div class="form-group">
+                <label for="nev">Név:</label>
+                <input type="text" id="nev" name="nev" placeholder="Adja meg a nevét">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="pelda@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="kor">Kor:</label>
+                <input type="number" id="kor" name="kor" placeholder="Életkor">
+            </div>
+            
+            <div class="form-group">
+                <label for="szak">Szak:</label>
+                <input type="text" id="szak" name="szak" placeholder="Válasszon szakot">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="mentesBtn" class="btn btn-primary">Mentés</button>
+            <button id="frissitesBtn" class="btn btn-secondary">Frissítés</button>
+            <button id="teljesAdatBtn" class="btn btn-info">Teljes adat</button>
+            <button id="mintaAdatokBtn" class="btn btn-warning">Minta adatok</button>
+        </div>
+        
+        <div class="data-section">
+            <h2>Mentett adatok (MySQL-ből)</h2>
+            <div id="adatokLista" class="data-list">
+                <!-- Adatok dinamikusan lesznek betöltve -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

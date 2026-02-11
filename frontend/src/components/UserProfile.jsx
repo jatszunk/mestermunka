@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import ProfileEdit from "./ProfileEdit";
+import "../styles/UserProfile.css";
 
 const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
