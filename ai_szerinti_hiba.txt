@@ -1,0 +1,35 @@
+PROJEKT RÉSZLETES ELEMZÉSE - SZÉPSÉGHIBÁK
+1. ADATBÁZIS KAPCSOLATOK
+Két connection pool: db (fő) és commentDb (alternatív) - felesleges
+Port konfliktus: 3307 vs 3306 - lehet inkonzisztencia
+Karakterkódolás: utf8mb4 - helyes beállítás
+2. FRONTEND HIBÁK
+App.jsx (516 sor)
+Inkonzisztens szerepkör kezelés: 44-55. sor: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor - dehol van 'admin' kezelés
+Redundáns adatfeldolgozás: 38-55. sor és 127-144. sor - kétszer ugyanazt csinálja
+Hiányos hibakezelés: 302-317. sor - nincs try-catch a onDeleteGame-nél
+Rossz API hívás: 322. sor - fetch helyett axios kellene konzisztenciáért
+GameDevUpload.jsx (472 sor)
+Inkonzisztens formData reset: 105-108. sor - nem minden mezőt állítja vissza
+Hiányos validáció: nincs ellenőrzés, hogy a platform ki van-e választva
+Rossz mezőnév konzisztencia: desc vs leiras, jatekNev vs title
+3. BACKEND HIBÁK
+server.js (1455 sor)
+SQL injection sebezhetőség: 1348. sor - nincs prepared statement
+Rossz error handling: 1435. sor - nincs else ág a if (err5) után
+Inkonzisztens adatfeldolgozás: 1397-1414. sor - többszörös ellenőrzés
+Hiányos tranzakció kezelés: platform beillesztésnél nincs rollback
+4. ADATBÁZIS STRUKTÚRA PROBLÉMÁK
+Hiányzó foreign key: jatekok_platformok táblán nincs megfelelő FK constraint
+Nincs indexelés: idjatekok, idplatform mezőkön nincs index
+Denormalizált adatok: jatekok táblában sok redundáns mező
+5. JAVASLATOK
+Azonnali javítások:
+Egységesített hibakezelés - központi error handler
+Prepared statements - SQL injection elleni védelem
+Validáció - frontend és backend oldalon is
+Tranzakciók - adatkonzisztencia biztosítása
+Hosszú távú javítások:
+Refaktorálás - komponensek szétbontása
+TypeScript - típusbiztonság növelése
+Cache - teljesítmény

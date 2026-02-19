@@ -1076,6 +1076,20 @@ app.get("/gamedev/:username/stats", checkRole(['gamedev', 'admin']), (req, res) 
   });
 });
 
+// Platformok lekérdezése
+app.get("/platforms", (req, res) => {
+  const sql = "SELECT idplatform, nev FROM platform ORDER BY nev";
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Platformok lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, platforms: results });
+  });
+});
+
 // Email küldési végpont
 app.post("/api/send-email", (req, res) => {
   const { from, name, message, subject } = req.body;
@@ -1331,7 +1345,7 @@ app.post("/fix-uploaded-by", (req, res) => {
 
 // Játék feltöltése (gamedev és admin) - egyszerűsített verzió
 app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => {
-  const { title, developer, price, currency, category, image, minReq, recReq, desc, rating, username } = req.body;
+  const { title, developer, price, currency, category, image, minReq, recReq, desc, rating, username, platform } = req.body;
   
   console.log('Játék feltöltési kérés:', req.body);
 
@@ -1411,6 +1425,20 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
 
           const gameId = gameResult.insertId;
           console.log('Játék sikeresen feltöltve:', gameId);
+
+          // Platform beillesztése a jatekok_platformok táblába
+          if (platform && platform !== "") {
+            const platformSql = "INSERT INTO jatekok_platformok (idjatekok, idplatform) VALUES (?, ?)";
+            
+            db.query(platformSql, [gameId, parseInt(platform)], (err5) => {
+              if (err5) {
+                console.error('Platform beillesztési hiba:', err5);
+              } else {
+                console.log('Platform sikeresen beillesztve:', platform);
+              }
+            });
+          }
+
           res.json({ success: true, message: "Játék sikeresen feltöltve jóváhagyásra!", gameId });
         });
       }

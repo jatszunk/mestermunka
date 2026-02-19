@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/GameDevUpload.css";
@@ -11,6 +11,7 @@ const GameDevUpload = ({ user }) => {
     price: "",
     currency: "FT",
     category: "",
+    platform: "", // Egyszerű string egy platform ID-ra
     image: "",
     minReq: "",
     recReq: "",
@@ -24,6 +25,23 @@ const GameDevUpload = ({ user }) => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [platforms, setPlatforms] = useState([]);
+
+  // Platformok betöltése az adatbázisból
+  useEffect(() => {
+    const fetchPlatforms = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/platforms');
+        if (response.data.success) {
+          setPlatforms(response.data.platforms);
+        }
+      } catch (error) {
+        console.error('Hiba a platformok betöltésekor:', error);
+      }
+    };
+
+    fetchPlatforms();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,6 +78,8 @@ const GameDevUpload = ({ user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    console.log('Küldött formData:', formData);
 
     try {
       const res = await axios.post("http://localhost:3001/gamedev/upload-game", {
@@ -207,6 +227,24 @@ const GameDevUpload = ({ user }) => {
                   required
                   className="cyber-input"
                 />
+              </div>
+
+              <div className="cyber-input-group">
+                <label className="cyber-input-label">Platform *</label>
+                <select
+                  name="platform"
+                  value={formData.platform}
+                  onChange={handleChange}
+                  required
+                  className="cyber-input"
+                >
+                  <option value="">Válassz platformot</option>
+                  {platforms.map(platform => (
+                    <option key={platform.idplatform} value={platform.idplatform}>
+                      {platform.nev}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
