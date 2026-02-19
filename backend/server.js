@@ -1,5 +1,6 @@
 const express = require("express");
 const mysql = require("mysql");
+const bcrypt = require("bcrypt");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 
@@ -20,9 +21,7 @@ const db = mysql.createPool({
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true,
-  charset: 'utf8mb4',
-  // Definer probléma megoldása
-  insecureAuth: true
+  charset: 'utf8mb4'
 });
 
 // Alternatív kapcsolat a kommentekhez (ha a fő kapcsolat nem működik)
