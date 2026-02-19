@@ -168,16 +168,12 @@ const GameDevPanel = ({ user }) => {
         {/* Részletes statisztikák */}
         <div className="detailed-stats">
           <div className="stat-item">
-            <span className="stat-label">Összes letöltés:</span>
-            <span className="stat-value">{stats.totalDownloads}</span>
-          </div>
-          <div className="stat-item">
             <span className="stat-label">Összes értékelés:</span>
-            <span className="stat-value">{stats.totalRatings}</span>
+            <span className="stat-value">{stats.totalRatings || 0}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Átlagos értékelés:</span>
-            <span className="stat-value">{stats.averageRating}/10</span>
+            <span className="stat-value">{parseFloat(stats.averageRating).toFixed(2)}/10</span>
           </div>
         </div>
 
@@ -232,8 +228,7 @@ const GameDevPanel = ({ user }) => {
                               Feltöltve: {formatDate(game.uploadDate)}
                             </p>
                             <p className="game-meta">
-                              Letöltések: {game.downloads || 0} | 
-                              Értékelés: {game.averageRating ? `${game.averageRating}/10` : 'N/A'}
+                              Értékelés: {game.averageRating ? `${parseFloat(game.averageRating).toFixed(2)}/10` : 'N/A'}
                             </p>
                           </div>
                         </div>
@@ -308,8 +303,7 @@ const GameDevPanel = ({ user }) => {
                         <h4>{game.title}</h4>
                         <p className="game-meta">Feltöltve: {formatDate(game.uploadDate)}</p>
                         <div className="game-stats">
-                          <span>📥 {game.downloads || 0} letöltés</span>
-                          <span>⭐ {game.averageRating ? `${game.averageRating}/10` : 'N/A'}</span>
+                          <span>⭐ {game.averageRating ? `${parseFloat(game.averageRating).toFixed(2)}/10` : 'N/A'}</span>
                         </div>
                       </div>
                     </div>

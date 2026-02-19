@@ -1010,8 +1010,9 @@ app.get("/gamedev/:username/games", (req, res, next) => {
         j.kepurl AS image,
         j.ertekeles AS rating,
         j.status,
-        j.created_at,
-        j.uploaded_by
+        j.created_at AS uploadDate,
+        j.uploaded_by,
+        (SELECT COALESCE(AVG(k.ertekeles), 0) FROM kommentek k WHERE k.idjatekok = j.idjatekok AND k.status = 'active' AND k.ertekeles IS NOT NULL) as averageRating
       FROM jatekok j
       ORDER BY j.created_at DESC
     `;
@@ -1047,7 +1048,16 @@ app.get("/gamedev/:username/stats", checkRole(['gamedev', 'admin']), (req, res) 
       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingGames,
       SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approvedGames,
       SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejectedGames,
-      COALESCE(AVG(ertekeles), 0) as averageRating
+      (SELECT COUNT(*) FROM kommentek WHERE status = 'active' AND idjatekok IN (
+        SELECT idjatekok FROM jatekok WHERE uploaded_by = (
+          SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
+        )
+      )) as totalRatings,
+      (SELECT COALESCE(AVG(ertekeles), 0) FROM kommentek WHERE status = 'active' AND ertekeles IS NOT NULL AND idjatekok IN (
+        SELECT idjatekok FROM jatekok WHERE uploaded_by = (
+          SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
+        )
+      )) as averageRating
     FROM jatekok 
     WHERE uploaded_by = (
       SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ?
