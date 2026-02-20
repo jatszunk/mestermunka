@@ -62,19 +62,31 @@ function App() {
 
     // games
     axios.get("http://localhost:3001/jatekok").then((res) => {
-      const mappedGames = (res.data.games || []).map((g) => ({
-        id: g.id,
-        title: g.title,
-        developer: g.developer,
-        price: g.price,
-        image: g.image || defaultImage,
-        requirements: g.requirements || { minimum: "-", recommended: "-" },
-        categories: Array.isArray(g.categories) ? g.categories : [],
-        category: Array.isArray(g.categories) && g.categories.length ? g.categories[0] : "Egyéb", // fallback (régi kódoknak)
-        platforms: Array.isArray(g.platforms) ? g.platforms : [],
-        rating: g.rating || 0,
-        description: g.description || "",
-      }));
+      const mappedGames = (res.data.games || []).map((g) => {
+        // Biztonságos string kezelés
+        const categoryIds = g.categoryIds || '';
+        const platformIds = g.platformIds || '';
+        const categoryNames = g.categories || '';
+        const platformNames = g.platforms || '';
+        
+        return {
+          id: g.id,
+          title: g.title,
+          developer: g.developer,
+          price: g.price,
+          image: g.image || defaultImage,
+          requirements: { 
+            minimum: g.minimum || '-', 
+            recommended: g.recommended || '-' 
+          },
+          categories: categoryIds ? categoryIds.split(',').filter(id => id.trim()).map(id => id.trim()) : [],
+          categoryNames: g.categories ? (typeof g.categories === 'string' ? g.categories.split(',').filter(name => name.trim()).map(name => name.trim()) : g.categories) : [],
+          platforms: platformIds ? platformIds.split(',').filter(id => id.trim()).map(id => id.trim()) : [],
+          platformNames: g.platforms ? (typeof g.platforms === 'string' ? g.platforms.split(',').filter(name => name.trim()).map(name => name.trim()) : g.platforms) : [],
+          rating: g.rating || 0,
+          description: g.description || "",
+        };
+      });
       setGames(mappedGames);
     });
 

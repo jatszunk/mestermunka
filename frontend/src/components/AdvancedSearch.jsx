@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AdvancedSearch = ({ onSearch, onFilter, games }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [platforms, setPlatforms] = useState([]);
   const [filters, setFilters] = useState({
     categories: [],
     platforms: [],
@@ -24,16 +27,29 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
 
-  const categories = [
-    'Akció', 'Kaland', 'RPG', 'Stratégia', 'Sport', 'Verseny',
-    'Horrort', 'Puzzle', 'Platformer', 'Shooter', 'MMO', 'Szimulátor',
-    'Indie', 'Co-op', 'Battle Royale', 'MOBA', 'Taktikai', 'Barkochba'
-  ];
+  // Kategóriák és platformok betöltése az adatbázisból
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesResponse, platformsResponse] = await Promise.all([
+          axios.get('http://localhost:3001/categories'),
+          axios.get('http://localhost:3001/platforms')
+        ]);
+        
+        if (categoriesResponse.data.success) {
+          setCategories(categoriesResponse.data.categories);
+        }
+        
+        if (platformsResponse.data.success) {
+          setPlatforms(platformsResponse.data.platforms);
+        }
+      } catch (error) {
+        console.error('Hiba az adatok betöltésekor:', error);
+      }
+    };
 
-  const platforms = [
-    'PC', 'PlayStation 5', 'PlayStation 4', 'Xbox Series X/S', 'Xbox One',
-    'Nintendo Switch', 'Mobil (iOS)', 'Mobil (Android)', 'VR'
-  ];
+    fetchData();
+  }, []);
 
   const operatingSystems = [
     'Windows 10', 'Windows 11', 'macOS', 'Linux', 'SteamOS'
@@ -118,17 +134,17 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
     }
   };
 
-  const handleCategoryToggle = (category) => {
-    const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter(c => c !== category)
-      : [...filters.categories, category];
+  const handleCategoryToggle = (categoryId) => {
+    const newCategories = filters.categories.includes(categoryId)
+      ? filters.categories.filter(c => c !== categoryId)
+      : [...filters.categories, categoryId];
     handleFilterChange('categories', newCategories);
   };
 
-  const handlePlatformToggle = (platform) => {
-    const newPlatforms = filters.platforms.includes(platform)
-      ? filters.platforms.filter(p => p !== platform)
-      : [...filters.platforms, platform];
+  const handlePlatformToggle = (platformId) => {
+    const newPlatforms = filters.platforms.includes(platformId)
+      ? filters.platforms.filter(p => p !== platformId)
+      : [...filters.platforms, platformId];
     handleFilterChange('platforms', newPlatforms);
   };
 
@@ -250,11 +266,11 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
             <div className="filter-options">
               {categories.map(category => (
                 <button
-                  key={category}
-                  className={`filter-chip ${filters.categories.includes(category) ? 'active' : ''}`}
-                  onClick={() => handleCategoryToggle(category)}
+                  key={category.idkategoria}
+                  className={`filter-chip ${filters.categories.includes(category.idkategoria.toString()) ? 'active' : ''}`}
+                  onClick={() => handleCategoryToggle(category.idkategoria.toString())}
                 >
-                  {category}
+                  {category.nev}
                 </button>
               ))}
             </div>
@@ -265,11 +281,11 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
             <div className="filter-options">
               {platforms.map(platform => (
                 <button
-                  key={platform}
-                  className={`filter-chip ${filters.platforms.includes(platform) ? 'active' : ''}`}
-                  onClick={() => handlePlatformToggle(platform)}
+                  key={platform.idplatform}
+                  className={`filter-chip ${filters.platforms.includes(platform.idplatform.toString()) ? 'active' : ''}`}
+                  onClick={() => handlePlatformToggle(platform.idplatform.toString())}
                 >
-                  {platform}
+                  {platform.nev}
                 </button>
               ))}
             </div>

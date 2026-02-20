@@ -29,7 +29,7 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
         </div>
         <div className="game-developer">{game.developer}</div>
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-  {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])
+  {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
     .filter(Boolean)
     .map((cat) => (
       <span key={cat} className="category-chip">
@@ -42,6 +42,11 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
         <div className="game-requirements">
           <h4>Gépigény (minimum):</h4>
           <p>{game.requirements?.minimum || "Nincs megadva"}</p>
+        </div>
+
+        <div className="game-requirements">
+          <h4>Gépigény (ajánlott):</h4>
+          <p>{game.requirements?.recommended || "Nincs megadva"}</p>
         </div>
 
         <div style={{ marginTop: 12 }}>

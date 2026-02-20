@@ -211,7 +211,9 @@ app.get("/jatekok", (req, res) => {
       j.kepurl AS image,
       COALESCE(j.ertekeles, 0) AS rating,
       GROUP_CONCAT(DISTINCT k.nev SEPARATOR ', ') AS categories,
-      GROUP_CONCAT(DISTINCT p.nev SEPARATOR ', ') AS platforms
+      GROUP_CONCAT(DISTINCT k.idkategoria SEPARATOR ', ') AS categoryIds,
+      GROUP_CONCAT(DISTINCT p.nev SEPARATOR ', ') AS platforms,
+      GROUP_CONCAT(DISTINCT p.idplatform SEPARATOR ', ') AS platformIds
     FROM jatekok j
     LEFT JOIN fejleszto f ON j.idfejleszto = f.idfejleszto
     LEFT JOIN rendszerkovetelmeny r ON j.idrendszerkovetelmeny = r.idrendszerkovetelmeny
@@ -222,6 +224,17 @@ app.get("/jatekok", (req, res) => {
     WHERE (j.status = 'approved' OR j.status IS NULL)
     GROUP BY j.idjatekok
   `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Játékok lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, games: results });
+  });
+});
+
 app.get("/jatekok/:id/extra", (req, res) => {
   const gameId = req.params.id;
 
@@ -256,27 +269,6 @@ app.get("/jatekok/:id/videok", (req, res) => {
   db.query(sql, [gameId], (err, results) => {
     if (err) return res.status(500).json({ success: false, error: err });
     return res.json({ success: true, videos: results || [] });
-  });
-});
-
-
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-
-    const mappedGames = results.map((game) => ({
-      id: game.id,
-      title: game.title,
-      developer: game.developer,
-      price: game.price === 0.00 ? "Ingyenes" : game.price ? `${game.price}` : "",
-      image: game.image,
-      requirements: { minimum: game.minimum, recommended: game.recommended },
-      categories: game.categories ? game.categories.split(",").map((x) => x.trim()) : [],
-      platforms: game.platforms ? game.platforms.split(",").map((x) => x.trim()) : [],
-      rating: game.rating || 0,
-      description: game.description,
-    }));
-
-    res.json({ success: true, games: mappedGames });
   });
 });
 
@@ -1090,6 +1082,20 @@ app.get("/platforms", (req, res) => {
   });
 });
 
+// Kategóriák lekérdezése
+app.get("/categories", (req, res) => {
+  const sql = "SELECT idkategoria, nev FROM kategoria ORDER BY nev";
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Kategóriák lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, categories: results });
+  });
+});
+
 // Email küldési végpont
 app.post("/api/send-email", (req, res) => {
   const { from, name, message, subject } = req.body;
@@ -1345,7 +1351,7 @@ app.post("/fix-uploaded-by", (req, res) => {
 
 // Játék feltöltése (gamedev és admin) - egyszerűsített verzió
 app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => {
-  const { title, developer, price, currency, category, image, minReq, recReq, desc, rating, username, platform } = req.body;
+  const { title, developer, price, currency, categories, platforms, image, minReq, recReq, desc, rating, username } = req.body;
   
   console.log('Játék feltöltési kérés:', req.body);
 
@@ -1426,16 +1432,45 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
           const gameId = gameResult.insertId;
           console.log('Játék sikeresen feltöltve:', gameId);
 
-          // Platform beillesztése a jatekok_platformok táblába
-          if (platform && platform !== "") {
-            const platformSql = "INSERT INTO jatekok_platformok (idjatekok, idplatform) VALUES (?, ?)";
-            
-            db.query(platformSql, [gameId, parseInt(platform)], (err5) => {
-              if (err5) {
-                console.error('Platform beillesztési hiba:', err5);
-              } else {
-                console.log('Platform sikeresen beillesztve:', platform);
-              }
+          // Platformok beillesztése a jatekok_platformok táblába
+          if (platforms && Array.isArray(platforms)) {
+            const platformPromises = platforms.map(platformId => {
+              return new Promise((resolve) => {
+                const platformSql = "INSERT INTO jatekok_platformok (idjatekok, idplatform) VALUES (?, ?)";
+                db.query(platformSql, [gameId, parseInt(platformId)], (err5) => {
+                  if (err5) {
+                    console.error('Platform beillesztési hiba:', err5);
+                  } else {
+                    console.log('Platform sikeresen beillesztve:', platformId);
+                  }
+                  resolve();
+                });
+              });
+            });
+
+            Promise.all(platformPromises).then(() => {
+              console.log('Minden platform beillesztve');
+            });
+          }
+
+          // Kategóriák beillesztése a jatekok_kategoriak táblába
+          if (categories && Array.isArray(categories)) {
+            const categoryPromises = categories.map(categoryId => {
+              return new Promise((resolve) => {
+                const categorySql = "INSERT INTO jatekok_kategoriak (idjatekok, idkategoria) VALUES (?, ?)";
+                db.query(categorySql, [gameId, parseInt(categoryId)], (err6) => {
+                  if (err6) {
+                    console.error('Kategória beillesztési hiba:', err6);
+                  } else {
+                    console.log('Kategória sikeresen beillesztve:', categoryId);
+                  }
+                  resolve();
+                });
+              });
+            });
+
+            Promise.all(categoryPromises).then(() => {
+              console.log('Minden kategória beillesztve');
             });
           }
 

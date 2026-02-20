@@ -10,8 +10,8 @@ const GameDevUpload = ({ user }) => {
     developer: "",
     price: "",
     currency: "FT",
-    category: "",
-    platform: "", // Egyszerű string egy platform ID-ra
+    categories: [], // Tömb a kategóriáknak
+    platforms: [], // Tömb a platformoknak
     image: "",
     minReq: "",
     recReq: "",
@@ -26,21 +26,30 @@ const GameDevUpload = ({ user }) => {
 
   const [loading, setLoading] = useState(false);
   const [platforms, setPlatforms] = useState([]);
+  const [categories, setCategories] = useState([]);
 
-  // Platformok betöltése az adatbázisból
+  // Platformok és kategóriák betöltése az adatbázisból
   useEffect(() => {
-    const fetchPlatforms = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/platforms');
-        if (response.data.success) {
-          setPlatforms(response.data.platforms);
+        const [platformsResponse, categoriesResponse] = await Promise.all([
+          axios.get('http://localhost:3001/platforms'),
+          axios.get('http://localhost:3001/categories')
+        ]);
+        
+        if (platformsResponse.data.success) {
+          setPlatforms(platformsResponse.data.platforms);
+        }
+        
+        if (categoriesResponse.data.success) {
+          setCategories(categoriesResponse.data.categories);
         }
       } catch (error) {
-        console.error('Hiba a platformok betöltésekor:', error);
+        console.error('Hiba az adatok betöltésekor:', error);
       }
     };
 
-    fetchPlatforms();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -48,6 +57,22 @@ const GameDevUpload = ({ user }) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleCategoryChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({
+      ...prev,
+      categories: selectedOptions
+    }));
+  };
+
+  const handlePlatformChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({
+      ...prev,
+      platforms: selectedOptions
     }));
   };
 
@@ -79,6 +104,19 @@ const GameDevUpload = ({ user }) => {
     e.preventDefault();
     setLoading(true);
 
+    // Validáció - legalább egy kategóriát és platformot kötelező választani
+    if (!formData.categories || formData.categories.length === 0) {
+      alert('Kérlek, válassz legalább egy kategóriát!');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.platforms || formData.platforms.length === 0) {
+      alert('Kérlek, válassz legalább egy platformot!');
+      setLoading(false);
+      return;
+    }
+
     console.log('Küldött formData:', formData);
 
     try {
@@ -94,7 +132,8 @@ const GameDevUpload = ({ user }) => {
           developer: "",
           price: "",
           currency: "FT",
-          category: "",
+          categories: [],
+          platforms: [],
           image: "",
           minReq: "",
           recReq: "",
@@ -217,34 +256,43 @@ const GameDevUpload = ({ user }) => {
 
             <div className="cyber-form-row">
               <div className="cyber-input-group">
-                <label className="cyber-input-label">Kategória *</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  placeholder="pl: FPS, RPG, Stratégia"
-                  required
+                <label className="cyber-input-label">Kategóriák *</label>
+                <select
+                  name="categories"
+                  value={formData.categories}
+                  onChange={handleCategoryChange}
                   className="cyber-input"
-                />
+                  multiple
+                  style={{ height: '120px' }}
+                >
+                  <option value="" disabled>Válassz kategóriákat...</option>
+                  {categories.map(category => (
+                    <option key={category.idkategoria} value={category.idkategoria}>
+                      {category.nev}
+                    </option>
+                  ))}
+                </select>
+                <small className="cyber-hint">Tartsd lenyomva a Ctrl/Cmd gombot a többszörös választáshoz</small>
               </div>
 
               <div className="cyber-input-group">
-                <label className="cyber-input-label">Platform *</label>
+                <label className="cyber-input-label">Platformok *</label>
                 <select
-                  name="platform"
-                  value={formData.platform}
-                  onChange={handleChange}
-                  required
+                  name="platforms"
+                  value={formData.platforms}
+                  onChange={handlePlatformChange}
                   className="cyber-input"
+                  multiple
+                  style={{ height: '120px' }}
                 >
-                  <option value="">Válassz platformot</option>
+                  <option value="" disabled>Válassz platformokat...</option>
                   {platforms.map(platform => (
                     <option key={platform.idplatform} value={platform.idplatform}>
                       {platform.nev}
                     </option>
                   ))}
                 </select>
+                <small className="cyber-hint">Tartsd lenyomva a Ctrl/Cmd gombot a többszörös választáshoz</small>
               </div>
             </div>
 

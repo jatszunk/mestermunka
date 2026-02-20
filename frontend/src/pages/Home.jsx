@@ -16,19 +16,17 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
   const handleFilterChange = (filters) => {
     let filtered = [...games];
     
-    // Kategória szűrés
+    // Kategória szűrés - ID-k alapján
     if (filters.categories && filters.categories.length > 0) {
       filtered = filtered.filter(game => 
-        filters.categories.includes(game.category)
+        game.categories && game.categories.length > 0 && game.categories.some(cat => filters.categories.includes(cat.toString()))
       );
     }
     
-    // Platform szűrés
+    // Platform szűrés - ID-k alapján
     if (filters.platforms && filters.platforms.length > 0) {
       filtered = filtered.filter(game => 
-        filters.platforms.some(platform => 
-          game.platform && game.platform.includes(platform)
-        )
+        game.platforms && game.platforms.length > 0 && game.platforms.some(platform => filters.platforms.includes(platform.toString()))
       );
     }
     
