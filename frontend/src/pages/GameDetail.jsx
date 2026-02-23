@@ -168,7 +168,7 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
                 })()}
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-  {(Array.isArray(game.categories) && game.categories.length ? game.categories : [game.category || "Egyéb"])
+              {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
     .filter(Boolean)
     .map((cat) => (
       <span key={cat} className="category-chip">
