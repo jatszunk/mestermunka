@@ -80,7 +80,8 @@ db.getConnection((err, connection) => {
     ADD COLUMN IF NOT EXISTS discord VARCHAR(100) NULL,
     ADD COLUMN IF NOT EXISTS twitter VARCHAR(100) NULL,
     ADD COLUMN IF NOT EXISTS youtube VARCHAR(200) NULL,
-    ADD COLUMN IF NOT EXISTS twitch VARCHAR(100) NULL
+    ADD COLUMN IF NOT EXISTS twitch VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS password_hash_type VARCHAR(20) NULL DEFAULT 'plain'
   `, (alterErr) => {
     if (alterErr) {
       console.error("Hiba a felhasználó mezők hozzáadásakor:", alterErr);
@@ -172,10 +173,18 @@ const checkRole = (allowedRoles) => {
 app.post("/register", (req, res) => {
   const { felhasznalonev, email, jelszo, szerepkor = 'felhasznalo' } = req.body;
   
-  const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, szerepkor) VALUES (?, ?, ?, ?)";
-  db.query(sql, [felhasznalonev, email, jelszo, szerepkor], (err) => {
-    if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
-    res.json({ success: true });
+  // Jelszó hashelése bcrypt-tel
+  bcrypt.hash(jelszo, 12, (err, hashedPassword) => {
+    if (err) {
+      console.error("Hiba a jelszó hashelésekor:", err);
+      return res.status(500).json({ success: false, message: "Hiba történt a jelszó feldolgozása közben" });
+    }
+    
+    const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, szerepkor, password_hash_type) VALUES (?, ?, ?, ?, 'bcrypt')";
+    db.query(sql, [felhasznalonev, email, hashedPassword, szerepkor], (err) => {
+      if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
+      res.json({ success: true });
+    });
   });
 });
 
@@ -183,15 +192,66 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const { felhasznalonev, jelszo } = req.body;
   
-  const sql = "SELECT * FROM felhasznalo WHERE felhasznalonev=? AND jelszo=? AND aktiv = 1";
-  db.query(sql, [felhasznalonev, jelszo], (err, results) => {
+  const sql = "SELECT * FROM felhasznalo WHERE felhasznalonev=? AND aktiv = 1";
+  db.query(sql, [felhasznalonev], (err, results) => {
     if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
-    if (results.length > 0) {
-      // Update last login time
-      db.query("UPDATE felhasznalo SET utolso_belepes = NOW() WHERE idfelhasznalo = ?", [results[0].idfelhasznalo]);
-      res.json({ success: true, user: results[0] });
+    
+    if (results.length === 0) {
+      return res.status(401).json({ success: false, message: "Hibás adatok vagy inaktív fiók" });
+    }
+    
+    const user = results[0];
+    const hashType = user.password_hash_type || 'plain';
+    
+    // Ellenőrizzük a jelszó hash típusát és validáljuk
+    if (hashType === 'bcrypt') {
+      // Új bcrypt hash
+      bcrypt.compare(jelszo, user.jelszo, (err, isValid) => {
+        if (err) {
+          console.error("Hiba a bcrypt ellenőrzésekor:", err);
+          return res.status(500).json({ success: false, message: "Hiba történt a bejelentkezés során" });
+        }
+        
+        if (isValid) {
+          // Sikeres bejelentkezés, frissítjük az utolsó bejelentkezés időpontját
+          db.query("UPDATE felhasznalo SET utolso_belepes = NOW() WHERE idfelhasznalo = ?", [user.idfelhasznalo]);
+          res.json({ success: true, user: user });
+        } else {
+          res.status(401).json({ success: false, message: "Hibás adatok vagy inaktív fiók" });
+        }
+      });
     } else {
-      res.status(401).json({ success: false, message: "Hibás adatok vagy inaktív fiók" });
+      // Régi plain text jelszó - gradális migráció
+      if (jelszo === user.jelszo) {
+        // Sikeres bejelentkezés régi jelszóval, migráljuk bcrypt-re
+        bcrypt.hash(jelszo, 12, (err, hashedPassword) => {
+          if (err) {
+            console.error("Hiba a migráció során:", err);
+            // Mégis engedjük be a felhasználót, de naplózzuk a hibát
+            db.query("UPDATE felhasznalo SET utolso_belepes = NOW() WHERE idfelhasznalo = ?", [user.idfelhasznalo]);
+            return res.json({ success: true, user: user });
+          }
+          
+          // Frissítjük a jelszót és a hash típust
+          db.query(
+            "UPDATE felhasznalo SET jelszo = ?, password_hash_type = 'bcrypt' WHERE idfelhasznalo = ?",
+            [hashedPassword, user.idfelhasznalo],
+            (updateErr) => {
+              if (updateErr) {
+                console.error("Hiba a jelszó migrációja során:", updateErr);
+              } else {
+                console.log(`Sikeres migráció: ${felhasznalonev} (ID: ${user.idfelhasznalo})`);
+              }
+              
+              // Frissítjük az utolsó bejelentkezés időpontját
+              db.query("UPDATE felhasznalo SET utolso_belepes = NOW() WHERE idfelhasznalo = ?", [user.idfelhasznalo]);
+              res.json({ success: true, user: user });
+            }
+          );
+        });
+      } else {
+        res.status(401).json({ success: false, message: "Hibás adatok vagy inaktív fiók" });
+      }
     }
   });
 });
@@ -496,46 +556,126 @@ app.put("/users/:username", (req, res) => {
     return res.status(400).json({ success: false, message: "Hiányzó adatok" });
   }
   
-  const { email, name, nev, bio, avatar, favoriteGenres, preferredPlatforms, country, birthYear, discord, twitter, youtube, twitch } = req.body;
+  const { email, name, nev, bio, avatar, favoriteGenres, preferredPlatforms, country, birthYear, discord, twitter, youtube, twitch, currentPassword, newPassword } = req.body;
   
   // A frontend 'name' mezőt használja, de szervernek 'nev' kell
   const finalNev = name || nev || '';
   
-  console.log('Destructured adatok:', { email, name, nev, finalNev, bio, avatar, favoriteGenres, preferredPlatforms, country, birthYear, discord, twitter, youtube, twitch });
+  console.log('Destructured adatok:', { email, name, nev, finalNev, bio, avatar, favoriteGenres, preferredPlatforms, country, birthYear, discord, twitter, youtube, twitch, currentPassword, newPassword });
   
-  // JSON mezők konvertálása
-  const favoriteGenresJson = Array.isArray(favoriteGenres) ? JSON.stringify(favoriteGenres) : null;
-  const preferredPlatformsJson = Array.isArray(preferredPlatforms) ? JSON.stringify(preferredPlatforms) : null;
-  
-  const sql = `
-    UPDATE felhasznalo 
-    SET email = ?, nev = ?, bio = ?, avatar = ?, 
-        favoriteGenres = ?, preferredPlatforms = ?, 
-        country = ?, birthYear = ?, discord = ?, twitter = ?, youtube = ?, twitch = ?
-    WHERE felhasznalonev = ?
-  `;
-  
-  const params = [
-    email, finalNev, bio, avatar, 
-    favoriteGenresJson, preferredPlatformsJson, 
-    country, birthYear, discord, twitter, youtube, twitch, 
-    username
-  ];
-  
-  console.log('SQL paraméterek:', params);
-  
-  db.query(sql, params, (err, result) => {
-    if (err) {
-      console.error('SQL hiba:', err);
-      return res.status(500).json({ success: false, error: err });
-    }
-    if (result.affectedRows === 0) {
-      console.log('Nem található felhasználó:', username);
-      return res.status(404).json({ success: false, message: "Felhasználó nem található" });
-    }
-    console.log('Sikeres frissítés:', result);
-    res.json({ success: true, message: "Profil frissítve" });
-  });
+  // Jelszó változtatás kezelése
+  if (currentPassword && newPassword) {
+    // Először ellenőrizzük a jelenlegi jelszót
+    const getUserSql = "SELECT * FROM felhasznalo WHERE felhasznalonev = ? AND aktiv = 1";
+    db.query(getUserSql, [username], (err, userResults) => {
+      if (err || userResults.length === 0) {
+        return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+      }
+      
+      const user = userResults[0];
+      const hashType = user.password_hash_type || 'plain';
+      
+      if (hashType === 'bcrypt') {
+        bcrypt.compare(currentPassword, user.jelszo, (err, isValid) => {
+          if (err || !isValid) {
+            return res.status(401).json({ success: false, message: "Hibás jelenlegi jelszó" });
+          }
+          
+          // Új jelszó hashelése és frissítése
+          bcrypt.hash(newPassword, 12, (err, hashedPassword) => {
+            if (err) {
+              return res.status(500).json({ success: false, message: "Hiba a jelszó feldolgozása közben" });
+            }
+            
+            updateProfileWithPassword(hashedPassword);
+          });
+        });
+      } else {
+        // Régi plain text jelszó ellenőrzése
+        if (currentPassword !== user.jelszo) {
+          return res.status(401).json({ success: false, message: "Hibás jelenlegi jelszó" });
+        }
+        
+        // Új jelszó hashelése és frissítése
+        bcrypt.hash(newPassword, 12, (err, hashedPassword) => {
+          if (err) {
+            return res.status(500).json({ success: false, message: "Hiba a jelszó feldolgozása közben" });
+          }
+          
+          updateProfileWithPassword(hashedPassword);
+        });
+      }
+      
+      function updateProfileWithPassword(hashedPassword) {
+        // JSON mezők konvertálása
+        const favoriteGenresJson = Array.isArray(favoriteGenres) ? JSON.stringify(favoriteGenres) : null;
+        const preferredPlatformsJson = Array.isArray(preferredPlatforms) ? JSON.stringify(preferredPlatforms) : null;
+        
+        const sql = `
+          UPDATE felhasznalo 
+          SET email = ?, nev = ?, bio = ?, avatar = ?, 
+              favoriteGenres = ?, preferredPlatforms = ?, 
+              country = ?, birthYear = ?, discord = ?, twitter = ?, youtube = ?, twitch = ?,
+              jelszo = ?, password_hash_type = 'bcrypt'
+          WHERE felhasznalonev = ?
+        `;
+        
+        const params = [
+          email, finalNev, bio, avatar, 
+          favoriteGenresJson, preferredPlatformsJson, 
+          country, birthYear, discord, twitter, youtube, twitch, 
+          hashedPassword, username
+        ];
+        
+        db.query(sql, params, (err, result) => {
+          if (err) {
+            console.error('SQL hiba:', err);
+            return res.status(500).json({ success: false, error: err });
+          }
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+          }
+          console.log('Sikeres profil és jelszó frissítés:', result);
+          res.json({ success: true, message: "Profil és jelszó frissítve" });
+        });
+      }
+    });
+  } else {
+    // Normál profil frissítés jelszó nélkül
+    // JSON mezők konvertálása
+    const favoriteGenresJson = Array.isArray(favoriteGenres) ? JSON.stringify(favoriteGenres) : null;
+    const preferredPlatformsJson = Array.isArray(preferredPlatforms) ? JSON.stringify(preferredPlatforms) : null;
+    
+    const sql = `
+      UPDATE felhasznalo 
+      SET email = ?, nev = ?, bio = ?, avatar = ?, 
+          favoriteGenres = ?, preferredPlatforms = ?, 
+          country = ?, birthYear = ?, discord = ?, twitter = ?, youtube = ?, twitch = ?
+      WHERE felhasznalonev = ?
+    `;
+    
+    const params = [
+      email, finalNev, bio, avatar, 
+      favoriteGenresJson, preferredPlatformsJson, 
+      country, birthYear, discord, twitter, youtube, twitch, 
+      username
+    ];
+    
+    console.log('SQL paraméterek:', params);
+    
+    db.query(sql, params, (err, result) => {
+      if (err) {
+        console.error('SQL hiba:', err);
+        return res.status(500).json({ success: false, error: err });
+      }
+      if (result.affectedRows === 0) {
+        console.log('Nem található felhasználó:', username);
+        return res.status(404).json({ success: false, message: "Felhasználó nem található" });
+      }
+      console.log('Sikeres frissítés:', result);
+      res.json({ success: true, message: "Profil frissítve" });
+    });
+  }
 });
 
 // Felhasználói adatok lekérdezése
