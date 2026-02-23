@@ -15,7 +15,7 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
   const displayedComments = showAllComments ? comments : comments.slice(0, 2);
 
   return (
-     
+
     <div className="game-card">
       <div className="game-image">
         <img src={game.image} alt={game.title} />
@@ -28,15 +28,28 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
           <span>{game.rating}</span>
         </div>
         <div className="game-developer">{game.developer}</div>
+        {/* PLATFORMOK (chip-ek) */}
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-  {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
-    .filter(Boolean)
-    .map((cat) => (
-      <span key={cat} className="category-chip">
-        {cat}
-      </span>
-    ))}
-</div>
+          {Array.isArray(game.platformNames) && game.platformNames.length
+            ? game.platformNames
+              .filter(Boolean)
+              .map((pl) => (
+                <span key={pl} className="category-chip">{pl}</span>
+
+              ))
+            : null}
+        </div>
+
+
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+          {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
+            .filter(Boolean)
+            .map((cat) => (
+              <span key={cat} className="category-chip">
+                {cat}
+              </span>
+            ))}
+        </div>
 
 
         <div className="game-requirements">
@@ -68,14 +81,14 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
           <div className="game-actions">
             {user && (
               <>
-                <button 
+                <button
                   onClick={() => onAddToWishlist(game.id)}
                   className="wishlist-btn"
                   title="Hozzáadás a kívánságlistához"
                 >
                   ❤️
                 </button>
-                <button 
+                <button
                   onClick={() => onAddToCollection(game.id)}
                   className="collection-btn"
                   title="Hozzáadás a gyűjteményhez"
@@ -153,7 +166,7 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
                   </div>
                 </div>
               ))}
-              
+
               {/* Ha több mint 2 komment van és nem mutatjuk mindet, akkor mutassunk egy gombot */}
               {comments.length > 2 && !showAllComments && (
                 <button
@@ -172,7 +185,7 @@ function GameCard({ game, user, comments, onAddComment, onAddToWishlist, onAddTo
                   Mutasd az összes ({comments.length - 2} további)
                 </button>
               )}
-              
+
               {/* Ha már mutatjuk az összeset, akkor lehetőség a bezárásra */}
               {showAllComments && (
                 <button
