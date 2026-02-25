@@ -167,8 +167,29 @@ function GameDetail({ user, games, comments, handleAddComment, fetchComments }) 
                   return `${game.price} ${currency}`;
                 })()}
               </div>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>Kategóriák:
-              {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
+              
+              {/* Platformok */}
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+                <span style={{ marginRight: "4px" }}>Platformok:</span>
+                {(Array.isArray(game.platformNames) && game.platformNames.length ? game.platformNames : [game.platform || "PC"])
+    .filter(Boolean)
+    .map((platform) => (
+      <span key={platform} className="platform-chip" style={{ 
+        background: "#ff6b6b", 
+        color: "white", 
+        padding: "2px 8px", 
+        borderRadius: "12px", 
+        fontSize: "12px" 
+      }}>
+        {platform}
+      </span>
+    ))}
+              </div>
+
+              {/* Kategóriák */}
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+                <span style={{ marginRight: "4px" }}>Kategóriák:</span>
+                {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
     .filter(Boolean)
     .map((cat) => (
       <span key={cat} className="category-chip">
