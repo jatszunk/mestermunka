@@ -40,6 +40,15 @@ function LoginPage({ user, handleLogin }) {
         <button type="submit" className="login-btn">Belépés</button>
       </form>
 
+      <div className="forgot-password-section">
+        <button 
+          className="forgot-password-btn" 
+          onClick={() => navigate('/forgot-password')}
+        >
+          Elfelejtette a jelszavát?
+        </button>
+      </div>
+
       <button className="vissza-btn" style={{ marginTop: 20 }} onClick={() => navigate('/')}>
         ⬅ Vissza
       </button>

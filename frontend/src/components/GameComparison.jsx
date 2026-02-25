@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 
-const GameComparison = ({ games, onClose }) => {
+const GameComparison = ({ games, comments, onClose }) => {
   const [selectedGames, setSelectedGames] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
+
+  // Globális értékelés számítása egy játékhoz
+  const getGlobalRating = (gameId) => {
+    const gameComments = comments[gameId] || [];
+    return gameComments.length > 0 
+      ? (gameComments.reduce((sum, comment) => sum + comment.rating, 0) / gameComments.length).toFixed(2)
+      : "Nincs";
+  };
 
   const handleGameSelect = (game) => {
     if (selectedGames.find(g => g.id === game.id)) {
@@ -62,7 +70,7 @@ const GameComparison = ({ games, onClose }) => {
             <div className="comparison-row">
               <div className="comparison-cell label">Fejlesztő</div>
               {selectedGames.map(game => (
-                <div key={game.id} className="comparison-cell">{game.developer}</div>
+                <div key={game.id} className="comparison-cell developer">{game.developer}</div>
               ))}
             </div>
 
@@ -74,22 +82,24 @@ const GameComparison = ({ games, onClose }) => {
                 </div>
               ))}
             </div>
-
             <div className="comparison-row">
               <div className="comparison-cell label">Értékelés</div>
-              {selectedGames.map(game => (
+              {selectedGames.map(game => {
+                const globalRating = getGlobalRating(game.id);
+                return (
                 <div key={game.id} className="comparison-cell rating">
                   <div className="rating-display">
-                    <span className="rating-score">{game.rating}/10</span>
+                    <span className="rating-score">{globalRating}/10</span>
                     <div className="rating-bar">
                       <div 
                         className="rating-fill" 
-                        style={{ width: `${(game.rating / 10) * 100}%` }}
+                        style={{ width: `${(parseFloat(globalRating) / 10) * 100}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="comparison-row">
@@ -97,7 +107,7 @@ const GameComparison = ({ games, onClose }) => {
               {selectedGames.map(game => (
                 <div key={game.id} className="comparison-cell">
                   <div className="category-tags">
-                    {(game.categories || []).map((cat, idx) => (
+                    {(game.categoryNames || []).map((cat, idx) => (
                       <span key={idx} className="category-tag">{cat}</span>
                     ))}
                   </div>
@@ -110,7 +120,7 @@ const GameComparison = ({ games, onClose }) => {
               {selectedGames.map(game => (
                 <div key={game.id} className="comparison-cell">
                   <div className="platform-tags">
-                    {(game.platforms || []).map((platform, idx) => (
+                    {(game.platformNames || []).map((platform, idx) => (
                       <span key={idx} className="platform-tag">{platform}</span>
                     ))}
                   </div>
@@ -190,7 +200,7 @@ const GameComparison = ({ games, onClose }) => {
                     <p>{game.developer}</p>
                     <p className="price">{formatPrice(game.price, game.currency)}</p>
                     <div className="rating-small">
-                      <span>{game.rating}/10</span>
+                      <span>{getGlobalRating(game.id)}/10</span>
                     </div>
                   </div>
                 </div>

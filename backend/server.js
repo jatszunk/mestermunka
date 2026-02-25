@@ -108,6 +108,25 @@ db.getConnection((err, connection) => {
     }
   });
 
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      token VARCHAR(255) NOT NULL UNIQUE,
+      expiry_time DATETIME NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES felhasznalo(idfelhasznalo) ON DELETE CASCADE,
+      INDEX idx_token (token),
+      INDEX idx_user_id (user_id)
+    )
+  `, (tableErr) => {
+    if (tableErr) {
+      console.error("Hiba a password_reset_tokens tábla létrehozásakor:", tableErr);
+    } else {
+      console.log("Password reset tokens tábla létrehozva vagy már létezett.");
+    }
+  });
+
   // Problémát okozó trigger eltávolítása
   connection.query("DROP TRIGGER IF EXISTS log_game_status_change", (triggerErr) => {
     if (triggerErr) {
@@ -1233,6 +1252,224 @@ app.get("/categories", (req, res) => {
     }
     
     res.json({ success: true, categories: results });
+  });
+});
+
+// Elfelejtett jelszó - jelszó visszaállítási link küldése
+app.post("/forgot-password", (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "E-mail cím megadása kötelező!" 
+    });
+  }
+
+  // Felhasználó keresése e-mail cím alapján
+  const userSql = "SELECT idfelhasznalo, felhasznalonev FROM felhasznalo WHERE email = ?";
+  
+  db.query(userSql, [email], (err, results) => {
+    if (err) {
+      console.error('Felhasználó keresési hiba:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Adatbázis hiba történt" 
+      });
+    }
+
+    if (results.length === 0) {
+      // Biztonsági okokból nem mondjuk meg, hogy nincs ilyen e-mail
+      return res.json({ 
+        success: true, 
+        message: "Ha az e-mail cím regisztrálva van, hamarosan kapni fog egy jelszó visszaállítási linket." 
+      });
+    }
+
+    const user = results[0];
+    
+    // Generálunk egy egyedi tokent (24 órás érvényességgel)
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 óra múlva lejár
+
+    // Token mentése az adatbázisba
+    const tokenSql = `
+      INSERT INTO password_reset_tokens (user_id, token, expiry_time, created_at) 
+      VALUES (?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE token = VALUES(token), expiry_time = VALUES(expiry_time), created_at = VALUES(created_at)
+    `;
+
+    db.query(tokenSql, [user.idfelhasznalo, token, expiryTime], (tokenErr) => {
+      if (tokenErr) {
+        console.error('Token mentési hiba:', tokenErr);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Token generálási hiba" 
+        });
+      }
+
+      // E-mail küldése a visszaállítási linkkel
+      const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+      
+      const mailOptions = {
+        from: 'gameverse@example.com',
+        to: email,
+        subject: 'Jelszó visszaállítás - GameVerse',
+        html: `
+          <h2>Jelszó visszaállítás</h2>
+          <p>Kedves ${user.felhasznalonev}!</p>
+          <p>Kérés érkezett a jelszava visszaállítására. Kattintson az alábbi linkre a jelszó megváltoztatásához:</p>
+          <p><a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Jelszó visszaállítása</a></p>
+          <p>A link 24 órán keresztül érvényes.</p>
+          <p>Ha nem Ön kérte a jelszó visszaállítását, kérjük, hagyja figyelmen kívül ezt az e-mailt.</p>
+          <p>Üdvözlettel,<br>GameVerse csapat</p>
+        `
+      };
+
+      // Email küldése (nodemailer transporter használata)
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'gameverseprojekt@gmail.com',
+          pass: 'nzwj fwda ugvx gsqp'
+        }
+      });
+
+      transporter.sendMail(mailOptions, (mailErr) => {
+        if (mailErr) {
+          console.error('E-mail küldési hiba:', mailErr);
+          // Még akkor is sikeres választ adunk, ha az e-mail küldés hibára fut
+          // (biztonsági okokból)
+        }
+        
+        res.json({ 
+          success: true, 
+          message: "Ha az e-mail cím regisztrálva van, hamarosan kapni fog egy jelszó visszaállítási linket." 
+        });
+      });
+    });
+  });
+});
+
+// Token validálása
+app.post("/validate-reset-token", (req, res) => {
+  const { token } = req.body;
+  
+  if (!token) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Token megadása kötelező!" 
+    });
+  }
+
+  const sql = `
+    SELECT user_id 
+    FROM password_reset_tokens 
+    WHERE token = ? AND expiry_time > NOW()
+  `;
+  
+  db.query(sql, [token], (err, results) => {
+    if (err) {
+      console.error('Token validálási hiba:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Adatbázis hiba történt" 
+      });
+    }
+
+    if (results.length === 0) {
+      return res.json({ 
+        success: false, 
+        message: "Érvénytelen vagy lejárt token!" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Token érvényes!" 
+    });
+  });
+});
+
+// Jelszó visszaállítása
+app.post("/reset-password", (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  if (!token || !newPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Token és új jelszó megadása kötelező!" 
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "A jelszónak legalább 6 karakter hosszúnak kell lennie!" 
+    });
+  }
+
+  // Token validálása és felhasználó ID lekérése
+  const tokenSql = `
+    SELECT user_id 
+    FROM password_reset_tokens 
+    WHERE token = ? AND expiry_time > NOW()
+  `;
+  
+  db.query(tokenSql, [token], (err, results) => {
+    if (err) {
+      console.error('Token validálási hiba:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Adatbázis hiba történt" 
+      });
+    }
+
+    if (results.length === 0) {
+      return res.json({ 
+        success: false, 
+        message: "Érvénytelen vagy lejárt token!" 
+      });
+    }
+
+    const userId = results[0].user_id;
+
+    // Jelszó hash-elése
+    bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+      if (hashErr) {
+        console.error('Jelszó hash-elési hiba:', hashErr);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Jelszó feldolgozási hiba" 
+        });
+      }
+
+      // Jelszó frissítése
+      const updateSql = "UPDATE felhasznalo SET jelszo = ? WHERE idfelhasznalo = ?";
+      
+      db.query(updateSql, [hashedPassword, userId], (updateErr) => {
+        if (updateErr) {
+          console.error('Jelszó frissítési hiba:', updateErr);
+          return res.status(500).json({ 
+            success: false, 
+            message: "Jelszó frissítési hiba" 
+          });
+        }
+
+        // Token törlése a sikeres visszaállítás után
+        const deleteTokenSql = "DELETE FROM password_reset_tokens WHERE token = ?";
+        db.query(deleteTokenSql, [token], (deleteErr) => {
+          if (deleteErr) {
+            console.error('Token törlési hiba:', deleteErr);
+          }
+        });
+
+        res.json({ 
+          success: true, 
+          message: "Jelszó sikeresen megváltoztatva!" 
+        });
+      });
+    });
   });
 });
 

@@ -5,8 +5,10 @@ import "./App.css";
 
 import Home from "./pages/Home.jsx";
 import GameDetail from "./pages/GameDetail.jsx";
-import LoginPage from "./pages/Login.jsx";
+import LoginPage from "./pages/login.jsx";
 import RegisterPage from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 import NevjegyPage from "./pages/Nevjegy.jsx";
 import LandingPage from "./pages/landingpage.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
@@ -455,6 +457,8 @@ function App() {
         />
 
         <Route path="/login" element={<LoginPage user={user} handleLogin={handleLogin} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<RegisterPage handleRegister={handleRegister} />} />
 
         <Route

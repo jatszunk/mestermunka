@@ -8,7 +8,7 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
   const [filters, setFilters] = useState({
     categories: [],
     platforms: [],
-    priceRange: { min: 0, max: 50000 },
+    priceRange: { min: 0, max: 150000 },
     rating: { min: 0, max: 10 },
     systemRequirements: {
       os: '',
@@ -17,10 +17,6 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
       ram: '',
       storage: ''
     },
-    features: [],
-    languages: [],
-    multiplayer: null,
-    ageRating: '',
     releaseYear: { min: 2000, max: new Date().getFullYear() }
   });
 
@@ -76,21 +72,6 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
     '10 GB', '20 GB', '50 GB', '100 GB', '200 GB', '500 GB', '1 TB'
   ];
 
-  const features = [
-    'Egyjátékos', 'Többjátékos', 'Co-op', 'PvP', 'Online multiplayer',
-    'LAN multiplayer', 'Cross-platform', 'Achievements', 'Cloud saves',
-    'Controller support', 'VR support', 'Modding support', 'HDR', '4K support'
-  ];
-
-  const languages = [
-    'Magyar', 'Angol', 'Német', 'Francia', 'Spanyol', 'Olasz',
-    'Portugál', 'Orosz', 'Japán', 'Kínai', 'Koreai'
-  ];
-
-  const ageRatings = [
-    'PEGI 3', 'PEGI 7', 'PEGI 12', 'PEGI 16', 'PEGI 18',
-    'ESRB Everyone', 'ESRB Everyone 10+', 'ESRB Teen', 'ESRB Mature 17+'
-  ];
 
   useEffect(() => {
     if (searchTerm.length > 2) {
@@ -148,25 +129,11 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
     handleFilterChange('platforms', newPlatforms);
   };
 
-  const handleFeatureToggle = (feature) => {
-    const newFeatures = filters.features.includes(feature)
-      ? filters.features.filter(f => f !== feature)
-      : [...filters.features, feature];
-    handleFilterChange('features', newFeatures);
-  };
-
-  const handleLanguageToggle = (language) => {
-    const newLanguages = filters.languages.includes(language)
-      ? filters.languages.filter(l => l !== language)
-      : [...filters.languages, language];
-    handleFilterChange('languages', newLanguages);
-  };
-
   const clearFilters = () => {
     setFilters({
       categories: [],
       platforms: [],
-      priceRange: { min: 0, max: 50000 },
+      priceRange: { min: 0, max: 150000 },
       rating: { min: 0, max: 10 },
       systemRequirements: {
         os: '',
@@ -175,10 +142,6 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
         ram: '',
         storage: ''
       },
-      features: [],
-      languages: [],
-      multiplayer: null,
-      ageRating: '',
       releaseYear: { min: 2000, max: new Date().getFullYear() }
     });
     setSearchTerm('');
@@ -190,17 +153,13 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
     let count = 0;
     if (filters.categories.length > 0) count++;
     if (filters.platforms.length > 0) count++;
-    if (filters.priceRange.min > 0 || filters.priceRange.max < 50000) count++;
+    if (filters.priceRange.min > 0 || filters.priceRange.max < 150000) count++;
     if (filters.rating.min > 0 || filters.rating.max < 10) count++;
     if (filters.systemRequirements.os) count++;
     if (filters.systemRequirements.cpu) count++;
     if (filters.systemRequirements.gpu) count++;
     if (filters.systemRequirements.ram) count++;
     if (filters.systemRequirements.storage) count++;
-    if (filters.features.length > 0) count++;
-    if (filters.languages.length > 0) count++;
-    if (filters.multiplayer !== null) count++;
-    if (filters.ageRating) count++;
     if (filters.releaseYear.min > 2000 || filters.releaseYear.max < new Date().getFullYear()) count++;
     return count;
   };
@@ -307,7 +266,7 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
                   type="number"
                   placeholder="Max"
                   value={filters.priceRange.max}
-                  onChange={(e) => handleFilterChange('priceRange.max', parseInt(e.target.value) || 50000)}
+                  onChange={(e) => handleFilterChange('priceRange.max', parseInt(e.target.value) || 150000)}
                   className="range-input"
                 />
                 <span>Ft</span>
@@ -413,70 +372,6 @@ const AdvancedSearch = ({ onSearch, onFilter, games }) => {
                   ))}
                 </select>
               </div>
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <h3>⚡ Jellemzők</h3>
-            <div className="filter-options">
-              {features.map(feature => (
-                <button
-                  key={feature}
-                  className={`filter-chip ${filters.features.includes(feature) ? 'active' : ''}`}
-                  onClick={() => handleFeatureToggle(feature)}
-                >
-                  {feature}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-row">
-            <div className="filter-section">
-              <h3>🌍 Nyelvek</h3>
-              <div className="filter-options">
-                {languages.map(language => (
-                  <button
-                    key={language}
-                    className={`filter-chip ${filters.languages.includes(language) ? 'active' : ''}`}
-                    onClick={() => handleLanguageToggle(language)}
-                  >
-                    {language}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="filter-section">
-              <h3>🎮 Többjátékos</h3>
-              <div className="multiplayer-options">
-                <button
-                  className={`filter-chip ${filters.multiplayer === true ? 'active' : ''}`}
-                  onClick={() => handleFilterChange('multiplayer', true)}
-                >
-                  Igen
-                </button>
-                <button
-                  className={`filter-chip ${filters.multiplayer === false ? 'active' : ''}`}
-                  onClick={() => handleFilterChange('multiplayer', false)}
-                >
-                  Nem
-                </button>
-              </div>
-            </div>
-
-            <div className="filter-section">
-              <h3>🔞 Korhatár</h3>
-              <select
-                value={filters.ageRating}
-                onChange={(e) => handleFilterChange('ageRating', e.target.value)}
-                className="age-rating-select"
-              >
-                <option value="">Bármelyik</option>
-                {ageRatings.map(rating => (
-                  <option key={rating} value={rating}>{rating}</option>
-                ))}
-              </select>
             </div>
           </div>
 

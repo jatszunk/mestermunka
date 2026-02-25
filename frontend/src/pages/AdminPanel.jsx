@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import AdminGameUpload from "../components/AdminGameUpload.jsx";
 
 const AdminPanel = ({ user }) => {
   const navigate = useNavigate();
@@ -388,17 +387,6 @@ const AdminPanel = ({ user }) => {
         <a href="/profile" className="nav-link">Profil</a>
         <a href="/nevjegy" className="nav-link">Névjegy</a>
         <a href="/admin-panel" className="nav-link active">Admin Panel</a>
-        <button 
-          onClick={() => setActiveTab("game-upload")}
-          className="nav-link"
-          style={{ 
-            background: activeTab === "game-upload" ? "#00d2d3" : "transparent",
-            color: activeTab === "game-upload" ? "white" : "#00d2d3",
-            border: "1px solid #00d2d3"
-          }}
-        >
-          Játék Feltöltés
-        </button>
       </nav>
 
       <div className="admin-header">
@@ -713,10 +701,7 @@ const AdminPanel = ({ user }) => {
           </div>
         )}
 
-        {activeTab === "game-upload" && (
-          <AdminGameUpload user={user} />
-        )}
-
+        
         {activeTab === "users" && (
           <div>
             <h2>Felhasználók ({users.length})</h2>

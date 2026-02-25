@@ -38,12 +38,17 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
       );
     }
     
-    // Értékelés szűrés
+    // Értékelés szűrés - globális értékelés alapján
     if (filters.rating) {
-      filtered = filtered.filter(game => 
-        game.rating >= filters.rating.min && 
-        game.rating <= filters.rating.max
-      );
+      filtered = filtered.filter(game => {
+        // Kiszámoljuk a globális értékelést a kommentek alapján
+        const gameComments = comments[game.id] || [];
+        const globalRating = gameComments.length > 0 
+          ? gameComments.reduce((sum, comment) => sum + comment.rating, 0) / gameComments.length 
+          : 0;
+        
+        return globalRating >= filters.rating.min && globalRating <= filters.rating.max;
+      });
     }
     
     // Keresési szűrés
@@ -119,6 +124,7 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
       {showComparison && (
         <GameComparison 
           games={games} 
+          comments={comments}
           onClose={() => setShowComparison(false)}
         />
       )}

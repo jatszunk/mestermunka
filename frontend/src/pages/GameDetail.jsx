@@ -22,7 +22,7 @@ function getYouTubeEmbedUrl(url) {
   }
 }
 
-function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fetchComments }) {
+function GameDetail({ user, games, comments, handleAddComment, fetchComments }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -167,7 +167,7 @@ function GameDetail({ user, games, comments, onDeleteGame, handleAddComment, fet
                   return `${game.price} ${currency}`;
                 })()}
               </div>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>Kategóriák:
               {(Array.isArray(game.categoryNames) && game.categoryNames.length ? game.categoryNames : [game.category || "Egyéb"])
     .filter(Boolean)
     .map((cat) => (
