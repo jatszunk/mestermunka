@@ -161,22 +161,6 @@ const GameDevUpload = ({ user }) => {
 
   return (
     <div className="game-upload-page">
-      {/* Navbar */}
-      <nav>
-        <Link to="/" className="nav-link">Főoldal</Link>
-        <Link to="/statistics" className="nav-link">Statisztikák</Link>
-        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
-        {user?.role === 'admin' && (
-          <Link to="/admin" className="nav-link">Admin Panel</Link>
-        )}
-        {(user?.role === 'gamedev' || user?.role === 'admin') && (
-          <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
-        )}
-        {(user?.role === 'gamedev' || user?.role === 'admin') && (
-          <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-        )}
-      </nav>
       
       <div className="cyber-upload-container">
         {/* Futuristic Header */}

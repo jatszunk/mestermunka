@@ -9,7 +9,7 @@ import LoginPage from "./pages/login.jsx";
 import RegisterPage from "./pages/Register.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
-import NevjegyPage from "./pages/Nevjegy.jsx";
+import NevjegyPage from "./pages/nevjegy.jsx";
 import LandingPage from "./pages/landingpage.jsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import GameDevUpload from "./pages/GameDevUpload.jsx";

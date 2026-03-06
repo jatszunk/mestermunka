@@ -99,17 +99,6 @@ function GameDetail({ user, games, comments, handleAddComment, fetchComments }) 
 
   return (
     <div className="maincenter">
-      <nav>
-        <Link to="/" className="nav-link">
-          Főoldal
-        </Link>
-        <Link to="/profile" className="nav-link">
-          {user ? "Profil" : "Bejelentkezés"}
-        </Link>
-        <Link to="/nevjegy" className="nav-link">
-          Névjegy
-        </Link>
-      </nav>
 
       <h2>{game.title}</h2>
 

@@ -123,14 +123,6 @@ const GameDevPanel = ({ user }) => {
 
   return (
     <div className="maincenter">
-      <nav>
-        <a href="/" className="nav-link">Főoldal</a>
-        <a href="/statistics" className="nav-link">Statisztikák</a>
-        <a href="/profile" className="nav-link">Profil</a>
-        <a href="/nevjegy" className="nav-link">Névjegy</a>
-        <a href="/gamedev-panel" className="nav-link active">GameDev Panel</a>
-        <a href="/gamedev-upload" className="nav-link">Játék Feltöltés</a>
-      </nav>
 
       <div className="gamedev-panel">
         <div className="gamedev-header">

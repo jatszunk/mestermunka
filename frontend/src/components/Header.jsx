@@ -26,12 +26,6 @@ const Header = ({ user }) => {
                   <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
                 </>
               )}
-              <button onClick={() => {
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-              }} className="nav-link logout-btn">
-                Kijelentkezés
-              </button>
             </>
           ) : (
             <>
@@ -40,6 +34,14 @@ const Header = ({ user }) => {
             </>
           )}
         </nav>
+        {user && (
+          <button onClick={() => {
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+          }} className="logout-btn">
+            Kijelentkezés
+          </button>
+        )}
       </div>
     </header>
   );
