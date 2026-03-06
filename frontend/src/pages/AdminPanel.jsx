@@ -412,15 +412,6 @@ const AdminPanel = ({ user }) => {
 
   return (
     <div className="maincenter">
-      {/* Navbar */}
-      <nav>
-        <a href="/" className="nav-link">Főoldal</a>
-        <a href="/statistics" className="nav-link">Statisztikák</a>
-        <a href="/profile" className="nav-link">Profil</a>
-        <a href="/nevjegy" className="nav-link">Névjegy</a>
-        <a href="/admin-panel" className="nav-link active">Admin Panel</a>
-      </nav>
-
       <div className="admin-header">
         <h1>Admin Panel</h1>
         <button

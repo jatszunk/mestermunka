@@ -236,26 +236,9 @@ const Statistics = ({ games, comments, users, user }) => {
 
   return (
     <div className="maincenter">
-      {/* Navbar */}
-      <nav>
-        <Link to="/" className="nav-link">Főoldal</Link>
-        <Link to="/statistics" className="nav-link">Statisztikák</Link>
-        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
-        {user?.role === 'admin' && (
-          <Link to="/admin-panel" className="nav-link">Admin Panel</Link>
-        )}
-        {user?.role === 'gamedev' && (
-          <>
-            <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
-            <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-          </>
-        )}
-      </nav>
-
       <div className="statistics-container">
         <div className="statistics-header">
-          <h1>📊 GameVerse Statisztikák</h1>
+          <h1> GameVerse Statisztikák</h1>
           <p className="statistics-subtitle">Részletes betekintés a platform adataiba</p>
         </div>
         

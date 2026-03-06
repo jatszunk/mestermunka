@@ -250,38 +250,9 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
 
   return (
     <div className="maincenter">
-      <nav>
-        <Link to="/" className="nav-link">
-          Főoldal
-        </Link>
-        <Link to="/statistics" className="nav-link">
-          Statisztikák
-        </Link>
-        <Link to="/profile" className="nav-link active">
-          Profil
-        </Link>
-        <Link to="/nevjegy" className="nav-link">
-          Névjegy
-        </Link>
-
-        {currentUser?.role === "admin" && (
-          <Link to="/admin-panel" className="nav-link">
-            Admin Panel
-          </Link>
-        )}
-
-        {currentUser?.role === "gamedev" && (
-          <>
-            <Link to="/gamedev-panel" className="nav-link">
-              GameDev Panel
-            </Link>
-            <Link to="/gamedev-upload" className="nav-link">
-              Játék Feltöltés
-            </Link>
-          </>
-        )}
-      </nav>
-
+      <div>
+        <h1>Profil</h1>
+      </div>
       <div className="profile-container">
         <div className="profile-header">
           <div className="profile-avatar">

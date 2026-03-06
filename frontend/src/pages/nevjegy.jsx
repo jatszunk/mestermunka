@@ -56,22 +56,6 @@ function NevjegyPage({ user }) {
 
   return (
     <div className="maincenter">
-      {/* Navbar */}
-      <nav>
-        <Link to="/" className="nav-link">Főoldal</Link>
-        <Link to="/statistics" className="nav-link">Statisztikák</Link>
-        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
-        {user?.role === 'admin' && (
-          <Link to="/admin-panel" className="nav-link">Admin Panel</Link>
-        )}
-        {user?.role === 'gamedev' && (
-          <>
-            <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
-            <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-          </>
-        )}
-      </nav>
 
       <h2>Névjegy</h2>
 

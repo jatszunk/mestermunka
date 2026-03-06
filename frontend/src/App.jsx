@@ -19,6 +19,7 @@ import UserProfile from "./components/UserProfile.jsx";
 
 import defaultImage from "./assets/default.jpg";
 import Footer from "./components/Footer.jsx";
+import Header from "./components/Header.jsx";
 
 function App() {
   const [games, setGames] = useState([]);
@@ -424,6 +425,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Header user={user} />
       <Routes>
         <Route
           path="/"

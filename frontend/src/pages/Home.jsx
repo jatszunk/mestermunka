@@ -69,22 +69,6 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
 
   return (
     <div className="maincenter">
-      <nav>
-        <Link to="/" className="nav-link">Főoldal</Link>
-        <Link to="/statistics" className="nav-link">Statisztikák</Link>
-        <Link to="/profile" className="nav-link">{user ? "Profil" : "Bejelentkezés"}</Link>
-        <Link to="/nevjegy" className="nav-link">Névjegy</Link>
-        {user?.role === 'admin' && (
-          <Link to="/admin-panel" className="nav-link">Admin Panel</Link>
-        )}
-        {user?.role === 'gamedev' && (
-          <>
-            <Link to="/gamedev-panel" className="nav-link">GameDev Panel</Link>
-            <Link to="/gamedev-upload" className="nav-link">Játék Feltöltés</Link>
-          </>
-        )}
-      </nav>
-
       <h1>Játéklista</h1>
 
       <div className="action-bar">
