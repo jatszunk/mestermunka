@@ -162,7 +162,7 @@ const Statistics = ({ games, comments, users, user }) => {
     return games
       .filter(game => game.rating && game.rating > 0)
       .sort((a, b) => b.rating - a.rating)
-      .slice(0, 5);
+      .slice(0, 8);
   };
 
   const getTopCategories = () => {
@@ -313,28 +313,27 @@ const Statistics = ({ games, comments, users, user }) => {
           </div>
           <div className="top-games-grid">
             {getTopRatedGames().map((game, index) => (
-              <div key={game.id} className="top-game-card">
-                <div className="rank-badge">#{index + 1}</div>
-                <img src={game.image} alt={game.title} className="top-game-image" />
-                <div className="top-game-content">
-                  <h4>{game.title}</h4>
-                  <p className="developer">🏢 {game.developer}</p>
-                  <div className="game-meta">
-                    <span className="price-tag">{(() => {
-                  const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
-                  if (isFree) {
-                    return 'Ingyenes';
-                  }
-                  const currency = game.currency && game.currency.trim() !== '' ? game.currency : 'FT';
-                  return `${game.price} ${currency}`;
-                })()}</span>
-                    <span className="rating-badge">⭐ {game.rating}/10</span>
+              <Link key={game.id} to={`/game/${game.id}`} className="top-game-card-link">
+                <div className="top-game-card">
+                  <div className="rank-badge">#{index + 1}</div>
+                  <img src={game.image} alt={game.title} className="top-game-image" />
+                  <div className="top-game-content">
+                    <h4>{game.title}</h4>
+                    <p className="developer">🏢 {game.developer}</p>
+                    <div className="game-meta">
+                      <span className="price-tag">{(() => {
+                    const isFree = game.price == 0 || game.price == "0" || game.price === 0 || game.price === "0";
+                    if (isFree) {
+                      return 'Ingyenes';
+                    }
+                    const currency = game.currency && game.currency.trim() !== '' ? game.currency : 'FT';
+                    return `${game.price} ${currency}`;
+                  })()}</span>
+                      <span className="rating-badge">⭐ {game.rating}/10</span>
+                    </div>
                   </div>
                 </div>
-                <div className="top-game-actions">
-                  <Link to={`/game/${game.id}`} className="btn-primary">Megtekintés</Link>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
