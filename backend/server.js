@@ -1257,6 +1257,30 @@ app.get("/categories", (req, res) => {
   });
 });
 
+// Platform statisztikák lekérdezése
+app.get("/platform-stats", (req, res) => {
+  const sql = `
+    SELECT 
+      p.idplatform,
+      p.nev AS name,
+      COUNT(jp.idjatekok) AS count
+    FROM platform p
+    LEFT JOIN jatekok_platformok jp ON p.idplatform = jp.idplatform
+    LEFT JOIN jatekok j ON jp.idjatekok = j.idjatekok AND j.status = 'approved'
+    GROUP BY p.idplatform, p.nev
+    ORDER BY count DESC, p.nev ASC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Platform statisztikák lekérdezési hiba:', err);
+      return res.status(500).json({ success: false, error: err });
+    }
+    
+    res.json({ success: true, platforms: results });
+  });
+});
+
 // Elfelejtett jelszó - jelszó visszaállítási link küldése
 app.post("/forgot-password", (req, res) => {
   const { email } = req.body;

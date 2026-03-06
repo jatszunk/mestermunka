@@ -15,9 +15,49 @@ const Statistics = ({ games, comments, users, user }) => {
     recentActivity: []
   });
 
+  const [platformData, setPlatformData] = useState([]);
+
   useEffect(() => {
     calculateStatistics();
+    fetchPlatformStats();
   }, [games, comments, users]);
+
+  const fetchPlatformStats = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/platform-stats');
+      const data = await response.json();
+      if (data.success) {
+        // Add appropriate icons based on platform names
+        const platformsWithIcons = data.platforms.map(platform => {
+          let icon = '🎮'; // default icon
+          
+          // Map platform names to appropriate emojis
+          if (platform.name.toLowerCase().includes('pc') || platform.name.toLowerCase().includes('windows')) {
+            icon = '🖥️';
+          } else if (platform.name.toLowerCase().includes('playstation') || platform.name.toLowerCase().includes('ps')) {
+            icon = '🎮';
+          } else if (platform.name.toLowerCase().includes('xbox')) {
+            icon = '🎮';
+          } else if (platform.name.toLowerCase().includes('nintendo') || platform.name.toLowerCase().includes('switch')) {
+            icon = '🎮';
+          } else if (platform.name.toLowerCase().includes('mobil') || platform.name.toLowerCase().includes('android') || platform.name.toLowerCase().includes('ios')) {
+            icon = '📱';
+          } else if (platform.name.toLowerCase().includes('konzol')) {
+            icon = '🎮';
+          }
+          
+          return {
+            ...platform,
+            icon: icon
+          };
+        });
+        
+        setPlatformData(platformsWithIcons);
+      }
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+    }
+  };
 
   const calculateStatistics = () => {
     console.log('Statistics data:', { 
@@ -389,18 +429,19 @@ const Statistics = ({ games, comments, users, user }) => {
               <div className="section-badge">RÉSZLETEK</div>
             </div>
             <div className="platform-stats">
-              <div className="platform-item">
-                <span className="platform-name">🖥️ PC</span>
-                <span className="platform-count">{Math.floor(stats.totalGames * 0.7)}</span>
-              </div>
-              <div className="platform-item">
-                <span className="platform-name">🎮 Konzol</span>
-                <span className="platform-count">{Math.floor(stats.totalGames * 0.2)}</span>
-              </div>
-              <div className="platform-item">
-                <span className="platform-name">📱 Mobil</span>
-                <span className="platform-count">{Math.floor(stats.totalGames * 0.1)}</span>
-              </div>
+              {platformData.length > 0 ? (
+                platformData.map((platform, index) => (
+                  <div className="platform-item" key={index}>
+                    <span className="platform-name">{platform.icon} {platform.name}</span>
+                    <span className="platform-count">{platform.count}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="platform-item">
+                  <span className="platform-name">�️ PC</span>
+                  <span className="platform-count">{Math.floor(stats.totalGames * 0.7)}</span>
+                </div>
+              )}
             </div>
           </div>
 
