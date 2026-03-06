@@ -445,6 +445,7 @@ app.get("/kommentek", (req, res) => {
       f.felhasznalonev AS user,
       k.tartalom AS text,
       k.ertekeles AS rating,
+      k.datum AS datum,
       j.nev AS gameName
     FROM kommentek k
     LEFT JOIN felhasznalo f ON f.idfelhasznalo = k.idfelhasznalo
@@ -542,6 +543,7 @@ app.get("/admin/search-comments", checkRole(['admin']), (req, res) => {
       f.felhasznalonev AS user,
       k.tartalom AS text,
       k.ertekeles AS rating,
+      k.datum AS datum,
       k.idfelhasznalo AS userId,
       j.nev AS gameName
     FROM kommentek k

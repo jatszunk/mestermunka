@@ -454,7 +454,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                             <div key={comment.id} className="comment-item">
                               <div className="comment-header">
                                 <span className="rating-badge">{comment.rating}/10</span>
-                                <span className="comment-date">{formatDate(comment.date)}</span>
+                                <span className="comment-date">{formatDate(comment.datum)}</span>
                               </div>
                               <p className="comment-text">{comment.text}</p>
                             </div>
