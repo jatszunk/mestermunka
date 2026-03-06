@@ -16,8 +16,9 @@ const AdminPanel = ({ user }) => {
   const [comments, setComments] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [commentSearchQuery, setCommentSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState({ users: [], comments: [] });
-  const [isSearching, setIsSearching] = useState({ users: false, comments: false });
+  const [approvedGamesSearchQuery, setApprovedGamesSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({ users: [], comments: [], approvedGames: [] });
+  const [isSearching, setIsSearching] = useState({ users: false, comments: false, approvedGames: false });
 
   useEffect(() => {
     fetchStatistics();
@@ -353,6 +354,34 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const handleApprovedGamesSearch = async (query) => {
+    setApprovedGamesSearchQuery(query);
+    
+    if (query.length < 2) {
+      setSearchResults(prev => ({ ...prev, approvedGames: [] }));
+      return;
+    }
+    
+    setIsSearching(prev => ({ ...prev, approvedGames: true }));
+    
+    try {
+      // Filter approved games locally based on search query
+      const filteredGames = approvedGames.filter(game => 
+        game.title.toLowerCase().includes(query.toLowerCase()) ||
+        game.developer.toLowerCase().includes(query.toLowerCase()) ||
+        (game.categories && game.categories.toLowerCase().includes(query.toLowerCase())) ||
+        (game.uploaded_by_name && game.uploaded_by_name.toLowerCase().includes(query.toLowerCase()))
+      );
+      
+      setSearchResults(prev => ({ ...prev, approvedGames: filteredGames }));
+    } catch (error) {
+      console.error("Játék keresés hiba:", error);
+      alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
+    } finally {
+      setIsSearching(prev => ({ ...prev, approvedGames: false }));
+    }
+  };
+
   const clearSearch = (type) => {
     if (type === 'users') {
       setUserSearchQuery('');
@@ -360,6 +389,9 @@ const AdminPanel = ({ user }) => {
     } else if (type === 'comments') {
       setCommentSearchQuery('');
       setSearchResults(prev => ({ ...prev, comments: [] }));
+    } else if (type === 'approvedGames') {
+      setApprovedGamesSearchQuery('');
+      setSearchResults(prev => ({ ...prev, approvedGames: [] }));
     }
   };
 
@@ -507,6 +539,49 @@ const AdminPanel = ({ user }) => {
           <div>
             <h2>Jóváhagyott játékok ({approvedGames.length})</h2>
             
+            {/* Kereső mező */}
+            <div className="search-container" style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="Keresés játék név, fejlesztő, kategória vagy feltöltő szerint..."
+                  value={approvedGamesSearchQuery}
+                  onChange={(e) => handleApprovedGamesSearch(e.target.value)}
+                  style={{
+                    flex: '1',
+                    minWidth: '200px',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+                {approvedGamesSearchQuery && (
+                  <button
+                    onClick={() => clearSearch('approvedGames')}
+                    style={{
+                      padding: '10px 15px',
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Törlés
+                  </button>
+                )}
+                {isSearching.approvedGames && (
+                  <span style={{ color: '#666' }}>Keresés...</span>
+                )}
+              </div>
+              {approvedGamesSearchQuery && searchResults.approvedGames.length > 0 && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                  {searchResults.approvedGames.length} találat a keresésre
+                </div>
+              )}
+            </div>
+            
             {/* Szerkesztő Felület */}
             {editingGame && (
               <div className="edit-game-modal">
@@ -607,11 +682,13 @@ const AdminPanel = ({ user }) => {
             )}
             
             {/* Játékok Lista */}
-            {approvedGames.length === 0 ? (
-              <p className="no-data">Nincsenek jóváhagyott játékok.</p>
+            {(approvedGamesSearchQuery ? searchResults.approvedGames : approvedGames).length === 0 ? (
+              <p className="no-data">
+                {approvedGamesSearchQuery ? 'Nincs találat a keresési feltételeknek megfelelően.' : 'Nincsenek jóváhagyott játékok.'}
+              </p>
             ) : (
               <div className="pending-games-list">
-                {approvedGames.map((game) => (
+                {(approvedGamesSearchQuery ? searchResults.approvedGames : approvedGames).map((game) => (
                   <div key={game.id} className="pending-game-card">
                     <div className="pending-game-info">
                       <h3>{game.title}</h3>
