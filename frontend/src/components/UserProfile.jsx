@@ -112,7 +112,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
 
     const favoriteCategories = {};
     commentedGames.forEach((game) => {
-      (game.categories || []).forEach((category) => {
+      (game.categoryNames || []).forEach((category) => {
         favoriteCategories[category] = (favoriteCategories[category] || 0) + 1;
       });
     });
