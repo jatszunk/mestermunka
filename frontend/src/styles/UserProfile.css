@@ -422,6 +422,15 @@
   box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
 }
 
+/* Profile Actions Container */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
 /* Profile Edit Styles */
 .profile-edit-container {
   position: fixed;
@@ -716,6 +725,18 @@
   
   .profile-info h2 {
     font-size: 1.8em;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .edit-profile-btn,
+  .logout-btn {
+    width: 100%;
+    max-width: 250px;
   }
   
   .profile-tabs {

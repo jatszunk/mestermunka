@@ -17,6 +17,20 @@ const Statistics = ({ games, comments, users, user }) => {
 
   const [platformData, setPlatformData] = useState([]);
 
+  // Function to get user avatar
+  const getUserAvatar = (username) => {
+    const foundUser = users.find(u => u.username === username);
+    if (foundUser && foundUser.avatar) {
+      return foundUser.avatar;
+    }
+    return null;
+  };
+
+  // Function to get user initial for placeholder
+  const getUserInitial = (username) => {
+    return username ? username.charAt(0).toUpperCase() : '?';
+  };
+
   useEffect(() => {
     calculateStatistics();
     fetchPlatformStats();
@@ -372,7 +386,17 @@ const Statistics = ({ games, comments, users, user }) => {
               stats.recentActivity.map((activity, index) => (
                 <div key={`${activity.id}-${index}`} className="activity-item">
                   <div className="activity-avatar">
-                    <div className="avatar-placeholder">👤</div>
+                    {getUserAvatar(activity.user) ? (
+                      <img 
+                        src={getUserAvatar(activity.user)} 
+                        alt={activity.user} 
+                        className="avatar-image" 
+                      />
+                    ) : (
+                      <div className="avatar-placeholder">
+                        {getUserInitial(activity.user)}
+                      </div>
+                    )}
                   </div>
                   <div className="activity-content">
                     <div className="activity-header">
