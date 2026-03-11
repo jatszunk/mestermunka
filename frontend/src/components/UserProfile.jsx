@@ -533,7 +533,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                               : item.status === "played"
                               ? "Játszottam"
                               : item.status === "completed"
-                              ? "Teljesítettem"
+                              ? "Ki vittem"
                               : "Abbahagytam"}
                           </span>
 
@@ -551,7 +551,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                         >
                           <option value="owned">Birtokolom</option>
                           <option value="played">Játszottam</option>
-                          <option value="completed">Teljesítettem</option>
+                          <option value="completed">Ki vittem</option>
                           <option value="abandoned">Abbahagytam</option>
                         </select>
 
