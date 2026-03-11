@@ -8,10 +8,23 @@ import GameComparison from '../components/GameComparison.jsx';
 function Home({ user, games, comments, handleAddComment, handleAddToWishlist, handleAddToCollection }) {
   const [filteredGames, setFilteredGames] = useState(games);
   const [showComparison, setShowComparison] = useState(false);
+  const [mobileWarning, setMobileWarning] = useState(false);
 
   useEffect(() => {
     setFilteredGames(games);
   }, [games]);
+
+  const handleComparisonClick = () => {
+    // Check if mobile
+    if (window.innerWidth <= 768) {
+      setMobileWarning(true);
+      // Hide warning after 3 seconds
+      setTimeout(() => setMobileWarning(false), 3000);
+      return;
+    }
+    
+    setShowComparison(true);
+  };
 
   const handleFilterChange = (filters) => {
     let filtered = [...games];
@@ -79,10 +92,15 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
         />
         <button 
           className="comparison-toggle-btn"
-          onClick={() => setShowComparison(true)}
+          onClick={handleComparisonClick}
         >
           🔄 Játékok Összehasonlítása
         </button>
+        {mobileWarning && (
+          <div className="mobile-warning">
+            📱 Mobil nézetben nem elérhető
+          </div>
+        )}
       </div>
 
       <div className="games-grid">

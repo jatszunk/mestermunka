@@ -1,8 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const GameComparison = ({ games, comments, onClose }) => {
   const [selectedGames, setSelectedGames] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
+  const navigate = useNavigate();
+
+  // Mobile detection and auto-redirect
+  useEffect(() => {
+    const checkMobileAndRedirect = () => {
+      if (window.innerWidth <= 768 && showComparison) {
+        // Close comparison and redirect to main page
+        setShowComparison(false);
+        setSelectedGames([]);
+        onClose();
+        navigate('/');
+      }
+    };
+
+    // Check on mount and resize
+    checkMobileAndRedirect();
+    window.addEventListener('resize', checkMobileAndRedirect);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobileAndRedirect);
+    };
+  }, [showComparison, onClose, navigate]);
+
+  // Close comparison immediately if mobile on mount
+  useEffect(() => {
+    if (window.innerWidth <= 768 && showComparison) {
+      setShowComparison(false);
+      setSelectedGames([]);
+      onClose();
+      navigate('/');
+    }
+  }, []); // Only run on mount
 
   // Globális értékelés számítása egy játékhoz
   const getGlobalRating = (gameId) => {
@@ -23,6 +56,12 @@ const GameComparison = ({ games, comments, onClose }) => {
   };
 
   const handleCompare = () => {
+    // Check if mobile and prevent comparison
+    if (window.innerWidth <= 768) {
+      alert('A játék összehasonlítás nem érhető el mobil nézetben. Kérjük, asztali nézetben használja ezt a funkciót!');
+      return;
+    }
+    
     if (selectedGames.length >= 2) {
       setShowComparison(true);
     } else {
