@@ -414,12 +414,6 @@ const AdminPanel = ({ user }) => {
     <div className="maincenter">
       <div className="admin-header">
         <h1>Admin Panel</h1>
-        <button
-          onClick={() => navigate("/")}
-          className="vissza-btn"
-        >
-          Vissza a főoldalra
-        </button>
       </div>
 
       <div className="admin-tabs">
@@ -833,11 +827,11 @@ const AdminPanel = ({ user }) => {
                 <tbody>
                   {(userSearchQuery ? searchResults.users : users).map((userItem) => (
                     <tr key={userItem.idfelhasznalo}>
-                      <td>{userItem.idfelhasznalo}</td>
-                      <td className="username-cell">{userItem.felhasznalonev}</td>
-                      <td>{userItem.nev || "-"}</td>
-                      <td>{userItem.email}</td>
-                      <td>
+                      <td data-label="ID">{userItem.idfelhasznalo}</td>
+                      <td className="username-cell" data-label="">{userItem.felhasznalonev}</td>
+                      <td data-label="Név">{userItem.nev || "-"}</td>
+                      <td data-label="Email">{userItem.email}</td>
+                      <td data-label="Role">
                         <select
                           value={userItem.szerepkor === 'felhasznalo' ? 'user' : userItem.szerepkor}
                           onChange={(e) => handleRoleChange(userItem.idfelhasznalo, e.target.value)}
@@ -849,13 +843,13 @@ const AdminPanel = ({ user }) => {
                           <option value="admin">Admin</option>
                         </select>
                       </td>
-                      <td>
+                      <td data-label="Utolsó bejelentkezés">
                         {userItem.utolso_belepes ? 
                           new Date(userItem.utolso_belepes).toLocaleString('hu-HU') : 
                           'Még nem jelentkezett be'
                         }
                       </td>
-                      <td>
+                      <td data-label="Műveletek">
                         {userItem.idfelhasznalo === user.id && (
                           <span className="current-user-badge">Ön</span>
                         )}
