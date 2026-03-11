@@ -28,102 +28,12 @@ const db = mysql.createPool({
 });
 
 // Kapcsolat ellenőrzése
-db.getConnection((err, connection) => {
+db.getConnection((err) => {
   if (err) {
     console.error("Nem sikerült csatlakozni a MySQL-hez:", err);
     return;
   }
   console.log("MySQL kapcsolat létrejött.");
-  
-  // Kommentek tábla triggerek és view-k eltávolítása
-  connection.query(`
-    DROP TRIGGER IF EXISTS kommentek_before_insert;
-    DROP TRIGGER IF EXISTS kommentek_after_insert;
-    DROP TRIGGER IF EXISTS kommentek_before_update;
-    DROP TRIGGER IF EXISTS kommentek_after_update;
-    DROP TRIGGER IF EXISTS kommentek_before_delete;
-    DROP TRIGGER IF EXISTS kommentek_after_delete;
-    DROP TRIGGER IF EXISTS after_comment_insert;
-    DROP TRIGGER IF EXISTS after_comment_update;
-    DROP TRIGGER IF EXISTS after_comment_delete;
-    DROP VIEW IF EXISTS kommentek_view;
-    DROP VIEW IF EXISTS v_kommentek;
-    DROP PROCEDURE IF EXISTS UpdateGameRating;
-  `, (triggerErr) => {
-    if (triggerErr) {
-      console.error("Hiba a triggerek/view-k/eltávolításakor:", triggerErr);
-    } else {
-      console.log("Kommentek triggerek, view-k és eljárások eltávolítva.");
-    }
-  });
-  
-  connection.query(`
-    ALTER TABLE felhasznalo 
-    ADD COLUMN IF NOT EXISTS bio TEXT NULL,
-    ADD COLUMN IF NOT EXISTS avatar VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS favoriteGenres JSON NULL,
-    ADD COLUMN IF NOT EXISTS preferredPlatforms JSON NULL,
-    ADD COLUMN IF NOT EXISTS country VARCHAR(100) NULL,
-    ADD COLUMN IF NOT EXISTS birthYear INT NULL,
-    ADD COLUMN IF NOT EXISTS discord VARCHAR(100) NULL,
-    ADD COLUMN IF NOT EXISTS twitter VARCHAR(100) NULL,
-    ADD COLUMN IF NOT EXISTS youtube VARCHAR(200) NULL,
-    ADD COLUMN IF NOT EXISTS twitch VARCHAR(100) NULL,
-    ADD COLUMN IF NOT EXISTS password_hash_type VARCHAR(20) NULL DEFAULT 'plain'
-  `, (alterErr) => {
-    if (alterErr) {
-      console.error("Hiba a felhasználó mezők hozzáadásakor:", alterErr);
-    } else {
-      console.log("Felhasználó mezők hozzáadva vagy már léteznek.");
-    }
-  });
-
-  connection.query(`
-    ALTER TABLE jatekok 
-    ADD COLUMN IF NOT EXISTS megjelenes VARCHAR(50) NULL,
-    ADD COLUMN IF NOT EXISTS steam_link VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS jatek_elmeny TEXT NULL,
-    ADD COLUMN IF NOT EXISTS reszletes_leiras TEXT NULL,
-    ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL,
-    ADD COLUMN IF NOT EXISTS approved_by INT NULL,
-    ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL,
-    ADD COLUMN IF NOT EXISTS uploaded_by INT NULL
-  `, (gameAlterErr) => {
-    if (gameAlterErr) {
-      console.error("Hiba a játék mezők hozzáadásakor:", gameAlterErr);
-    } else {
-      console.log("Játék mezők hozzáadva vagy már léteznek.");
-    }
-  });
-
-  connection.query(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
-      token VARCHAR(255) NOT NULL UNIQUE,
-      expiry_time DATETIME NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES felhasznalo(idfelhasznalo) ON DELETE CASCADE,
-      INDEX idx_token (token),
-      INDEX idx_user_id (user_id)
-    )
-  `, (tableErr) => {
-    if (tableErr) {
-      console.error("Hiba a password_reset_tokens tábla létrehozásakor:", tableErr);
-    } else {
-      console.log("Password reset tokens tábla létrehozva vagy már létezett.");
-    }
-  });
-
-  // Problémát okozó trigger eltávolítása
-  connection.query("DROP TRIGGER IF EXISTS log_game_status_change", (triggerErr) => {
-    if (triggerErr) {
-      console.log("Trigger eltávolítása nem szükséges vagy hiba történt:", triggerErr.message);
-    } else {
-      console.log("log_game_status_change trigger eltávolítva.");
-    }
-  });
-  connection.release();
 });
 
 // Middleware - jogosultság ellenőrzése
@@ -1853,5 +1763,6 @@ app.get("/", (req, res) => res.send("fut a szerver"));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`A szerver a localhost:${PORT} címen fut.`);
 });
+
