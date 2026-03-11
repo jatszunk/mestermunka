@@ -90,17 +90,106 @@ const checkRole = (allowedRoles) => {
 app.post("/register", (req, res) => {
   const { felhasznalonev, email, jelszo, szerepkor = 'felhasznalo' } = req.body;
   
-  // Jelszó hashelése bcrypt-tel
-  bcrypt.hash(jelszo, 12, (err, hashedPassword) => {
+  console.log(`Regisztrációs kérés érkezett: ${felhasznalonev}, ${email}, ${szerepkor}`);
+  
+  // Ellenőrizzük, hogy az email cím már létezik-e
+  const checkEmailSql = "SELECT idfelhasznalo FROM felhasznalo WHERE email = ?";
+  db.query(checkEmailSql, [email], (err, emailResults) => {
     if (err) {
-      console.error("Hiba a jelszó hashelésekor:", err);
-      return res.status(500).json({ success: false, message: "Hiba történt a jelszó feldolgozása közben" });
+      console.error("Hiba az email ellenőrzésekor:", err);
+      return res.status(500).json({ success: false, message: "Hiba történt az email ellenőrzése közben" });
     }
     
-    const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, szerepkor, password_hash_type) VALUES (?, ?, ?, ?, 'bcrypt')";
-    db.query(sql, [felhasznalonev, email, hashedPassword, szerepkor], (err) => {
-      if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
-      res.json({ success: true });
+    console.log(`Email ellenőrzés eredménye: ${emailResults.length} találat`);
+    
+    if (emailResults.length > 0) {
+      console.log(`Email már létezik: ${email}`);
+      return res.status(400).json({ success: false, message: "Ehhez az email címhez már tartozik fiók!" });
+    }
+    
+    console.log("Email cím egyedi, folytatás a regisztrációval...");
+    
+    // Jelszó hashelése bcrypt-tel
+    bcrypt.hash(jelszo, 12, (err, hashedPassword) => {
+      if (err) {
+        console.error("Hiba a jelszó hashelésekor:", err);
+        return res.status(500).json({ success: false, message: "Hiba történt a jelszó feldolgozása közben" });
+      }
+      
+      console.log("Jelszó hashelése sikeres");
+      
+      const sql = "INSERT INTO felhasznalo (felhasznalonev, email, jelszo, szerepkor, password_hash_type) VALUES (?, ?, ?, ?, 'bcrypt')";
+      db.query(sql, [felhasznalonev, email, hashedPassword, szerepkor], (err, result) => {
+        if (err) {
+          console.error("Hiba a felhasználó létrehozásakor:", err);
+          return res.status(500).json({ success: false, message: "Hiba történt a regisztráció során", error: err });
+        }
+        
+        console.log(`Felhasználó sikeresen létrehozva, ID: ${result.insertId}`);
+        
+        // Email küldése a sikeres regisztrációról
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EM_USER,
+            pass: process.env.EM_PASS
+          }
+        });
+        
+        const mailOptions = {
+          from: `GameVerse <${process.env.EM_USER}>`,
+          to: email,
+          subject: 'Sikeres regisztráció - GameVerse',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; border-radius: 10px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); margin: 0;">GameVerse</h1>
+                <p style="color: #27e8ff; margin: 5px 0;">Játékplatform</p>
+              </div>
+              
+              <div style="background: rgba(39, 232, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #27e8ff33; margin: 20px 0;">
+                <h2 style="color: #27e8ff; margin-top: 0;">🎉 Sikeres regisztráció!</h2>
+                <p style="line-height: 1.6;">Kedves <strong>${felhasznalonev}</strong>!</p>
+                <p style="line-height: 1.6;">Sikeresen befejezted a regisztrációt a GameVerse platformon. Fiókod létrejött és készen áll a használatra.</p>
+                
+                <div style="background: rgba(0, 255, 136, 0.1); padding: 15px; border-radius: 5px; border-left: 3px solid #00ff88; margin: 20px 0;">
+                  <h3 style="color: #00ff88; margin-top: 0;">Regisztrációs adatok:</h3>
+                  <p style="margin: 5px 0;"><strong>Felhasználónév:</strong> ${felhasznalonev}</p>
+                  <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                  <p style="margin: 5px 0;"><strong>Szerepkör:</strong> ${szerepkor === 'felhasznalo' ? 'Felhasználó' : szerepkor}</p>
+                </div>
+                
+                <p style="line-height: 1.6;">Most már bejelentkezhetsz a fiókodba és elkezdheted felfedezni a játékokat!</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #27e8ff33;">
+                <p style="color: #b8bcc8; font-size: 0.9em;">Üdvözlettel,<br>GameVerse csapat</p>
+                <p style="color: #27e8ff; font-size: 0.8em; margin-top: 10px;">
+                  Ez egy automatikus email, kérjük ne válaszolj rá.
+                </p>
+              </div>
+            </div>
+          `
+        };
+        
+        transporter.sendMail(mailOptions, (emailErr, info) => {
+          if (emailErr) {
+            console.error("Hiba az email küldésekor:", emailErr);
+            // Még ha az email küldése sikertelen is, a regisztráció sikeres volt
+            return res.json({ 
+              success: true, 
+              message: "Sikeres regisztráció, de az email küldése sikertelen volt.",
+              warning: "Az email küldése technikai okokból sikertelen volt, de a fiókod létrejött."
+            });
+          }
+          
+          console.log("Regisztrációs email elküldve:", info.messageId);
+          res.json({ 
+            success: true, 
+            message: "Sikeres regisztráció! Ellenőrizd az email fiókod a visszaigazolásért."
+          });
+        });
+      });
     });
   });
 });

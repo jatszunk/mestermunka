@@ -188,10 +188,6 @@ function App() {
       avatar: "",
       name: ""
     };
-    setUsers((prev) => [...prev, newUser]);
-    setUser(newUser);
-    // Mentés localStorage-ba
-    localStorage.setItem('user', JSON.stringify(newUser));
 
     axios.post("http://localhost:3001/register", {
       felhasznalonev: uname,
@@ -202,14 +198,53 @@ function App() {
     .then((res) => {
       console.log('Regisztrációs válasz:', res.data);
       if (res.data.success) {
+        // Sikeres regisztráció esetén mentjük a localStorage-ba
+        setUsers((prev) => [...prev, newUser]);
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        
+        // Megjelenítjük a visszaigazoló üzenetet
+        const message = res.data.message || "Sikeres regisztráció!";
+        if (res.data.warning) {
+          alert(`${message}\n\nFigyelmeztetés: ${res.data.warning}`);
+        } else {
+          alert(message);
+        }
+        // Csak sikeres esetén hívjuk meg a callbacket
         cb && cb();
       } else {
-        alert("Regisztrációs hiba történt!");
+        // Sikertelen regisztráció esetén megjelenítjük a konkrét hibaüzenetet
+        const errorMessage = res.data.message || "Regisztrációs hiba történt!";
+        alert(`Regisztrációs hiba: ${errorMessage}`);
+        // HIBA: NEM hívjuk meg a callbacket, így nem történik navigáció
       }
     })
     .catch((err) => {
       console.error('Regisztrációs hiba:', err);
-      alert("Regisztrációs hiba történt!");
+      
+      // Kezeljük a különböző típusú hibákat
+      if (err.response) {
+        // A szerver válaszolt hibakóddal
+        const statusCode = err.response.status;
+        const errorData = err.response.data;
+        
+        if (statusCode === 400 && errorData && errorData.message) {
+          // Email már létezik vagy más validációs hiba
+          alert(`Regisztrációs hiba: ${errorData.message}`);
+        } else if (errorData && errorData.message) {
+          // Egyéb backend hiba
+          alert(`Regisztrációs hiba: ${errorData.message}`);
+        } else {
+          alert(`Regisztrációs hiba (${statusCode}): Kérjük, próbálja újra később.`);
+        }
+      } else if (err.request) {
+        // A kérés elküldése, de nem érkezett válasz
+        alert("Regisztrációs hiba: Nem sikerült kapcsolódni a szerverhez. Kérjük, ellenőrizze a hálózati kapcsolatot!");
+      } else {
+        // Egyéb hiba
+        alert("Regisztrációs hiba történt! Kérjük, próbálja újra később.");
+      }
+      // HIBA: NEM hívjuk meg a callbacket, így nem történik navigáció
     });
   }
 
