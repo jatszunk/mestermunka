@@ -81,8 +81,8 @@ function NevjegyPage({ user }) {
 
             <p>
               <strong>E-mail:</strong>{' '}
-              <a href="mailto:gameverseprojekt@gmail.hu">
-                gameverseprojekt@gmail.hu
+              <a href="mailto:gameverseprojekt@gmail.com">
+                gameverseprojekt@gmail.com
               </a>
             </p>
           </div>
@@ -123,7 +123,7 @@ function NevjegyPage({ user }) {
             marginBottom: '1.5rem'
           }}
         >
-          Üzeneted azonnal elküldődik a gameverseprojekt@gmail.hu címre.
+          Üzeneted azonnal elküldődik a gameverseprojekt@gmail.com címre.
         </p>
 
         <form onSubmit={handleSubmit} className="contact-form">

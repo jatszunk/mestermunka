@@ -2543,7 +2543,7 @@ h1, h2 {
   margin-top: 10px;
 }
 
-/* Mobil: egymás alá */
+/* Tablet: jobb oszlop sticky */
 @media (max-width: 1000px){
   .detail-3col{
     align-items: stretch; /* oszlopok egy magasságra nyúlnak */
@@ -2563,5 +2563,53 @@ h1, h2 {
 
   .detail-center .detail-card{
     max-width: 98vw;
+  }
+}
+
+/* Mobil: vertikális layout - center, right, left sorrendben */
+@media (max-width: 768px){
+  .detail-3col{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 20px;
+    align-items: stretch;
+  }
+  
+  .detail-center{
+    order: 1; /* Első (felül) */
+    grid-row: 1;
+  }
+  
+  .detail-right{
+    order: 2; /* Második (középen) */
+    grid-row: 2;
+    position: static; /* Sticky nem kell mobilon */
+    min-height: auto;
+  }
+  
+  .detail-left{
+    order: 3; /* Harmadik (alul) */
+    grid-row: 3;
+  }
+  
+  .detail-center .detail-card{
+    max-width: 100%;
+  }
+  
+  .detail-left,
+  .detail-right{
+    padding: 12px;
+  }
+}
+
+/* Kis mobil finomhangolás */
+@media (max-width: 480px){
+  .detail-3col{
+    gap: 15px;
+  }
+  
+  .detail-left,
+  .detail-right{
+    padding: 10px;
   }
 }

@@ -60,27 +60,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.logout-btn {
-  position: absolute;
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 67, 54, 0.8);
-  color: white;
-  border: 1px solid rgba(255, 67, 54, 0.9);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.logout-btn:hover {
-  background: rgba(255, 67, 54, 0.9);
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 67, 54, 0.3);
-}
 
 /* Reszponzív dizájn */
 @media (max-width: 768px) {
@@ -111,15 +90,6 @@
     max-width: 280px;
     margin-bottom: 1rem;
   }
-  
-  .logout-btn {
-    position: static;
-    transform: none;
-    margin-top: 1.5rem;
-    align-self: center;
-    width: 100%;
-    max-width: 250px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -146,10 +116,5 @@
     height: 100px;
     max-width: 240px;
   }
-  
-  .logout-btn {
-    width: 100%;
-    max-width: 200px;
-    margin-top: 0.5rem;
-  }
+
 }
