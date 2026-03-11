@@ -367,13 +367,17 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
     db.query(
       "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom, status) VALUES (?, ?, ?, ?, 'active')",
       [userId, gameId, Number(rating), text],
-      (result) => {
-          console.log('Komment sikeresen hozzáadva:', result.insertId);
-          res.json({
-            success: true,
-            comment: { id: result.insertId, user: username, text, rating: Number(rating) },
-          });
+      (err, result) => {
+        if (err) {
+          console.error('Komment hozzáadási hiba:', err);
+          return res.status(500).json({ success: false, message: "Hiba a komment hozzáadásakor", error: err });
         }
+        console.log('Komment sikeresen hozzáadva:', result.insertId);
+        res.json({
+          success: true,
+          comment: { id: result.insertId, user: username, text, rating: Number(rating) },
+        });
+      }
     );
   });
 });
@@ -462,7 +466,7 @@ app.post("/update-game-rating/:gameId", checkRole(['admin']), (req, res) => {
 
 // Felhasználók listázása
 app.get("/felhasznalok", (req, res) => {
-  db.query("SELECT idfelhasznalo, felhasznalonev, email, szerepkor, nev, aktiv, utolso_belepes FROM felhasznalo ORDER BY szerepkor, felhasznalonev", (err, results) => {
+  db.query("SELECT idfelhasznalo, felhasznalonev, email, szerepkor, nev, aktiv, utolso_belepes, avatar, bio, favoriteGenres, preferredPlatforms, country, birthYear, discord, twitter, youtube, twitch FROM felhasznalo ORDER BY szerepkor, felhasznalonev", (err, results) => {
     if (err) return res.status(500).json({ success: false, message: "Hiba történt", error: err });
     res.json({ success: true, users: results });
   });

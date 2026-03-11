@@ -17,7 +17,7 @@ const Statistics = ({ games, comments, users, user }) => {
 
   const [platformData, setPlatformData] = useState([]);
 
-  // Function to get user avatar
+//Avatar lekérdezés
   const getUserAvatar = (username) => {
     const foundUser = users.find(u => u.username === username);
     if (foundUser && foundUser.avatar) {
@@ -26,7 +26,7 @@ const Statistics = ({ games, comments, users, user }) => {
     return null;
   };
 
-  // Function to get user initial for placeholder
+ //Alap avatar
   const getUserInitial = (username) => {
     return username ? username.charAt(0).toUpperCase() : '?';
   };
