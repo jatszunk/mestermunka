@@ -460,7 +460,8 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Header user={user} />
+      {/* Header csak akkor jelenik meg, ha a felhasználó be van jelentkezve */}
+      {user && <Header user={user} />}
       <Routes>
         <Route
           path="/"

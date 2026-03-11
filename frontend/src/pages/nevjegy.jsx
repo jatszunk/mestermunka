@@ -133,7 +133,7 @@ function NevjegyPage({ user }) {
               htmlFor="name"
               style={{ color: '#27e8ff', fontWeight: 'bold' }}
             >
-              Neved:
+              Neved/Üzenet tárgya:
             </label>
             <input
               id="name"

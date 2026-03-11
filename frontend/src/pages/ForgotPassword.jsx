@@ -38,7 +38,7 @@ function ForgotPassword() {
   return (
     <div className="maincenter">
       <h2>Elfelejtett jelszó</h2>
-      <p>Adja meg az e-mail címét, és küldünk egy linket a jelszó megváltoztatásához.</p>
+      <p style={{ color: '#fff' }}>Adja meg az e-mail címét, és küldünk egy linket a jelszó megváltoztatásához.</p>
 
       {message && (
         <div className="success-message" style={{ 

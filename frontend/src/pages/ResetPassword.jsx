@@ -113,7 +113,7 @@ function ResetPassword() {
   return (
     <div className="maincenter">
       <h2>Jelszó visszaállítása</h2>
-      <p>Adja meg az új jelszavát!</p>
+      <p style={{ color: '#fff' }}>Adja meg az új jelszavát!</p>
 
       {message && (
         <div className="success-message" style={{ 
