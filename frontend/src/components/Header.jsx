@@ -34,14 +34,6 @@ const Header = ({ user }) => {
             </>
           )}
         </nav>
-        {user && (
-          <button onClick={() => {
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-          }} className="logout-btn">
-            Kijelentkezés
-          </button>
-        )}
       </div>
     </header>
   );

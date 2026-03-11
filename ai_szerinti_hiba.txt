@@ -1,8 +1,4 @@
 PROJEKT RÉSZLETES ELEMZÉSE - SZÉPSÉGHIBÁK
-1. ADATBÁZIS KAPCSOLATOK
-Két connection pool: db (fő) és commentDb (alternatív) - felesleges
-Port konfliktus: 3307 vs 3306 - lehet inkonzisztencia
-Karakterkódolás: utf8mb4 - helyes beállítás
 2. FRONTEND HIBÁK
 App.jsx (516 sor)
 Inkonzisztens szerepkör kezelés: 44-55. sor: u.szerepkor === 'felhasznalo' ? 'user' : u.szerepkor - dehol van 'admin' kezelés

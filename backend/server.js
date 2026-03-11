@@ -3,6 +3,9 @@ const mysql = require("mysql");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -12,27 +15,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MySQL kapcsolat pool beállítása
 const db = mysql.createPool({
   connectionLimit: 10,
-  host: "localhost",
-  port: 3307,
-  user: "root",
-  password: "",
-  database: "jatekhirdeto",
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "jatekhirdeto",
   multipleStatements: true,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true,
-  charset: 'utf8mb4'
-});
-
-// Alternatív kapcsolat a kommentekhez (ha a fő kapcsolat nem működik)
-const commentDb = mysql.createPool({
-  connectionLimit: 5,
-  host: "127.0.0.1",
-  port: 3307,
-  user: "root",
-  password: "",
-  database: "jatekhirdeto",
-  multipleStatements: false,
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true,
@@ -376,39 +364,17 @@ app.post("/jatekok/:id/kommentek", (req, res) => {
     const userId = users[0].idfelhasznalo;
     console.log('Felhasználó ID:', userId, 'Game ID:', gameId);
 
-    // Először próbáljuk meg a fő kapcsolattal
+    //Kommentek hozzá adása
     db.query(
       "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom, status) VALUES (?, ?, ?, ?, 'active')",
       [userId, gameId, Number(rating), text],
-      (err2, result) => {
-        if (err2) {
-          console.error('Komment hozzáadási hiba (fő kapcsolat):', err2);
-          
-          // Ha a fő kapcsolat nem működik, próbáljuk meg az alternatív kapcsolattal
-          console.log('Próbálkozás alternatív kapcsolattal...');
-          commentDb.query(
-            "INSERT INTO kommentek (idfelhasznalo, idjatekok, ertekeles, tartalom) VALUES (?, ?, ?, ?)",
-            [userId, gameId, Number(rating), text],
-            (err3, result2) => {
-              if (err3) {
-                console.error('Alternatív kapcsolat is hibás:', err3);
-                return res.status(500).json({ success: false, message: "Hiba a komment mentésekor (adatbázis definer probléma)", error: err3.message });
-              }
-              console.log('Komment sikeresen hozzáadva (alternatív kapcsolat):', result2.insertId);
-              res.json({
-                success: true,
-                comment: { id: result2.insertId, user: username, text, rating: Number(rating) },
-              });
-            }
-          );
-        } else {
-          console.log('Komment sikeresen hozzáadva (fő kapcsolat):', result.insertId);
+      (result) => {
+          console.log('Komment sikeresen hozzáadva:', result.insertId);
           res.json({
             success: true,
             comment: { id: result.insertId, user: username, text, rating: Number(rating) },
           });
         }
-      }
     );
   });
 });
@@ -467,7 +433,6 @@ app.get("/user-statistics/:userId", checkRole(['admin', 'felhasznalo']), (req, r
   const userId = req.params.userId;
   
   if (req.userRole !== 'admin') {
-    // Get user ID from username for non-admin users
     db.query("SELECT idfelhasznalo FROM felhasznalo WHERE felhasznalonev = ? AND aktiv = 1", [req.username], (err, userResults) => {
       if (err || !userResults.length) return res.status(403).json({ success: false, message: "Nincs jogosultsága" });
       if (userResults[0].idfelhasznalo != userId) return res.status(403).json({ success: false, message: "Nincs jogosultsága" });
@@ -1338,7 +1303,7 @@ app.post("/forgot-password", (req, res) => {
       const resetLink = `http://localhost:5173/reset-password?token=${token}`;
       
       const mailOptions = {
-        from: 'gameverse@example.com',
+        from: 'gameverseprojekt@gmail.com',
         to: email,
         subject: 'Jelszó visszaállítás - GameVerse',
         html: `
@@ -1356,8 +1321,8 @@ app.post("/forgot-password", (req, res) => {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'gameverseprojekt@gmail.com',
-          pass: 'nzwj fwda ugvx gsqp'
+          user: process.env.EM_USER,
+          pass: process.env.EM_PASS
         }
       });
 
@@ -1509,14 +1474,14 @@ app.post("/api/send-email", (req, res) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'gameverseprojekt@gmail.com', // Itt add meg a valós email címed
-      pass: 'nzwj fwda ugvx gsqp' // Itt add meg az app jelszavad
+      user: process.env.EM_USER, 
+      pass: process.env.EM_PASS 
     }
   });
 
   const mailOptions = {
     from: from,
-    to: 'gameverseprojekt@gmail.com', // Címzett email
+    to: process.env.EM_USER, // Címzett email
     subject: `JátékHirdető Kapcsolat: ${subject}`,
     text: `
       Új üzenet érkezett a JátékHirdető oldalról:
