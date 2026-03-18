@@ -123,7 +123,7 @@
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
+  gap: 50px;
   margin-bottom: 40px;
   width: 100%;
 }
@@ -136,6 +136,7 @@
   transition: all 0.3s ease;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 20px;
 }
 
 .stats-section:hover {
@@ -191,6 +192,7 @@
   word-wrap: break-word;
 }
 
+
 .bar-item {
   display: flex;
   align-items: center;
@@ -217,6 +219,11 @@
   overflow: hidden;
   position: relative;
   min-width: 100px;
+}
+@media (max-width: 768px) {
+  .bar-container {
+    min-width: 100px;
+  }
 }
 
 .bar {
@@ -585,6 +592,7 @@
   
   .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
   }
 }
 
@@ -624,14 +632,20 @@
   }
   
   .bar-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
   }
   
   .bar-label {
     min-width: auto;
-    text-align: left;
+    text-align: center;
+    flex: 0 0 auto;
+  }
+  
+  .bar-container {
+    flex: 1;
+    min-width: 100px;
   }
   
   .price-item {
@@ -646,6 +660,10 @@
   
   .game-meta {
     justify-content: center;
+  }
+  
+  .comment-count-mobile {
+    display: none;
   }
 }
 

@@ -260,7 +260,7 @@ const Statistics = ({ games, comments, users, user }) => {
     });
   };
 
-  const renderBarChart = (data, title, color = '#27e8ff') => {
+  const renderBarChart = (data, title, color = '#27e8ff', useKeys = false) => {
     if (!data || typeof data !== 'object') {
       return (
         <div className="bar-chart">
@@ -277,7 +277,7 @@ const Statistics = ({ games, comments, users, user }) => {
         <h4>{title}</h4>
         {Object.entries(data).map(([key, value], index) => (
           <div key={key} className="bar-item">
-            <span className="bar-label">{index + 1}</span>
+            <span className="bar-label">{useKeys ? key : index + 1}</span>
             <div className="bar-container">
               <div 
                 className="bar" 
@@ -416,7 +416,7 @@ const Statistics = ({ games, comments, users, user }) => {
               </div>
             </div>
             <h4>Ár tartományok eloszlása</h4>
-            {renderBarChart(stats.priceStats.priceRanges, 'Árkategóriák', '#ffaa00')}
+            {renderBarChart(stats.priceStats.priceRanges, 'Árkategóriák', '#ffaa00', true)}
           </div>
         </div>
 
@@ -545,7 +545,12 @@ const Statistics = ({ games, comments, users, user }) => {
                 <span className="metric-value">
                   {(() => {
                     const topCommenter = getTopCommenter();
-                    return topCommenter ? `${topCommenter.username} (${topCommenter.count} komment)` : 'Nincs adat';
+                    return topCommenter ? (
+                      <>
+                        {topCommenter.username}
+                        <span className="comment-count-mobile"> ({topCommenter.count} komment)</span>
+                      </>
+                    ) : 'Nincs adat';
                   })()}
                 </span>
               </div>
