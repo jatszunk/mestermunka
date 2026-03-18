@@ -220,12 +220,6 @@
   position: relative;
   min-width: 100px;
 }
-@media (max-width: 768px) {
-  .bar-container {
-    min-width: 100px;
-  }
-}
-
 .bar {
   height: 100%;
   transition: width 0.8s ease;

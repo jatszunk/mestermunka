@@ -9,9 +9,12 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
   const [filteredGames, setFilteredGames] = useState(games);
   const [showComparison, setShowComparison] = useState(false);
   const [mobileWarning, setMobileWarning] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const gamesPerPage = 9;
 
   useEffect(() => {
     setFilteredGames(games);
+    setCurrentPage(1); // Reset page when games change
   }, [games]);
 
   const handleComparisonClick = () => {
@@ -74,10 +77,34 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
     }
     
     setFilteredGames(filtered);
+    setCurrentPage(1); // Reset page when filters change
   };
 
   const handleSearch = (searchTerm) => {
     handleFilterChange({ searchTerm });
+  };
+
+  // Pagination logic
+  const indexOfLastGame = currentPage * gamesPerPage;
+  const indexOfFirstGame = indexOfLastGame - gamesPerPage;
+  const currentGames = filteredGames.slice(indexOfFirstGame, indexOfLastGame);
+  const totalPages = Math.ceil(filteredGames.length / gamesPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0); // Scroll to top when page changes
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
   };
 
   return (
@@ -104,7 +131,7 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
       </div>
 
       <div className="games-grid">
-        {filteredGames.map(game => (
+        {currentGames.map(game => (
           <GameCard
             key={game.id}
             game={game}
@@ -120,6 +147,42 @@ function Home({ user, games, comments, handleAddComment, handleAddToWishlist, ha
       {filteredGames.length === 0 && (
         <div className="no-results">
           <p>Nem található a keresési feltételeknek megfelelő játék.</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button 
+            className="pagination-btn prev-btn"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            ← Előző
+          </button>
+          
+          <div className="pagination-numbers">
+            {[...Array(totalPages)].map((_, index) => {
+              const pageNumber = index + 1;
+              return (
+                <button
+                  key={pageNumber}
+                  className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                  onClick={() => handlePageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button 
+            className="pagination-btn next-btn"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Következő →
+          </button>
         </div>
       )}
 
