@@ -147,7 +147,7 @@ const GameDevUpload = ({ user }) => {
         });
       }
     } catch (error) {
-      console.error("Feltöltés hiba:", error);
+      console.error('Játék feltöltési hiba:', error);
       const msg =
         error?.response?.data?.message ||
         (typeof error?.response?.data?.error === 'string' ? error.response.data.error : null) ||
@@ -163,7 +163,7 @@ const GameDevUpload = ({ user }) => {
     <div className="game-upload-page">
       
       <div className="cyber-upload-container">
-        {/* Futuristic Header */}
+        {/* Jövőbeállító Fejléc */}
         <div className="cyber-upload-header">
           <Link to="/" className="cyber-back-btn">
             ⬅ Vissza
@@ -172,7 +172,7 @@ const GameDevUpload = ({ user }) => {
           <p className="cyber-upload-subtitle">Töltsd fel a játékodat a GameVerse platformra</p>
         </div>
 
-        {/* Section 1: Basic Information */}
+        {/* 1. Szekció: Alapinformációk */}
         <div className="cyber-section">
           <div className="cyber-section-header">
             <span className="cyber-section-icon">🎮</span>
@@ -338,7 +338,7 @@ const GameDevUpload = ({ user }) => {
           </div>
         </div>
 
-        {/* Section 2: Media Upload */}
+        {/* 2. Szekció: Média Feltöltés */}
         <div className="cyber-section">
           <div className="cyber-section-header">
             <span className="cyber-section-icon">🖼️</span>
@@ -365,7 +365,7 @@ const GameDevUpload = ({ user }) => {
           </div>
         </div>
 
-        {/* Section 3: Description */}
+        {/* 3. Szekció: Leírások */}
         <div className="cyber-section">
           <div className="cyber-section-header">
             <span className="cyber-section-icon">📝</span>
@@ -398,7 +398,7 @@ const GameDevUpload = ({ user }) => {
           </div>
         </div>
 
-        {/* Section 4: System Requirements */}
+        {/* 4. Szekció: Rendszerkövetelmények */}
         <div className="cyber-section">
           <div className="cyber-section-header">
             <span className="cyber-section-icon">⚙️</span>
@@ -432,7 +432,7 @@ const GameDevUpload = ({ user }) => {
           </div>
         </div>
 
-        {/* Section 5: Videos */}
+        {/* 5. Szekció: Videók */}
         <div className="cyber-section">
           <div className="cyber-section-header">
             <span className="cyber-section-icon">🎬</span>

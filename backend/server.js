@@ -751,6 +751,29 @@ app.delete("/admin/users/:userId", checkRole(['admin']), (req, res) => {
   }
 });
 
+// Publikus statisztikák - bárki elérheti
+app.get("/public/statistics", (req, res) => {
+  const sql = `
+    SELECT 
+      (SELECT COUNT(*) FROM felhasznalo WHERE aktiv = 1) AS total_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'felhasznalo' AND aktiv = 1) AS regular_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'gamedev' AND aktiv = 1) AS gamedev_users,
+      (SELECT COUNT(*) FROM felhasznalo WHERE szerepkor = 'admin' AND aktiv = 1) AS admin_users,
+      (SELECT COUNT(*) FROM jatekok) AS total_games,
+      (SELECT COUNT(*) FROM jatekok WHERE status = 'approved') AS approved_games,
+      (SELECT COUNT(*) FROM jatekok WHERE status = 'pending') AS pending_games,
+      (SELECT COUNT(*) FROM jatekok WHERE status = 'rejected') AS rejected_games,
+      (SELECT COUNT(*) FROM kommentek WHERE status = 'active') AS total_comments,
+      (SELECT AVG(ertekeles) FROM kommentek WHERE status = 'active' AND ertekeles IS NOT NULL) AS avg_rating,
+      (SELECT COUNT(*) FROM felhasznalo WHERE aktiv = 1 AND utolso_belepes >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS active_users_30_days
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err });
+    res.json({ success: true, statistics: results[0] });
+  });
+});
+
 // Admin statisztikák
 app.get("/admin/statistics", checkRole(['admin']), (req, res) => {
   const sql = `
@@ -764,7 +787,8 @@ app.get("/admin/statistics", checkRole(['admin']), (req, res) => {
       (SELECT COUNT(*) FROM jatekok WHERE status = 'pending') AS pending_games,
       (SELECT COUNT(*) FROM jatekok WHERE status = 'rejected') AS rejected_games,
       (SELECT COUNT(*) FROM kommentek WHERE status = 'active') AS total_comments,
-      (SELECT AVG(ertekeles) FROM kommentek WHERE status = 'active' AND ertekeles IS NOT NULL) AS avg_rating
+      (SELECT AVG(ertekeles) FROM kommentek WHERE status = 'active' AND ertekeles IS NOT NULL) AS avg_rating,
+      (SELECT COUNT(*) FROM felhasznalo WHERE aktiv = 1 AND utolso_belepes >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS active_users_30_days
   `;
 
   db.query(sql, (err, results) => {
@@ -1848,6 +1872,38 @@ app.post("/gamedev/upload-game", checkRole(['gamedev', 'admin']), (req, res) => 
           res.json({ success: true, message: "Játék sikeresen feltöltve jóváhagyásra!", gameId });
         });
       }
+    });
+  });
+});
+
+// Legfrissebb aktivitások lekérdezése
+app.get("/recent-activity", (req, res) => {
+  const sql = `
+    SELECT 
+      k.idkommentek AS id,
+      k.idjatekok AS gameId,
+      f.felhasznalonev AS user,
+      k.tartalom AS content,
+      k.ertekeles AS rating,
+      k.datum AS date,
+      j.nev AS gameTitle
+    FROM kommentek k
+    LEFT JOIN felhasznalo f ON k.idfelhasznalo = f.idfelhasznalo
+    LEFT JOIN jatekok j ON k.idjatekok = j.idjatekok
+    WHERE k.status = 'active'
+    ORDER BY k.datum DESC
+    LIMIT 10
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Hiba a legfrissebb aktivitások lekérésekor:", err);
+      return res.status(500).json({ success: false, message: "Adatbázis hiba" });
+    }
+    
+    res.json({ 
+      success: true, 
+      activities: results 
     });
   });
 });

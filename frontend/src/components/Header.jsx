@@ -13,6 +13,7 @@ const Header = ({ user }) => {
         <nav className="nav-menu">
           <Link to="/" className="nav-link">Főoldal</Link>
           <Link to="/statistics" className="nav-link">Statisztikák</Link>
+          <Link to="/faq" className="nav-link">GYIK</Link>
           <Link to="/nevjegy" className="nav-link">Névjegy</Link>
           {user ? (
             <>

@@ -34,7 +34,7 @@ function ResetPassword() {
       })
       .catch(err => {
         setTokenValid(false);
-        setError('Token ellenőrzési hiba történt');
+        setError('A token ellenőrzése sikertelen volt!');
       });
   }, [searchParams]);
 

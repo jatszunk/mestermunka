@@ -12,10 +12,42 @@ const Statistics = ({ games, comments, users, user }) => {
     ratingDistribution: {},
     platformStats: {},
     developerStats: {},
-    recentActivity: []
+    recentActivity: [],
+    activeUsers30Days: 0
   });
 
   const [platformData, setPlatformData] = useState([]);
+
+// Helper function to get top commenter
+  const getTopCommenter = () => {
+    if (!comments) {
+      console.warn('Comments prop is missing or undefined');
+      return null;
+    }
+    
+    // Convert comments object to flat array
+    const commentsArray = Object.values(comments).flat();
+    
+    if (commentsArray.length === 0) {
+      return null;
+    }
+    
+    const commentCounts = {};
+    commentsArray.forEach(comment => {
+      if (comment && comment.user) {
+        commentCounts[comment.user] = (commentCounts[comment.user] || 0) + 1;
+      }
+    });
+    
+    const topCommenter = Object.entries(commentCounts).reduce((a, b) => 
+      commentCounts[a[0]] > commentCounts[b[0]] ? a : b
+    );
+    
+    return {
+      username: topCommenter ? topCommenter[0] : 'Nincs adat',
+      count: topCommenter ? commentCounts[topCommenter[0]] : 0
+    };
+  };
 
 //Avatar lekérdezés
   const getUserAvatar = (username) => {
@@ -34,6 +66,7 @@ const Statistics = ({ games, comments, users, user }) => {
   useEffect(() => {
     calculateStatistics();
     fetchPlatformStats();
+    fetchRecentActivity();
   }, [games, comments, users]);
 
   const fetchPlatformStats = async () => {
@@ -41,7 +74,7 @@ const Statistics = ({ games, comments, users, user }) => {
       const response = await fetch('http://localhost:3001/platform-stats');
       const data = await response.json();
       if (data.success) {
-        // Add appropriate icons based on platform names
+    // Add appropriate icons based on platform names
         const platformsWithIcons = data.platforms.map(platform => {
           let icon = '🎮'; // default icon
           
@@ -69,7 +102,42 @@ const Statistics = ({ games, comments, users, user }) => {
         setPlatformData(platformsWithIcons);
       }
     } catch (error) {
-      console.error('Error fetching platform stats:', error);
+      console.error('Platform statisztikák lekérdezési hiba:', error);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/recent-activity');
+      const data = await response.json();
+      if (data.success && data.activities) {
+        const activities = data.activities.map(activity => ({
+          ...activity,
+          gameTitle: activity.gameTitle || 'Ismeretlen játék'
+        }));
+        setStats(prevStats => ({
+          ...prevStats,
+          recentActivity: activities
+        }));
+      }
+    } catch (error) {
+      console.error('Legfrissebb aktivitás lekérdezési hiba:', error);
+      // Ha az adatbázis lekérdezés nem sikerül, használja a meglévő comments prop-ot
+      const recentActivity = [];
+      if (comments) {
+        const activity = Object.values(comments).flat()
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 10)
+          .map(comment => ({
+            ...comment,
+            gameTitle: games && Array.isArray(games) ? games.find(g => g.id === comment.gameId)?.title || 'Ismeretlen játék' : 'Ismeretlen játék'
+          }));
+        recentActivity.push(...activity);
+        setStats(prevStats => ({
+          ...prevStats,
+          recentActivity
+        }));
+      }
     }
   };
 
@@ -79,7 +147,35 @@ const Statistics = ({ games, comments, users, user }) => {
       comments: comments ? Object.keys(comments).length : 0, 
       users: users ? users.length : 0 
     });
-    
+
+    // Fetch public statistics from backend
+    fetch('http://localhost:3001/public/statistics')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setStats(prevStats => ({
+            ...prevStats,
+            totalGames: games ? games.length : 0,
+            totalUsers: users ? users.length : 0,
+            totalComments: comments ? Object.values(comments).flat().length : 0,
+            averageRating: data.statistics.avg_rating || 0,
+            activeUsers30Days: data.statistics.active_users_30_days || 0
+          }));
+        }
+      })
+      .catch(err => {
+        console.error('Publikus statisztikák lekérdezési hiba:', err);
+        // Becsléses számítás ha a backend nem elérhető
+        setStats(prevStats => ({
+          ...prevStats,
+          totalGames: games ? games.length : 0,
+          totalUsers: users ? users.length : 0,
+          totalComments: comments ? Object.values(comments).flat().length : 0,
+          averageRating: 0,
+          activeUsers30Days: Math.floor((users ? users.length : 0) * 0.6)
+        }));
+      });
+
     // Alap statisztikák
     const totalGames = games ? games.length : 0;
     const totalUsers = users ? users.length : 0;
@@ -88,15 +184,15 @@ const Statistics = ({ games, comments, users, user }) => {
     // Átlagos értékelés
     const allRatings = comments ? Object.values(comments).flat().map(c => c.rating) : [];
     const averageRating = allRatings.length > 0 
-      ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
+      ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length)
       : 0;
 
     // Kategória statisztikák
     const categoryStats = {};
     if (games && Array.isArray(games)) {
       games.forEach(game => {
-        (game.categories || []).forEach(category => {
-          categoryStats[category] = (categoryStats[category] || 0) + 1;
+        (game.categoryNames || []).forEach(category => {
+          categoryStats[category] = (categoryStats[category]);
         });
       });
     }
@@ -148,21 +244,8 @@ const Statistics = ({ games, comments, users, user }) => {
     const developerStats = {};
     if (games && Array.isArray(games)) {
       games.forEach(game => {
-        developerStats[game.developer] = (developerStats[game.developer] || 0) + 1;
+        developerStats[game.developer] = (developerStats[game.developer]);
       });
-    }
-
-    // Legfrissebb aktivitás
-    const recentActivity = [];
-    if (comments) {
-      const activity = Object.values(comments).flat()
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 10)
-        .map(comment => ({
-          ...comment,
-          gameTitle: games && Array.isArray(games) ? games.find(g => g.id === comment.gameId)?.title || 'Ismeretlen játék' : 'Ismeretlen játék'
-        }));
-      recentActivity.push(...activity);
     }
 
     setStats({
@@ -173,8 +256,7 @@ const Statistics = ({ games, comments, users, user }) => {
       categoryStats,
       priceStats,
       ratingDistribution,
-      developerStats,
-      recentActivity
+      developerStats
     });
   };
 
@@ -193,9 +275,9 @@ const Statistics = ({ games, comments, users, user }) => {
     return (
       <div className="bar-chart">
         <h4>{title}</h4>
-        {Object.entries(data).map(([key, value]) => (
+        {Object.entries(data).map(([key, value], index) => (
           <div key={key} className="bar-item">
-            <span className="bar-label">{key}</span>
+            <span className="bar-label">{index + 1}</span>
             <div className="bar-container">
               <div 
                 className="bar" 
@@ -262,25 +344,21 @@ const Statistics = ({ games, comments, users, user }) => {
             <div className="stat-icon">🎮</div>
             <h3>Összes játék</h3>
             <span className="stat-number">{stats.totalGames}</span>
-            <div className="stat-change">+12% ebben a hónapban</div>
           </div>
           <div className="stat-card success">
             <div className="stat-icon">👥</div>
             <h3>Összes felhasználó</h3>
             <span className="stat-number">{stats.totalUsers}</span>
-            <div className="stat-change">+8% ebben a hónapban</div>
           </div>
           <div className="stat-card warning">
             <div className="stat-icon">💬</div>
             <h3>Összes komment</h3>
             <span className="stat-number">{stats.totalComments}</span>
-            <div className="stat-change">+25% ebben a hónapban</div>
           </div>
           <div className="stat-card info">
             <div className="stat-icon">⭐</div>
             <h3>Átlagos értékelés</h3>
-            <span className="stat-number">{stats.averageRating}</span>
-            <div className="stat-change">0.3 pont növekedés</div>
+            <span className="stat-number">{typeof stats.averageRating === 'number' ? stats.averageRating.toFixed(2) : '0.00'}</span>
           </div>
         </div>
 
@@ -382,7 +460,7 @@ const Statistics = ({ games, comments, users, user }) => {
             <div className="section-badge">UTOLSÓ 10</div>
           </div>
           <div className="activity-timeline">
-            {stats.recentActivity.length > 0 ? (
+            {stats.recentActivity && stats.recentActivity.length > 0 ? (
               stats.recentActivity.map((activity, index) => (
                 <div key={`${activity.id}-${index}`} className="activity-item">
                   <div className="activity-avatar">
@@ -416,7 +494,7 @@ const Statistics = ({ games, comments, users, user }) => {
                     </div>
                   </div>
                   <div className="activity-time">
-                    {activity.date ? new Date(activity.date).toLocaleDateString('hu-HU') : 'Nemrég'}
+                    {activity.date ? new Date(activity.date).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Nemrég'}
                   </div>
                 </div>
               ))
@@ -463,12 +541,20 @@ const Statistics = ({ games, comments, users, user }) => {
                 <span className="metric-value">{stats.totalUsers > 0 ? (stats.totalComments / stats.totalUsers).toFixed(1) : 0}</span>
               </div>
               <div className="metric-item">
-                <span className="metric-label">Aktív felhasználók:</span>
-                <span className="metric-value">{Math.floor(stats.totalUsers * 0.6)}</span>
+                <span className="metric-label">🏆 Legtöbb kommentet író:</span>
+                <span className="metric-value">
+                  {(() => {
+                    const topCommenter = getTopCommenter();
+                    return topCommenter ? `${topCommenter.username} (${topCommenter.count} komment)` : 'Nincs adat';
+                  })()}
+                </span>
               </div>
               <div className="metric-item">
-                <span className="metric-label">Értékelések aránya:</span>
-                <span className="metric-value">{stats.totalGames > 0 ? ((getTopRatedGames().length / stats.totalGames) * 100).toFixed(1) : 0}%</span>
+                <span className="metric-label">📊 Utolsó 30 nap aktív felhasználók:</span>
+                <span className="metric-value">{stats.activeUsers30Days || 'Nincs adat'}</span>
+              </div>
+              <div className="metric-item">
+                <span className="metric-label">Köszönjük hogy itt vagytok!❤️</span>
               </div>
             </div>
           </div>

@@ -72,7 +72,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         setUserStats((prev) => ({ ...prev, wishlist: response.data.wishlist }));
       }
     } catch (error) {
-      console.error("Hiba a kívánságlista betöltésekor:", error);
+      console.error('Hiba a kívánságlista betöltésekor:', error);
     } finally {
       setLoading((prev) => ({ ...prev, wishlist: false }));
     }
@@ -88,7 +88,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         setUserStats((prev) => ({ ...prev, collection: response.data.collection }));
       }
     } catch (error) {
-      console.error("Hiba a gyűjtemény betöltésekor:", error);
+      console.error('Hiba a gyűjtemény betöltésekor:', error);
     } finally {
       setLoading((prev) => ({ ...prev, collection: false }));
     }
@@ -145,7 +145,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         await fetchWishlist();
         alert("Játék hozzáadva a kívánságlistához!");
       } else {
-        alert(response.data.message || "Hiba történt");
+        alert(response.data.message || "Hiba történt a kívánságlistához adáskor");
       }
     } catch (error) {
       console.error("Hiba a kívánságlistához adáskor:", error);
@@ -163,11 +163,11 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         await fetchWishlist();
         alert("Játék törölve a kívánságlistáról!");
       } else {
-        alert(response.data.message || "Hiba történt");
+        alert(response.data.message || "Hiba történt a kívánságlistáról törléskor");
       }
     } catch (error) {
       console.error("Hiba a kívánságlistáról törléskor:", error);
-      alert("Hiba történt a törléskor");
+      alert("Hiba történt a kívánságlistáról törléskor");
     }
   };
 
@@ -181,7 +181,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         await fetchCollection();
         alert("Játék hozzáadva a gyűjteményhez!");
       } else {
-        alert(response.data.message || "Hiba történt");
+        alert(response.data.message || "Hiba történt a gyűjteményhez adáskor");
       }
     } catch (error) {
       console.error("Hiba a gyűjteményhez adáskor:", error);
@@ -198,11 +198,11 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
       if (response.data.success) {
         await fetchCollection();
       } else {
-        alert(response.data.message || "Hiba történt");
+        alert(response.data.message || "Hiba történt a gyűjtemény frissítésekor");
       }
     } catch (error) {
       console.error("Hiba a gyűjtemény frissítésekor:", error);
-      alert("Hiba történt a frissítéskor");
+      alert("Hiba történt a gyűjtemény frissítésekor");
     }
   };
 
@@ -216,11 +216,11 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
         await fetchCollection();
         alert("Játék törölve a gyűjteményből!");
       } else {
-        alert(response.data.message || "Hiba történt");
+        alert(response.data.message || "Hiba történt a gyűjteményből törléskor");
       }
     } catch (error) {
       console.error("Hiba a gyűjteményből törléskor:", error);
-      alert("Hiba történt a törléskor");
+      alert("Hiba történt a gyűjteményből törléskor");
     }
   };
 

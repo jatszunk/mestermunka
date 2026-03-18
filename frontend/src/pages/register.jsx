@@ -8,7 +8,6 @@ function RegisterPage({ handleRegister }) {
   const [uname, setUname] = useState("");
   const [pass, setPass] = useState("");
   const [mail, setMail] = useState("");
-  const [role, setRole] = useState("user");
  
   return (
     <div className="maincenter">
@@ -18,7 +17,7 @@ function RegisterPage({ handleRegister }) {
         className="login-form"
         onSubmit={e => {
           e.preventDefault();
-          handleRegister(uname, mail, pass, role, () => navigate('/'));
+          handleRegister(uname, mail, pass, "user", () => navigate('/'));
         }}
       >
         <input
@@ -47,16 +46,6 @@ function RegisterPage({ handleRegister }) {
           required
           className="login-input"
         />
- 
-        <select
-          value={role}
-          onChange={e => setRole(e.target.value)}
-          className="login-input"
-        >
-          <option value="user">User</option>
-          <option value="gamedev">GameDev</option>
-          <option value="admin">Admin</option>
-        </select>
 
         <button className="login-btn" type="submit">Regisztráció</button>
       </form>

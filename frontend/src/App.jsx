@@ -6,7 +6,7 @@ import "./App.css";
 import Home from "./pages/Home.jsx";
 import GameDetail from "./pages/GameDetail.jsx";
 import LoginPage from "./pages/login.jsx";
-import RegisterPage from "./pages/Register.jsx";
+import RegisterPage from "./pages/register.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import NevjegyPage from "./pages/nevjegy.jsx";
@@ -16,6 +16,7 @@ import GameDevUpload from "./pages/GameDevUpload.jsx";
 import GameDevPanel from "./components/GameDevPanel.jsx";
 import Statistics from "./pages/Statistics.jsx";
 import UserProfile from "./components/UserProfile.jsx";
+import FAQPage from "./pages/FAQ.jsx";
 
 import defaultImage from "./assets/default.jpg";
 import Footer from "./components/Footer.jsx";
@@ -515,12 +516,14 @@ function App() {
 
         <Route path="/nevjegy" element={<NevjegyPage user={user} />} />
 
+        <Route path="/faq" element={<FAQPage user={user} />} />
+
         <Route
           path="/statistics"
           element={
             <Statistics 
               games={games}
-              comments={comments}
+              comments={Object.values(comments).flat()}
               users={users}
               user={user}
             />

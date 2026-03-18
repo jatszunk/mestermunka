@@ -1068,6 +1068,7 @@ h1, h2 {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+  color: white;
 }
 
 .role-badge.admin {
@@ -1084,7 +1085,7 @@ h1, h2 {
 
 .role-badge.user {
   background: linear-gradient(90deg, #27e8ff 25%, #ff41fa 100%);
-  color: #23272f;
+  color: lightblue;
   box-shadow: 0 0 15px #27e8ff66;
 }
 

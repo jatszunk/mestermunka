@@ -101,7 +101,7 @@ const AdminPanel = ({ user }) => {
         setLoading(false);
       }
     } catch (error) {
-      console.error("Felhasználók hiba:", error);
+      console.error('Felhasználók hiba:', error);
       setLoading(false);
     }
   };
@@ -123,7 +123,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Jóváhagyás hiba:", error);
+      console.error('Jóváhagyás hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a jóváhagyás során!"));
     }
   };
@@ -148,7 +148,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Elutasítás hiba:", error);
+      console.error('Elutasítás hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt az elutasítás során!"));
     }
   };
@@ -168,7 +168,7 @@ const AdminPanel = ({ user }) => {
         fetchUsers();
       }
     } catch (error) {
-      console.error("Szerepkör módosítás hiba:", error);
+      console.error('Szerepkör módosítás hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a szerepkör módosítás során!"));
     }
   };
@@ -190,7 +190,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Játék törlés hiba:", error);
+      console.error('Játék törlés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
@@ -211,7 +211,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Felhasználó törlés hiba:", error);
+      console.error('Felhasználó törlés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
@@ -256,7 +256,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Játék frissítés hiba:", error);
+      console.error('Játék frissítés hiba:', error);
       const errorMessage = getAxiosErrorMessage(error, "Hiba történt a frissítés során!");
       alert(`Hiba történt a frissítés során! ${errorMessage}`);
     }
@@ -274,7 +274,7 @@ const AdminPanel = ({ user }) => {
         setComments(res.data.comments);
       }
     } catch (error) {
-      console.error("Kommentek hiba:", error);
+      console.error('Kommentek hiba:', error);
     }
   };
 
@@ -294,7 +294,7 @@ const AdminPanel = ({ user }) => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error("Komment törlés hiba:", error);
+      console.error('Komment törlés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
     }
   };
@@ -320,7 +320,7 @@ const AdminPanel = ({ user }) => {
         setSearchResults(prev => ({ ...prev, users: res.data.users }));
       }
     } catch (error) {
-      console.error("Felhasználó keresés hiba:", error);
+      console.error('Felhasználó keresés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
     } finally {
       setIsSearching(prev => ({ ...prev, users: false }));
@@ -347,7 +347,7 @@ const AdminPanel = ({ user }) => {
         setSearchResults(prev => ({ ...prev, comments: res.data.comments }));
       }
     } catch (error) {
-      console.error("Komment keresés hiba:", error);
+      console.error('Komment keresés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
     } finally {
       setIsSearching(prev => ({ ...prev, comments: false }));
@@ -375,7 +375,7 @@ const AdminPanel = ({ user }) => {
       
       setSearchResults(prev => ({ ...prev, approvedGames: filteredGames }));
     } catch (error) {
-      console.error("Játék keresés hiba:", error);
+      console.error('Játék keresés hiba:', error);
       alert(getAxiosErrorMessage(error, "Hiba történt a keresés során!"));
     } finally {
       setIsSearching(prev => ({ ...prev, approvedGames: false }));

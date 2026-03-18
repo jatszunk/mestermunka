@@ -25,11 +25,11 @@ function ForgotPassword() {
           navigate('/login');
         }, 5000);
       } else {
-        setError(response.data.message || 'Hiba történt a kérés feldolgozása során');
+        setError(response.data.message || 'Sikertelen kérés');
       }
     } catch (err) {
       console.error('Elfelejtett jelszó hiba:', err);
-      setError(err.response?.data?.message || 'Hiba történt a kérés küldése közben');
+      setError(err.response?.data?.message || 'Hiba történt a kérés feldolgozása során');
     } finally {
       setLoading(false);
     }
