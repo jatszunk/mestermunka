@@ -1224,12 +1224,6 @@ h1, h2 {
   text-shadow: 0 0 7px #27e8ff, 0 0 11px #ff41fa44;
 }
 
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
 .activity-item {
   background: rgba(255, 65, 250, 0.1);
   border-radius: 10px;
@@ -1622,7 +1616,6 @@ h1, h2 {
   flex-direction: column;
   gap: 10px;
   max-height: 300px;
-  overflow-y: auto;
 }
 
 .activity-item {
@@ -1675,7 +1668,11 @@ h1, h2 {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
+
+  .activity-list {
+    overflow-y: auto;
+  } 
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 20px;
