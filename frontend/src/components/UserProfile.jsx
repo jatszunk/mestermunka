@@ -132,7 +132,10 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
 
   const handleProfileUpdate = (updatedUser) => {
     setCurrentUser(updatedUser);
-    if (onProfileEdit) onProfileEdit(updatedUser);
+    if (onProfileEdit) {
+      return onProfileEdit(updatedUser);
+    }
+    return Promise.resolve({ success: true, message: 'Profil frissítve' });
   };
 
   const handleEditCancel = () => setShowEditModal(false);

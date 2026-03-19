@@ -116,9 +116,7 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('handleSubmit kezdődik, loading állapot:', loading);
     setLoading(true);
-    console.log('loading beállítva true-ra, loading állapot:', loading);
     setMessage("");
 
     if (!formData || !user || !user.username) {
@@ -132,16 +130,13 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
     
     onProfileUpdate(formData)
       .then(result => {
-        console.log('Profil mentés eredmény:', result);
-        
         // A loading állapotot csak a sikeres/hibás válasz után állítjuk vissza
         if (result && result.success === true) {
           const successMessage = result.message || 'Sikeres mentés!';
+          alert('Sikeres profil módosítás!');
           setMessage(successMessage);
           setMessageType("success");
-          console.log('Sikeres mentés:', successMessage);
-          setLoading(false); // Sikeres esetén is állítsuk vissza
-          console.log('loading visszaállítva false-ra, loading állapot:', loading);
+          setLoading(false);
           
           // Azonnal bezárjuk a kártyát sikeres mentés után
           onCancel();
@@ -149,9 +144,7 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
           const errorMessage = result?.message || "Ismeretlen hiba történt";
           setMessage(errorMessage);
           setMessageType("error");
-          console.error('Profil mentés hiba:', errorMessage);
-          setLoading(false); // Hiba esetén is állítsuk vissza
-          console.log('loading visszaállítva false-ra hiba esetén, loading állapot:', loading);
+          setLoading(false);
         }
       })
       .catch(error => {
@@ -159,7 +152,6 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
         setMessage("Hiba történt a frissítés során");
         setMessageType("error");
         setLoading(false); // Kivétel esetén is állítsuk vissza
-        console.log('loading visszaállítva false-ra catch blokkban, loading állapot:', loading);
       });
   };
 
@@ -642,8 +634,6 @@ const ProfileEdit = ({ user, onProfileUpdate, onCancel }) => {
               >
                 {loading ? "Sikeres mentés" : "Profil mentése"}
               </button>
-              {/* Debug: loading állapot */}
-              {console.log('Gomb renderelése, loading:', loading)}
             </div>
           </form>
         </div>
