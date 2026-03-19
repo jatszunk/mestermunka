@@ -292,10 +292,15 @@ const AdminPanel = ({ user }) => {
         await fetchStatistics();
         // Kis késleltetés a state frissülésére
         await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        alert("Hiba: " + (res.data.message || "A törlés sikertelen"));
       }
     } catch (error) {
       console.error('Komment törlés hiba:', error);
-      alert(getAxiosErrorMessage(error, "Hiba történt a törlés során!"));
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          "Hiba történt a törlés során! A szerver nem elérhető vagy nincs jogosultságod.";
+      alert("Komment törlési hiba: " + errorMessage);
     }
   };
 

@@ -37,7 +37,6 @@ function App() {
     // users
     axios.get("http://localhost:3001/felhasznalok")
       .then((res) => {
-        console.log('Felhasználók válasz:', res.data);
         if (res.data.success) {
           const mapped = (res.data.users || []).map((u) => ({
             id: u.idfelhasznalo,

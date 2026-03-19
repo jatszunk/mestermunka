@@ -29,7 +29,7 @@ function FAQPage({ user }) {
       question: 'Hogyan tudok játékot feltölteni? / Hogy lehetek GameDev?',
       answer: (
         <div>
-          <p>Játékfeltöltéshez regisztrálnod kell és GameDev jogosultságot kell kérvényezned. A jogosultság megszerzése után a "Játék feltöltése" menüponton keresztül tudod megosztani a játékaidat, amelyeket aztán az adminisztrátorok jóváhagyása után mindenki láthat.</p>
+          <div>Játékfeltöltéshez regisztrálnod kell és GameDev jogosultságot kell kérvényezned. A jogosultság megszerzése után a "Játék feltöltése" menüponton keresztül tudod megosztani a játékaidat, amelyeket aztán az adminisztrátorok jóváhagyása után mindenki láthat.</div>
           <button 
             className="game-dev-request-btn"
             onClick={() => setShowGameDevModal(true)}
@@ -181,7 +181,7 @@ function FAQPage({ user }) {
                 </span>
               </div>
               <div className={`faq-answer ${activeIndex === index ? 'show' : ''}`}>
-                <p>{item.answer}</p>
+                {typeof item.answer === 'string' ? <div>{item.answer}</div> : item.answer}
               </div>
             </div>
           ))}

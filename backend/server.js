@@ -388,7 +388,7 @@ app.delete("/kommentek/:commentId", checkRole(['admin']), (req, res) => {
   
   console.log('Komment törlés kérés:', { commentId });
 
-  const sql = "DELETE FROM kommentek WHERE id = ?";
+  const sql = "DELETE FROM kommentek WHERE idkommentek = ?";
   
   db.query(sql, [commentId], (err, result) => {
     if (err) {

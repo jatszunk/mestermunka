@@ -142,12 +142,6 @@ const Statistics = ({ games, comments, users, user }) => {
   };
 
   const calculateStatistics = () => {
-    console.log('Statistics data:', { 
-      games: games ? games.length : 0, 
-      comments: comments ? Object.keys(comments).length : 0, 
-      users: users ? users.length : 0 
-    });
-
     // Fetch public statistics from backend
     fetch('http://localhost:3001/public/statistics')
       .then(res => res.json())
