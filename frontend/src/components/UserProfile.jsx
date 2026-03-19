@@ -555,7 +555,7 @@ const UserProfile = ({ user, users, comments, games, onProfileEdit, onLogout }) 
                           <option value="owned">Birtokolom</option>
                           <option value="played">Játszottam</option>
                           <option value="completed">Ki vittem</option>
-                          <option value="abandoned">Abbahagytam</option>
+                          <option value="abandoned">Feladtam</option>
                         </select>
 
                         <button
